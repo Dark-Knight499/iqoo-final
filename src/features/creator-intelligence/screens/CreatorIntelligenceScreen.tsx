@@ -66,7 +66,7 @@ export const CreatorIntelligenceScreen: React.FC = () => {
     bookmarkedIds,
   } = useCIStore();
 
-  const { showToast } = useAppStore();
+  const { showToast, openModal } = useAppStore();
   const [activeTopTab, setActiveTopTab] = React.useState<Region | 'saved'>(selectedRegion);
 
   const handleSelectRegion = (r: Region | 'saved') => {
@@ -186,7 +186,29 @@ export const CreatorIntelligenceScreen: React.FC = () => {
             </p>
           </div>
 
-          <StoryboardButton count={storyboardItems.length} onClick={openStoryboard} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              onClick={() => openModal('media-intelligence')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '6px 12px',
+                borderRadius: '999px',
+                backgroundColor: 'rgba(37, 99, 235, 0.15)',
+                border: '1px solid rgba(37, 99, 235, 0.35)',
+                color: '#60A5FA',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              <Sparkles size={13} />
+              <span>Media AI</span>
+            </button>
+            <StoryboardButton count={storyboardItems.length} onClick={openStoryboard} />
+          </div>
         </div>
 
         {/* Big Search Bar */}

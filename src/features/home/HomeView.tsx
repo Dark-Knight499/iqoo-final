@@ -197,6 +197,79 @@ export const HomeView: React.FC = () => {
         </button>
       </form>
 
+      {/* Quick Launchers */}
+      <div
+        style={{
+          display: 'flex',
+          gap: '8px',
+          overflowX: 'auto',
+          paddingBottom: '4px',
+          marginBottom: '26px',
+          scrollbarWidth: 'none',
+        }}
+      >
+        <button
+          onClick={() => openModal('media-intelligence')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '8px 14px',
+            borderRadius: '12px',
+            backgroundColor: 'rgba(37, 99, 235, 0.12)',
+            border: '1px solid rgba(37, 99, 235, 0.3)',
+            color: '#60A5FA',
+            fontSize: '12px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            flexShrink: 0,
+          }}
+        >
+          <Sparkles size={14} />
+          <span>🧠 Media Intelligence</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('insights')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '8px 14px',
+            borderRadius: '12px',
+            backgroundColor: 'rgba(216, 255, 0, 0.1)',
+            border: '1px solid rgba(216, 255, 0, 0.25)',
+            color: 'var(--ai-accent)',
+            fontSize: '12px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            flexShrink: 0,
+          }}
+        >
+          <span>✨ Creator Intelligence</span>
+        </button>
+
+        <button
+          onClick={() => openModal('editor')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '8px 14px',
+            borderRadius: '12px',
+            backgroundColor: 'rgba(255, 255, 255, 0.06)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            color: 'rgba(255, 255, 255, 0.85)',
+            fontSize: '12px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            flexShrink: 0,
+          }}
+        >
+          <span>🎬 Video Editor</span>
+        </button>
+      </div>
+
       {/* Projects Section */}
       <section style={{ marginBottom: '24px' }}>
         <div
