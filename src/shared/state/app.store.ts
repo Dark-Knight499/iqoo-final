@@ -12,7 +12,8 @@ export type ScreenModal =
   | 'effects'
   | 'game-studio'
   | 'export'
-  | 'assets';
+  | 'assets'
+  | 'media-intelligence';
 
 interface AppState {
   activeTab: MainTab;

@@ -7,7 +7,7 @@ export const BottomNav: React.FC = () => {
 
   const navItems: { tab: MainTab; label: string; icon: React.ReactNode; isAI?: boolean }[] = [
     { tab: 'home', label: 'Home', icon: <Home size={20} /> },
-    { tab: 'insights', label: 'Insights', icon: <Compass size={20} /> },
+    { tab: 'insights', label: 'Intelligence', icon: <Compass size={20} /> },
     { tab: 'create', label: 'Create', icon: <Plus size={22} />, isAI: true },
     { tab: 'profile', label: 'Profile', icon: <User size={20} /> },
   ];

@@ -3,6 +3,7 @@ import { useAppStore } from '@/shared/state/app.store';
 import { AppShell } from '@/shared/components/AppShell';
 import { HomeView } from '@/features/home/HomeView';
 import { InsightsView } from '@/features/insights/InsightsView';
+import { CreatorIntelligenceScreen } from '@/features/creator-intelligence/screens/CreatorIntelligenceScreen';
 import { CreateView } from '@/features/create/CreateView';
 import { ProfileView } from '@/features/profile/ProfileView';
 import { OnboardingFlow } from '@/features/onboarding/OnboardingFlow';
@@ -13,6 +14,7 @@ import { ScriptView } from '@/features/script/ScriptView';
 import { GameStudioView } from '@/features/game-studio/GameStudioView';
 import { EffectsStudioView } from '@/features/effects/EffectsStudioView';
 import { AssetsView } from '@/features/assets/AssetsView';
+import { MediaIntelligenceView } from '@/features/media-intelligence/MediaIntelligenceView';
 import { ExportModal } from '@/features/export/ExportModal';
 import { CopilotSheet } from '@/features/copilot/CopilotSheet';
 
@@ -53,7 +55,7 @@ export const App: React.FC = () => {
   return (
     <AppShell>
       {activeTab === 'home' && <HomeView />}
-      {activeTab === 'insights' && <InsightsView />}
+      {activeTab === 'insights' && <CreatorIntelligenceScreen />}
       {activeTab === 'create' && <CreateView />}
       {activeTab === 'profile' && <ProfileView />}
 
