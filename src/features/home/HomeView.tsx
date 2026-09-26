@@ -5,6 +5,7 @@ import { useCreatorStore } from '@/shared/state/creator.store';
 import { useProjectStore } from '@/shared/state/project.store';
 import { Button } from '@/shared/components/Button';
 import { Chip } from '@/shared/components/Chip';
+import { ThemeToggle } from '@/shared/components/ThemeToggle';
 
 export const HomeView: React.FC = () => {
   const { creator } = useCreatorStore();
@@ -60,22 +61,25 @@ export const HomeView: React.FC = () => {
           </div>
         </div>
 
-        <button
-          onClick={() => openModal('script')}
-          style={{
-            width: '38px',
-            height: '38px',
-            borderRadius: '50%',
-            backgroundColor: 'var(--bg-surface-2)',
-            color: 'var(--text-secondary)',
-            display: 'grid',
-            placeItems: 'center',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-          }}
-          title="Script Studio"
-        >
-          <SlidersHorizontal size={18} />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ThemeToggle />
+          <button
+            onClick={() => openModal('script')}
+            style={{
+              width: '38px',
+              height: '38px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--bg-surface-2)',
+              color: 'var(--text-secondary)',
+              display: 'grid',
+              placeItems: 'center',
+              border: '1px solid var(--border-color)',
+            }}
+            title="Script Studio"
+          >
+            <SlidersHorizontal size={18} />
+          </button>
+        </div>
       </div>
 
       {/* Greeting Headline */}

@@ -24,25 +24,25 @@ export const ContentCard: React.FC<ContentCardProps> = ({
       onClick={() => onClick(item)}
       style={{
         borderRadius: '16px',
-        backgroundColor: '#121212',
-        border: '1px solid rgba(255, 255, 255, 0.07)',
+        backgroundColor: 'var(--bg-surface)',
+        border: '1px solid var(--border-color)',
         overflow: 'hidden',
         cursor: 'pointer',
         display: 'flex',
         flexDirection: 'column',
-        transition: 'transform 0.18s ease, border-color 0.18s ease',
+        transition: 'transform 0.18s ease, border-color 0.18s ease, background-color 0.18s ease',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.16)';
+        e.currentTarget.style.borderColor = 'var(--ai-border, rgba(216, 255, 0, 0.25))';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.07)';
+        e.currentTarget.style.borderColor = 'var(--border-color)';
       }}
     >
       {/* Thumbnail area */}
-      <div style={{ position: 'relative', width: '100%', aspectRatio: item.type === 'reel' ? '9/11' : '16/9', backgroundColor: '#202020', overflow: 'hidden' }}>
+      <div style={{ position: 'relative', width: '100%', aspectRatio: item.type === 'reel' ? '9/11' : '16/9', backgroundColor: 'var(--bg-surface-3)', overflow: 'hidden' }}>
         <img
           src={item.thumbnail}
           alt={item.title}
@@ -127,7 +127,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({
             margin: '0 0 8px 0',
             fontSize: '14px',
             fontWeight: 600,
-            color: '#FFFFFF',
+            color: 'var(--text-primary)',
             lineHeight: 1.35,
             display: '-webkit-box',
             WebkitLineClamp: 2,
@@ -145,7 +145,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({
               width: '20px',
               height: '20px',
               borderRadius: '50%',
-              backgroundColor: '#2A2A2A',
+              backgroundColor: 'var(--bg-surface-2)',
               overflow: 'hidden',
               display: 'flex',
               alignItems: 'center',
@@ -157,15 +157,15 @@ export const ContentCard: React.FC<ContentCardProps> = ({
           >
             {item.creatorName.charAt(0)}
           </div>
-          <span style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.8)', fontWeight: 500 }}>
+          <span style={{ fontSize: '12px', color: 'var(--text-primary)', fontWeight: 500 }}>
             {item.creatorName}
           </span>
-          <span style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.4)' }}>•</span>
-          <span style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.4)' }}>{item.publishedAt}</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>•</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{item.publishedAt}</span>
         </div>
 
         {/* Stats */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', fontSize: '11px', color: 'rgba(255, 255, 255, 0.55)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', fontSize: '11px', color: 'var(--text-secondary)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <Eye size={12} />
             <span>{item.views}</span>
@@ -177,7 +177,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '10px', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
+        <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '10px', borderTop: '1px solid var(--border-color)' }}>
           <button
             onClick={(e) => onToggleBookmark(item.id, e)}
             style={{
@@ -188,9 +188,9 @@ export const ContentCard: React.FC<ContentCardProps> = ({
               gap: '6px',
               padding: '7px 10px',
               borderRadius: '8px',
-              backgroundColor: isBookmarked ? 'rgba(216, 255, 0, 0.12)' : 'rgba(255, 255, 255, 0.06)',
-              border: isBookmarked ? '1px solid rgba(216, 255, 0, 0.3)' : '1px solid rgba(255, 255, 255, 0.08)',
-              color: isBookmarked ? 'var(--ai-accent, #D8FF00)' : 'rgba(255, 255, 255, 0.8)',
+              backgroundColor: isBookmarked ? 'var(--ai-soft, rgba(216, 255, 0, 0.12))' : 'var(--bg-surface-2)',
+              border: isBookmarked ? '1px solid var(--ai-border, rgba(216, 255, 0, 0.3))' : '1px solid var(--border-color)',
+              color: isBookmarked ? 'var(--ai-accent, #D8FF00)' : 'var(--text-secondary)',
               fontSize: '12px',
               fontWeight: 600,
               cursor: 'pointer',
@@ -211,9 +211,9 @@ export const ContentCard: React.FC<ContentCardProps> = ({
               gap: '6px',
               padding: '7px 10px',
               borderRadius: '8px',
-              backgroundColor: isStoryboarding ? 'rgba(0, 220, 130, 0.15)' : 'rgba(255, 255, 255, 0.08)',
-              border: isStoryboarding ? '1px solid rgba(0, 220, 130, 0.35)' : '1px solid rgba(255, 255, 255, 0.1)',
-              color: isStoryboarding ? '#00DC82' : '#FFFFFF',
+              backgroundColor: isStoryboarding ? 'rgba(0, 220, 130, 0.15)' : 'var(--bg-surface-3)',
+              border: isStoryboarding ? '1px solid rgba(0, 220, 130, 0.35)' : '1px solid var(--border-color)',
+              color: isStoryboarding ? '#00DC82' : 'var(--text-primary)',
               fontSize: '12px',
               fontWeight: 600,
               cursor: 'pointer',

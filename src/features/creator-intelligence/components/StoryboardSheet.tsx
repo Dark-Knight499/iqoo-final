@@ -46,10 +46,10 @@ export const StoryboardSheet: React.FC<StoryboardSheetProps> = ({
           width: '100%',
           maxWidth: '560px',
           maxHeight: '85vh',
-          backgroundColor: '#111111',
+          backgroundColor: 'var(--bg-surface)',
           borderTopLeftRadius: '24px',
           borderTopRightRadius: '24px',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          border: '1px solid var(--border-color)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -61,7 +61,7 @@ export const StoryboardSheet: React.FC<StoryboardSheetProps> = ({
         <div
           style={{
             padding: '16px 20px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            borderBottom: '1px solid var(--border-color)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -70,11 +70,11 @@ export const StoryboardSheet: React.FC<StoryboardSheetProps> = ({
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Layers size={18} color="var(--ai-accent, #D8FF00)" />
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#FFFFFF' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
                 Storyboard ({items.length})
               </h3>
             </div>
-            <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: 'rgba(255, 255, 255, 0.5)' }}>
+            <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>
               References for your next piece
             </p>
           </div>
@@ -86,7 +86,7 @@ export const StoryboardSheet: React.FC<StoryboardSheetProps> = ({
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: 'rgba(255, 255, 255, 0.4)',
+                  color: 'var(--text-muted)',
                   fontSize: '12px',
                   cursor: 'pointer',
                   padding: '4px 8px',
@@ -98,7 +98,7 @@ export const StoryboardSheet: React.FC<StoryboardSheetProps> = ({
             <button
               onClick={onClose}
               style={{
-                background: 'rgba(255, 255, 255, 0.08)',
+                background: 'var(--bg-surface-3)',
                 border: 'none',
                 borderRadius: '50%',
                 width: '32px',
@@ -106,7 +106,7 @@ export const StoryboardSheet: React.FC<StoryboardSheetProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#FFFFFF',
+                color: 'var(--text-primary)',
                 cursor: 'pointer',
               }}
             >
@@ -122,11 +122,11 @@ export const StoryboardSheet: React.FC<StoryboardSheetProps> = ({
               style={{
                 padding: '40px 20px',
                 textAlign: 'center',
-                color: 'rgba(255, 255, 255, 0.4)',
+                color: 'var(--text-muted)',
               }}
             >
               <Layers size={36} style={{ marginBottom: '12px', opacity: 0.4 }} />
-              <p style={{ margin: '0 0 6px 0', fontSize: '14px', color: '#FFFFFF', fontWeight: 600 }}>
+              <p style={{ margin: '0 0 6px 0', fontSize: '14px', color: 'var(--text-primary)', fontWeight: 600 }}>
                 Your storyboard is empty
               </p>
               <p style={{ margin: 0, fontSize: '12px', lineHeight: 1.5 }}>
@@ -146,15 +146,15 @@ export const StoryboardSheet: React.FC<StoryboardSheetProps> = ({
                       gap: '12px',
                       padding: '10px 12px',
                       borderRadius: '12px',
-                      backgroundColor: '#181818',
-                      border: '1px solid rgba(255, 255, 255, 0.06)',
+                      backgroundColor: 'var(--bg-surface-2)',
+                      border: '1px solid var(--border-color)',
                     }}
                   >
                     <span
                       style={{
                         fontSize: '11px',
                         fontWeight: 700,
-                        color: 'rgba(255, 255, 255, 0.3)',
+                        color: 'var(--text-muted)',
                         width: '16px',
                         textAlign: 'center',
                       }}
@@ -170,7 +170,7 @@ export const StoryboardSheet: React.FC<StoryboardSheetProps> = ({
                         height: '42px',
                         borderRadius: '6px',
                         overflow: 'hidden',
-                        backgroundColor: '#2A2A2A',
+                        backgroundColor: 'var(--bg-surface-3)',
                         flexShrink: 0,
                         cursor: 'pointer',
                         position: 'relative',
@@ -192,7 +192,7 @@ export const StoryboardSheet: React.FC<StoryboardSheetProps> = ({
                           margin: '0 0 3px 0',
                           fontSize: '13px',
                           fontWeight: 600,
-                          color: '#FFFFFF',
+                          color: 'var(--text-primary)',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -200,7 +200,7 @@ export const StoryboardSheet: React.FC<StoryboardSheetProps> = ({
                       >
                         {content?.title || 'Selected Reference'}
                       </h5>
-                      <span style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
                         {content?.creatorName || 'Creator'} • {content?.views || '1M'} views
                       </span>
                     </div>
@@ -210,7 +210,7 @@ export const StoryboardSheet: React.FC<StoryboardSheetProps> = ({
                       style={{
                         background: 'none',
                         border: 'none',
-                        color: 'rgba(255, 255, 255, 0.4)',
+                        color: 'var(--text-muted)',
                         cursor: 'pointer',
                         padding: '6px',
                         borderRadius: '6px',
@@ -233,8 +233,8 @@ export const StoryboardSheet: React.FC<StoryboardSheetProps> = ({
         <div
           style={{
             padding: '16px 20px',
-            borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-            backgroundColor: '#141414',
+            borderTop: '1px solid var(--border-color)',
+            backgroundColor: 'var(--bg-surface-2)',
           }}
         >
           {items.length === 0 ? (
@@ -243,7 +243,7 @@ export const StoryboardSheet: React.FC<StoryboardSheetProps> = ({
                 margin: 0,
                 fontSize: '12px',
                 textAlign: 'center',
-                color: 'rgba(255, 255, 255, 0.45)',
+                color: 'var(--text-muted)',
               }}
             >
               Add references to your storyboard to generate content.

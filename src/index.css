@@ -9,6 +9,7 @@
   --ai-accent: #D8FF00;
   --ai-soft: rgba(216, 255, 0, 0.14);
   --ai-border: rgba(216, 255, 0, 0.28);
+  --border-color: rgba(255, 255, 255, 0.08);
   --success: #A7F36B;
   --warning: #FFCC66;
   --danger: #FF5C6C;
@@ -22,6 +23,27 @@
 
   --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.45);
   --shadow-float: 0 12px 40px rgba(0, 0, 0, 0.65);
+}
+
+[data-theme="light"] {
+  --bg-primary: #F8FAFC;
+  --bg-surface: #FFFFFF;
+  --bg-surface-2: #F1F5F9;
+  --bg-surface-3: #E2E8F0;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #64748B;
+  --ai-accent: #2563EB;
+  --ai-soft: rgba(37, 99, 235, 0.1);
+  --ai-border: rgba(37, 99, 235, 0.3);
+  --border-color: #E2E8F0;
+  --success: #16A34A;
+  --warning: #D97706;
+  --danger: #DC2626;
+  --info: #2563EB;
+
+  --shadow-card: 0 4px 14px rgba(15, 23, 42, 0.06);
+  --shadow-float: 0 10px 30px rgba(15, 23, 42, 0.1);
 }
 
 * {
@@ -39,6 +61,7 @@ body {
   overflow-x: hidden;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 button, input, textarea, select {
@@ -75,6 +98,7 @@ a {
   background-color: var(--bg-primary);
   display: flex;
   flex-direction: column;
+  transition: background-color 0.25s ease;
 }
 
 @media (min-width: 768px) {
@@ -82,8 +106,15 @@ a {
     background-color: #020202;
     background-image: radial-gradient(circle at 50% 10%, rgba(216, 255, 0, 0.04), transparent 50%);
   }
+  [data-theme="light"] body {
+    background-color: #EEF2F6;
+    background-image: radial-gradient(circle at 50% 10%, rgba(37, 99, 235, 0.05), transparent 50%);
+  }
   .app-viewport {
     box-shadow: 0 0 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+  [data-theme="light"] .app-viewport {
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.08);
   }
 }
 
@@ -117,4 +148,11 @@ a {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="light"] .glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }

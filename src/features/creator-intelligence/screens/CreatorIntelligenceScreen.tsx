@@ -33,6 +33,7 @@ import { StoryboardButton } from '../components/StoryboardButton';
 import { StoryboardSheet } from '../components/StoryboardSheet';
 import { ContentDetailSheet } from '../components/ContentDetailSheet';
 import { GenerateContentScreen } from './GenerateContentScreen';
+import { ThemeToggle } from '@/shared/components/ThemeToggle';
 import { useAppStore } from '@/shared/state/app.store';
 
 const REGIONS: { id: Region; label: string }[] = [
@@ -66,7 +67,8 @@ export const CreatorIntelligenceScreen: React.FC = () => {
     bookmarkedIds,
   } = useCIStore();
 
-  const { showToast, openModal } = useAppStore();
+  const { showToast, openModal, theme } = useAppStore();
+  const isDark = theme !== 'light';
   const [activeTopTab, setActiveTopTab] = React.useState<Region | 'saved'>(selectedRegion);
 
   const handleSelectRegion = (r: Region | 'saved') => {
@@ -148,9 +150,10 @@ export const CreatorIntelligenceScreen: React.FC = () => {
         display: 'flex',
         flexDirection: 'column',
         minHeight: '100%',
-        backgroundColor: '#0A0A0A',
-        color: '#FFFFFF',
+        backgroundColor: isDark ? '#0A0A0A' : '#F8FAFC',
+        color: isDark ? '#FFFFFF' : '#0F172A',
         paddingBottom: '130px',
+        transition: 'background-color 0.25s ease, color 0.25s ease',
       }}
     >
       {/* Top Header */}
@@ -170,7 +173,7 @@ export const CreatorIntelligenceScreen: React.FC = () => {
                 fontSize: '26px',
                 fontWeight: 800,
                 letterSpacing: '-0.5px',
-                color: '#FFFFFF',
+                color: isDark ? '#FFFFFF' : '#0F172A',
               }}
             >
               Creator Intelligence
@@ -179,7 +182,7 @@ export const CreatorIntelligenceScreen: React.FC = () => {
               style={{
                 margin: '4px 0 0 0',
                 fontSize: '13px',
-                color: 'rgba(255, 255, 255, 0.6)',
+                color: isDark ? 'rgba(255, 255, 255, 0.6)' : '#64748B',
               }}
             >
               What's happening. What's worth creating.
@@ -187,6 +190,7 @@ export const CreatorIntelligenceScreen: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <ThemeToggle />
             <button
               onClick={() => openModal('media-intelligence')}
               style={{
@@ -228,7 +232,7 @@ export const CreatorIntelligenceScreen: React.FC = () => {
             fontWeight: 800,
             textTransform: 'uppercase',
             letterSpacing: '0.6px',
-            color: 'rgba(255, 255, 255, 0.45)',
+            color: isDark ? 'rgba(255, 255, 255, 0.45)' : '#64748B',
             display: 'block',
             marginBottom: '8px',
           }}
@@ -254,9 +258,9 @@ export const CreatorIntelligenceScreen: React.FC = () => {
                 style={{
                   padding: '7px 16px',
                   borderRadius: '999px',
-                  backgroundColor: isActive ? '#FFFFFF' : '#181818',
-                  color: isActive ? '#000000' : 'rgba(255, 255, 255, 0.7)',
-                  border: isActive ? '1px solid #FFFFFF' : '1px solid rgba(255, 255, 255, 0.08)',
+                  backgroundColor: isActive ? (isDark ? '#FFFFFF' : '#0F172A') : (isDark ? '#181818' : '#FFFFFF'),
+                  color: isActive ? (isDark ? '#000000' : '#FFFFFF') : (isDark ? 'rgba(255, 255, 255, 0.7)' : '#475569'),
+                  border: isActive ? (isDark ? '1px solid #FFFFFF' : '1px solid #0F172A') : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #E2E8F0'),
                   fontSize: '13px',
                   fontWeight: isActive ? 700 : 500,
                   cursor: 'pointer',
@@ -275,9 +279,9 @@ export const CreatorIntelligenceScreen: React.FC = () => {
             style={{
               padding: '7px 16px',
               borderRadius: '999px',
-              backgroundColor: activeTopTab === 'saved' ? 'var(--ai-accent, #D8FF00)' : '#181818',
-              color: activeTopTab === 'saved' ? '#000000' : 'rgba(255, 255, 255, 0.7)',
-              border: activeTopTab === 'saved' ? '1px solid var(--ai-accent, #D8FF00)' : '1px solid rgba(255, 255, 255, 0.08)',
+              backgroundColor: activeTopTab === 'saved' ? 'var(--ai-accent)' : (isDark ? '#181818' : '#FFFFFF'),
+              color: activeTopTab === 'saved' ? (isDark ? '#000000' : '#FFFFFF') : (isDark ? 'rgba(255, 255, 255, 0.7)' : '#475569'),
+              border: activeTopTab === 'saved' ? '1px solid var(--ai-accent)' : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #E2E8F0'),
               fontSize: '13px',
               fontWeight: activeTopTab === 'saved' ? 700 : 500,
               cursor: 'pointer',
@@ -298,7 +302,7 @@ export const CreatorIntelligenceScreen: React.FC = () => {
       {isSearching && searchResults && (
         <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '26px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.6)' }}>
+            <span style={{ fontSize: '14px', fontWeight: 600, color: isDark ? 'rgba(255, 255, 255, 0.6)' : '#64748B' }}>
               Search results for "{searchQuery}"
             </span>
             <button
@@ -322,9 +326,9 @@ export const CreatorIntelligenceScreen: React.FC = () => {
             searchResults.videos.length === 0 &&
             searchResults.reels.length === 0 &&
             searchResults.topics.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '40px 20px', color: 'rgba(255, 255, 255, 0.4)' }}>
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: isDark ? 'rgba(255, 255, 255, 0.4)' : '#64748B' }}>
                 <Search size={36} style={{ marginBottom: '12px', opacity: 0.3 }} />
-                <h4 style={{ margin: '0 0 6px 0', fontSize: '16px', color: '#FFFFFF' }}>No results found</h4>
+                <h4 style={{ margin: '0 0 6px 0', fontSize: '16px', color: isDark ? '#FFFFFF' : '#0F172A' }}>No results found</h4>
                 <p style={{ margin: 0, fontSize: '13px' }}>Try another topic like "AI Agents", "NPU", or "Video".</p>
               </div>
             )}
@@ -332,7 +336,7 @@ export const CreatorIntelligenceScreen: React.FC = () => {
           {/* TOPICS */}
           {searchResults.topics.length > 0 && (
             <div>
-              <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'rgba(255, 255, 255, 0.45)', display: 'block', marginBottom: '10px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: isDark ? 'rgba(255, 255, 255, 0.45)' : '#64748B', display: 'block', marginBottom: '10px' }}>
                 Topics
               </span>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -346,9 +350,9 @@ export const CreatorIntelligenceScreen: React.FC = () => {
                       gap: '6px',
                       padding: '8px 14px',
                       borderRadius: '10px',
-                      backgroundColor: '#181818',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      color: '#FFFFFF',
+                      backgroundColor: isDark ? '#181818' : '#F1F5F9',
+                      border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #E2E8F0',
+                      color: isDark ? '#FFFFFF' : '#0F172A',
                       fontSize: '13px',
                       cursor: 'pointer',
                     }}
@@ -365,7 +369,7 @@ export const CreatorIntelligenceScreen: React.FC = () => {
           {/* CREATORS */}
           {searchResults.creators.length > 0 && (
             <div>
-              <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'rgba(255, 255, 255, 0.45)', display: 'block', marginBottom: '10px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: isDark ? 'rgba(255, 255, 255, 0.45)' : '#64748B', display: 'block', marginBottom: '10px' }}>
                 Creators
               </span>
               <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '6px' }}>
@@ -381,7 +385,7 @@ export const CreatorIntelligenceScreen: React.FC = () => {
           {/* VIDEOS */}
           {searchResults.videos.length > 0 && (
             <div>
-              <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'rgba(255, 255, 255, 0.45)', display: 'block', marginBottom: '10px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: isDark ? 'rgba(255, 255, 255, 0.45)' : '#64748B', display: 'block', marginBottom: '10px' }}>
                 Videos
               </span>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
@@ -403,7 +407,7 @@ export const CreatorIntelligenceScreen: React.FC = () => {
           {/* REELS */}
           {searchResults.reels.length > 0 && (
             <div>
-              <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'rgba(255, 255, 255, 0.45)', display: 'block', marginBottom: '10px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: isDark ? 'rgba(255, 255, 255, 0.45)' : '#64748B', display: 'block', marginBottom: '10px' }}>
                 Reels
               </span>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '14px' }}>
@@ -432,11 +436,11 @@ export const CreatorIntelligenceScreen: React.FC = () => {
             <div style={{ padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Flame size={17} color="#FF6B00" />
-                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#FFFFFF' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: isDark ? '#FFFFFF' : '#0F172A' }}>
                   Trending Topics
                 </h3>
               </div>
-              <span style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.4)' }}>Real-time growth</span>
+              <span style={{ fontSize: '12px', color: isDark ? 'rgba(255, 255, 255, 0.4)' : '#64748B' }}>Real-time growth</span>
             </div>
 
             <div
@@ -459,11 +463,11 @@ export const CreatorIntelligenceScreen: React.FC = () => {
             <div style={{ padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Users size={17} color="var(--ai-accent, #D8FF00)" />
-                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#FFFFFF' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: isDark ? '#FFFFFF' : '#0F172A' }}>
                   Top Creators
                 </h3>
               </div>
-              <span style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.4)' }}>Leading voices</span>
+              <span style={{ fontSize: '12px', color: isDark ? 'rgba(255, 255, 255, 0.4)' : '#64748B' }}>Leading voices</span>
             </div>
 
             <div
@@ -488,11 +492,11 @@ export const CreatorIntelligenceScreen: React.FC = () => {
             <div style={{ padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Film size={17} color="#2563EB" />
-                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#FFFFFF' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: isDark ? '#FFFFFF' : '#0F172A' }}>
                   Top Videos
                 </h3>
               </div>
-              <span style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.4)' }}>Deep dives</span>
+              <span style={{ fontSize: '12px', color: isDark ? 'rgba(255, 255, 255, 0.4)' : '#64748B' }}>Deep dives</span>
             </div>
 
             <div style={{ padding: '0 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
@@ -515,11 +519,11 @@ export const CreatorIntelligenceScreen: React.FC = () => {
             <div style={{ padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Play size={17} color="#FF4560" />
-                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#FFFFFF' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: isDark ? '#FFFFFF' : '#0F172A' }}>
                   Top Reels
                 </h3>
               </div>
-              <span style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.4)' }}>High velocity</span>
+              <span style={{ fontSize: '12px', color: isDark ? 'rgba(255, 255, 255, 0.4)' : '#64748B' }}>High velocity</span>
             </div>
 
             <div style={{ padding: '0 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '14px' }}>
@@ -557,9 +561,9 @@ export const CreatorIntelligenceScreen: React.FC = () => {
             width: '100%',
             padding: '14px 20px',
             borderRadius: '999px',
-            backgroundColor: storyboardItems.length > 0 ? 'var(--ai-accent, #D8FF00)' : '#222222',
-            color: storyboardItems.length > 0 ? '#000000' : 'rgba(255, 255, 255, 0.4)',
-            border: storyboardItems.length > 0 ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
+            backgroundColor: storyboardItems.length > 0 ? 'var(--ai-accent, #D8FF00)' : (isDark ? '#222222' : '#E2E8F0'),
+            color: storyboardItems.length > 0 ? '#000000' : (isDark ? 'rgba(255, 255, 255, 0.4)' : '#94A3B8'),
+            border: storyboardItems.length > 0 ? 'none' : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #CBD5E1'),
             fontSize: '14px',
             fontWeight: 800,
             display: 'flex',

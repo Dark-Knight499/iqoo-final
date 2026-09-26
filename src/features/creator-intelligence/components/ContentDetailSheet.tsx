@@ -42,10 +42,10 @@ export const ContentDetailSheet: React.FC<ContentDetailSheetProps> = ({
           width: '100%',
           maxWidth: '560px',
           maxHeight: '90vh',
-          backgroundColor: '#121212',
+          backgroundColor: 'var(--bg-surface)',
           borderTopLeftRadius: '24px',
           borderTopRightRadius: '24px',
-          border: '1px solid rgba(255, 255, 255, 0.12)',
+          border: '1px solid var(--border-color)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -54,7 +54,7 @@ export const ContentDetailSheet: React.FC<ContentDetailSheetProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Large Thumbnail & Close Button */}
-        <div style={{ position: 'relative', width: '100%', height: '220px', backgroundColor: '#1E1E1E', flexShrink: 0 }}>
+        <div style={{ position: 'relative', width: '100%', height: '220px', backgroundColor: 'var(--bg-surface-3)', flexShrink: 0 }}>
           <img
             src={item.thumbnail}
             alt={item.title}
@@ -64,7 +64,7 @@ export const ContentDetailSheet: React.FC<ContentDetailSheetProps> = ({
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'linear-gradient(to top, #121212 0%, rgba(18, 18, 18, 0.4) 50%, rgba(0, 0, 0, 0.6) 100%)',
+              background: 'linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 60%, rgba(0, 0, 0, 0.5) 100%)',
             }}
           />
 
@@ -129,7 +129,7 @@ export const ContentDetailSheet: React.FC<ContentDetailSheetProps> = ({
         {/* Scrollable Details */}
         <div style={{ padding: '20px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '18px' }}>
           <div>
-            <h2 style={{ margin: '0 0 10px 0', fontSize: '20px', fontWeight: 700, color: '#FFFFFF', lineHeight: 1.35 }}>
+            <h2 style={{ margin: '0 0 10px 0', fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.35 }}>
               {item.title}
             </h2>
 
@@ -140,7 +140,7 @@ export const ContentDetailSheet: React.FC<ContentDetailSheetProps> = ({
                   width: '32px',
                   height: '32px',
                   borderRadius: '50%',
-                  backgroundColor: '#2A2A2A',
+                  backgroundColor: 'var(--bg-surface-2)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -152,8 +152,8 @@ export const ContentDetailSheet: React.FC<ContentDetailSheetProps> = ({
                 {item.creatorName.charAt(0)}
               </div>
               <div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: '#FFFFFF' }}>{item.creatorName}</div>
-                <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.4)' }}>Published {item.publishedAt}</div>
+                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>{item.creatorName}</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Published {item.publishedAt}</div>
               </div>
             </div>
           </div>
@@ -166,27 +166,27 @@ export const ContentDetailSheet: React.FC<ContentDetailSheetProps> = ({
               gap: '10px',
               padding: '12px',
               borderRadius: '12px',
-              backgroundColor: '#181818',
-              border: '1px solid rgba(255, 255, 255, 0.05)',
+              backgroundColor: 'var(--bg-surface-2)',
+              border: '1px solid var(--border-color)',
             }}
           >
             <div>
-              <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.4)', marginBottom: '3px' }}>Views</div>
-              <div style={{ fontSize: '15px', fontWeight: 700, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <Eye size={14} color="rgba(255, 255, 255, 0.6)" />
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '3px' }}>Views</div>
+              <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Eye size={14} color="var(--text-muted)" />
                 {item.views}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.4)', marginBottom: '3px' }}>Engagement</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '3px' }}>Engagement</div>
               <div style={{ fontSize: '15px', fontWeight: 700, color: '#FF4560', display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <Heart size={14} fill="#FF4560" />
                 {item.engagement}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.4)', marginBottom: '3px' }}>Type</div>
-              <div style={{ fontSize: '15px', fontWeight: 700, color: '#FFFFFF', textTransform: 'capitalize' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '3px' }}>Type</div>
+              <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', textTransform: 'capitalize' }}>
                 {item.type}
               </div>
             </div>
@@ -197,8 +197,8 @@ export const ContentDetailSheet: React.FC<ContentDetailSheetProps> = ({
             style={{
               padding: '14px',
               borderRadius: '12px',
-              backgroundColor: 'rgba(216, 255, 0, 0.06)',
-              border: '1px solid rgba(216, 255, 0, 0.2)',
+              backgroundColor: 'var(--ai-soft, rgba(216, 255, 0, 0.06))',
+              border: '1px solid var(--ai-border, rgba(216, 255, 0, 0.2))',
             }}
           >
             <span
@@ -214,7 +214,7 @@ export const ContentDetailSheet: React.FC<ContentDetailSheetProps> = ({
             >
               Why this matters
             </span>
-            <p style={{ margin: 0, fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', lineHeight: 1.5 }}>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-primary)', lineHeight: 1.5 }}>
               {item.whyTrending || 'High engagement around on-device AI + strong creator discussion velocity.'}
             </p>
           </div>
@@ -222,10 +222,10 @@ export const ContentDetailSheet: React.FC<ContentDetailSheetProps> = ({
           {/* Description */}
           {item.description && (
             <div>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
                 Summary
               </span>
-              <p style={{ margin: 0, fontSize: '13px', color: 'rgba(255, 255, 255, 0.75)', lineHeight: 1.5 }}>
+              <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
                 {item.description}
               </p>
             </div>
@@ -233,7 +233,7 @@ export const ContentDetailSheet: React.FC<ContentDetailSheetProps> = ({
 
           {/* Related Topics */}
           <div>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>
               Related Topics
             </span>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -246,13 +246,13 @@ export const ContentDetailSheet: React.FC<ContentDetailSheetProps> = ({
                     gap: '4px',
                     padding: '4px 10px',
                     borderRadius: '8px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                    color: 'rgba(255, 255, 255, 0.85)',
+                    backgroundColor: 'var(--bg-surface-2)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-secondary)',
                     fontSize: '12px',
                   }}
                 >
-                  <Tag size={11} color="rgba(255, 255, 255, 0.4)" />
+                  <Tag size={11} color="var(--text-muted)" />
                   {t}
                 </span>
               ))}
@@ -264,8 +264,8 @@ export const ContentDetailSheet: React.FC<ContentDetailSheetProps> = ({
         <div
           style={{
             padding: '16px 20px',
-            borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-            backgroundColor: '#161616',
+            borderTop: '1px solid var(--border-color)',
+            backgroundColor: 'var(--bg-surface-2)',
             display: 'flex',
             gap: '12px',
           }}
@@ -280,9 +280,9 @@ export const ContentDetailSheet: React.FC<ContentDetailSheetProps> = ({
               gap: '8px',
               padding: '12px',
               borderRadius: '12px',
-              backgroundColor: isBookmarked ? 'rgba(216, 255, 0, 0.12)' : 'rgba(255, 255, 255, 0.08)',
-              border: isBookmarked ? '1px solid rgba(216, 255, 0, 0.35)' : '1px solid rgba(255, 255, 255, 0.1)',
-              color: isBookmarked ? 'var(--ai-accent, #D8FF00)' : '#FFFFFF',
+              backgroundColor: isBookmarked ? 'var(--ai-soft, rgba(216, 255, 0, 0.12))' : 'var(--bg-surface-3)',
+              border: isBookmarked ? '1px solid var(--ai-border, rgba(216, 255, 0, 0.35))' : '1px solid var(--border-color)',
+              color: isBookmarked ? 'var(--ai-accent, #D8FF00)' : 'var(--text-primary)',
               fontSize: '14px',
               fontWeight: 600,
               cursor: 'pointer',

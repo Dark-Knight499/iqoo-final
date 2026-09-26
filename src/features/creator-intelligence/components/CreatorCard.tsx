@@ -13,23 +13,23 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, onClick }) =>
       onClick={() => onClick(creator)}
       style={{
         borderRadius: '16px',
-        backgroundColor: '#141414',
-        border: '1px solid rgba(255, 255, 255, 0.07)',
+        backgroundColor: 'var(--bg-surface)',
+        border: '1px solid var(--border-color)',
         padding: '16px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         textAlign: 'center',
         cursor: 'pointer',
-        transition: 'transform 0.18s ease, border-color 0.18s ease',
+        transition: 'transform 0.18s ease, border-color 0.18s ease, background-color 0.18s ease',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.16)';
+        e.currentTarget.style.borderColor = 'var(--ai-border, rgba(216, 255, 0, 0.3))';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.07)';
+        e.currentTarget.style.borderColor = 'var(--border-color)';
       }}
     >
       <div style={{ position: 'relative', marginBottom: '12px' }}>
@@ -38,7 +38,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, onClick }) =>
             width: '64px',
             height: '64px',
             borderRadius: '50%',
-            backgroundColor: '#262626',
+            backgroundColor: 'var(--bg-surface-2)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -46,7 +46,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, onClick }) =>
             fontSize: '22px',
             fontWeight: 700,
             overflow: 'hidden',
-            border: '2px solid rgba(216, 255, 0, 0.3)',
+            border: '2px solid var(--ai-border, rgba(216, 255, 0, 0.3))',
           }}
         >
           {creator.name.charAt(0)}
@@ -57,7 +57,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, onClick }) =>
               position: 'absolute',
               bottom: 0,
               right: 0,
-              backgroundColor: '#0D0D0D',
+              backgroundColor: 'var(--bg-surface)',
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
@@ -69,10 +69,10 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, onClick }) =>
         )}
       </div>
 
-      <h4 style={{ margin: '0 0 2px 0', fontSize: '15px', fontWeight: 700, color: '#FFFFFF' }}>
+      <h4 style={{ margin: '0 0 2px 0', fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
         {creator.name}
       </h4>
-      <span style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.5)', marginBottom: '8px' }}>
+      <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>
         {creator.handle}
       </span>
 
@@ -81,8 +81,8 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, onClick }) =>
           display: 'inline-block',
           padding: '3px 8px',
           borderRadius: '999px',
-          backgroundColor: 'rgba(255, 255, 255, 0.06)',
-          color: 'rgba(255, 255, 255, 0.8)',
+          backgroundColor: 'var(--bg-surface-2)',
+          color: 'var(--text-secondary)',
           fontSize: '11px',
           fontWeight: 500,
           marginBottom: '14px',
@@ -98,19 +98,19 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, onClick }) =>
           gridTemplateColumns: '1fr 1fr',
           gap: '8px',
           paddingTop: '12px',
-          borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+          borderTop: '1px solid var(--border-color)',
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <span style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase' }}>
+          <span style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
             Followers
           </span>
-          <span style={{ fontSize: '13px', fontWeight: 700, color: '#FFFFFF' }}>
+          <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
             {creator.followers}
           </span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <span style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase' }}>
+          <span style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
             Growth
           </span>
           <span style={{ fontSize: '13px', fontWeight: 700, color: '#00DC82' }}>

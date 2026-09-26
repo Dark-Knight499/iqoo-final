@@ -61,8 +61,8 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
       <div
         style={{
           padding: '12px 16px',
-          backgroundColor: '#161616',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          backgroundColor: 'var(--bg-surface)',
+          borderBottom: '1px solid var(--border-color)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -74,7 +74,7 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
               width: '28px',
               height: '28px',
               borderRadius: '8px',
-              backgroundColor: 'rgba(216, 255, 0, 0.15)',
+              backgroundColor: 'var(--ai-soft, rgba(216, 255, 0, 0.15))',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -84,10 +84,10 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
             <Bot size={16} />
           </div>
           <div>
-            <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#FFFFFF' }}>
+            <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
               AI Copilot
             </h4>
-            <span style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
               Let's build this together.
             </span>
           </div>
@@ -101,9 +101,9 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
             gap: '6px',
             padding: '6px 12px',
             borderRadius: '8px',
-            backgroundColor: 'rgba(255, 255, 255, 0.08)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            color: '#FFFFFF',
+            backgroundColor: 'var(--bg-surface-2)',
+            border: '1px solid var(--border-color)',
+            color: 'var(--text-primary)',
             fontSize: '12px',
             fontWeight: 600,
             cursor: 'pointer',
@@ -163,11 +163,11 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
                     maxWidth: '88%',
                     padding: '12px 14px',
                     borderRadius: '14px',
-                    backgroundColor: isUser ? 'rgba(216, 255, 0, 0.15)' : '#181818',
+                    backgroundColor: isUser ? 'var(--ai-soft, rgba(216, 255, 0, 0.15))' : 'var(--bg-surface)',
                     border: isUser
-                      ? '1px solid rgba(216, 255, 0, 0.3)'
-                      : '1px solid rgba(255, 255, 255, 0.08)',
-                    color: isUser ? '#FFFFFF' : 'rgba(255, 255, 255, 0.9)',
+                      ? '1px solid var(--ai-border, rgba(216, 255, 0, 0.3))'
+                      : '1px solid var(--border-color)',
+                    color: isUser ? 'var(--text-primary)' : 'var(--text-primary)',
                     fontSize: '13px',
                     lineHeight: 1.5,
                   }}
@@ -181,8 +181,8 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
                         marginTop: '12px',
                         padding: '10px',
                         borderRadius: '8px',
-                        backgroundColor: '#0F0F0F',
-                        border: '1px solid rgba(255, 255, 255, 0.07)',
+                        backgroundColor: 'var(--bg-surface-2)',
+                        border: '1px solid var(--border-color)',
                       }}
                     >
                       <div
@@ -199,7 +199,7 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
                       </div>
                       {m.changes.map((ch, idx) => (
                         <div key={idx} style={{ marginBottom: idx < m.changes!.length - 1 ? '8px' : 0 }}>
-                          <span style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.6)' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}>
                             {ch.field}:
                           </span>
                           <div style={{ fontSize: '11px', color: '#FF6B6B', margin: '2px 0' }}>
@@ -241,8 +241,8 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
       <div
         style={{
           padding: '8px 16px',
-          borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-          backgroundColor: '#121212',
+          borderTop: '1px solid var(--border-color)',
+          backgroundColor: 'var(--bg-surface)',
           overflowX: 'auto',
           whiteSpace: 'nowrap',
           display: 'flex',
@@ -257,9 +257,9 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
             style={{
               padding: '6px 12px',
               borderRadius: '999px',
-              backgroundColor: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              color: 'rgba(255, 255, 255, 0.8)',
+              backgroundColor: 'var(--bg-surface-2)',
+              border: '1px solid var(--border-color)',
+              color: 'var(--text-secondary)',
               fontSize: '11px',
               fontWeight: 500,
               cursor: 'pointer',
@@ -276,8 +276,8 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
       <div
         style={{
           padding: '12px 16px',
-          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-          backgroundColor: '#161616',
+          borderTop: '1px solid var(--border-color)',
+          backgroundColor: 'var(--bg-surface)',
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
@@ -291,11 +291,11 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
           placeholder="Ask Copilot (e.g. 'Make it more controversial', 'Make hook shorter')..."
           style={{
             flex: 1,
-            backgroundColor: '#202020',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            backgroundColor: 'var(--bg-surface-2)',
+            border: '1px solid var(--border-color)',
             borderRadius: '10px',
             padding: '10px 14px',
-            color: '#FFFFFF',
+            color: 'var(--text-primary)',
             fontSize: '13px',
             outline: 'none',
             fontFamily: 'inherit',
@@ -308,8 +308,8 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
             width: '40px',
             height: '40px',
             borderRadius: '10px',
-            backgroundColor: inputText.trim() && !loading ? 'var(--ai-accent, #D8FF00)' : 'rgba(255, 255, 255, 0.1)',
-            color: inputText.trim() && !loading ? '#000000' : 'rgba(255, 255, 255, 0.3)',
+            backgroundColor: inputText.trim() && !loading ? 'var(--ai-accent, #D8FF00)' : 'var(--bg-surface-3)',
+            color: inputText.trim() && !loading ? '#000000' : 'var(--text-muted)',
             border: 'none',
             display: 'flex',
             alignItems: 'center',

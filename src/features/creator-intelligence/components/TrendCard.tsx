@@ -16,8 +16,8 @@ export const TrendCard: React.FC<TrendCardProps> = ({ trend, onClick }) => {
         width: '240px',
         padding: '16px',
         borderRadius: '16px',
-        backgroundColor: '#141414',
-        border: '1px solid rgba(255, 255, 255, 0.07)',
+        backgroundColor: 'var(--bg-surface)',
+        border: '1px solid var(--border-color)',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -27,13 +27,13 @@ export const TrendCard: React.FC<TrendCardProps> = ({ trend, onClick }) => {
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.borderColor = 'rgba(216, 255, 0, 0.3)';
-        e.currentTarget.style.backgroundColor = '#181818';
+        e.currentTarget.style.borderColor = 'var(--ai-border, rgba(216, 255, 0, 0.3))';
+        e.currentTarget.style.backgroundColor = 'var(--bg-surface-2)';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.07)';
-        e.currentTarget.style.backgroundColor = '#141414';
+        e.currentTarget.style.borderColor = 'var(--border-color)';
+        e.currentTarget.style.backgroundColor = 'var(--bg-surface)';
       }}
     >
       <div>
@@ -43,7 +43,7 @@ export const TrendCard: React.FC<TrendCardProps> = ({ trend, onClick }) => {
               fontSize: '11px',
               textTransform: 'uppercase',
               letterSpacing: '0.5px',
-              color: 'rgba(255, 255, 255, 0.45)',
+              color: 'var(--text-muted)',
               fontWeight: 600,
             }}
           >
@@ -56,7 +56,7 @@ export const TrendCard: React.FC<TrendCardProps> = ({ trend, onClick }) => {
               gap: '4px',
               padding: '2px 8px',
               borderRadius: '999px',
-              backgroundColor: 'rgba(216, 255, 0, 0.1)',
+              backgroundColor: 'var(--ai-soft, rgba(216, 255, 0, 0.1))',
               color: 'var(--ai-accent, #D8FF00)',
               fontSize: '12px',
               fontWeight: 700,
@@ -72,7 +72,7 @@ export const TrendCard: React.FC<TrendCardProps> = ({ trend, onClick }) => {
             margin: '0 0 6px 0',
             fontSize: '16px',
             fontWeight: 700,
-            color: '#FFFFFF',
+            color: 'var(--text-primary)',
             lineHeight: 1.3,
           }}
         >
@@ -83,7 +83,7 @@ export const TrendCard: React.FC<TrendCardProps> = ({ trend, onClick }) => {
           style={{
             margin: 0,
             fontSize: '12px',
-            color: 'rgba(255, 255, 255, 0.65)',
+            color: 'var(--text-secondary)',
             lineHeight: 1.45,
             display: '-webkit-box',
             WebkitLineClamp: 2,
@@ -102,10 +102,10 @@ export const TrendCard: React.FC<TrendCardProps> = ({ trend, onClick }) => {
           justifyContent: 'space-between',
           marginTop: '14px',
           paddingTop: '10px',
-          borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+          borderTop: '1px solid var(--border-color)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255, 255, 255, 0.4)', fontSize: '11px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-muted)', fontSize: '11px' }}>
           <Flame size={12} color="#FF6B00" />
           <span>{(trend.postCount / 1000).toFixed(0)}k posts</span>
         </div>

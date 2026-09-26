@@ -21,16 +21,16 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         display: 'flex',
         alignItems: 'center',
         width: '100%',
-        backgroundColor: '#161616',
+        backgroundColor: 'var(--bg-surface)',
         borderRadius: '12px',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        border: '1px solid var(--border-color)',
         padding: '0 12px',
         height: '44px',
         boxSizing: 'border-box',
-        transition: 'border-color 0.2s ease',
+        transition: 'border-color 0.2s ease, background-color 0.2s ease',
       }}
     >
-      <Search size={18} color="rgba(255, 255, 255, 0.4)" style={{ marginRight: '8px', flexShrink: 0 }} />
+      <Search size={18} color="var(--text-muted)" style={{ marginRight: '8px', flexShrink: 0 }} />
       <input
         type="text"
         value={value}
@@ -40,7 +40,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           flex: 1,
           background: 'transparent',
           border: 'none',
-          color: '#FFFFFF',
+          color: 'var(--text-primary)',
           fontSize: '14px',
           outline: 'none',
           fontFamily: 'inherit',
@@ -50,7 +50,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         <button
           onClick={onClear}
           style={{
-            background: 'rgba(255, 255, 255, 0.1)',
+            background: 'var(--bg-surface-3)',
             border: 'none',
             borderRadius: '50%',
             width: '22px',
@@ -60,7 +60,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             justifyContent: 'center',
             cursor: 'pointer',
             padding: 0,
-            color: 'rgba(255, 255, 255, 0.7)',
+            color: 'var(--text-secondary)',
           }}
           title="Clear search"
         >

@@ -53,10 +53,10 @@ export const FinalView: React.FC<FinalViewProps> = ({
             marginBottom: '16px',
           }}
         />
-        <h4 style={{ margin: '0 0 6px 0', fontSize: '16px', fontWeight: 600, color: '#FFFFFF' }}>
+        <h4 style={{ margin: '0 0 6px 0', fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>
           Finalizing Content Document...
         </h4>
-        <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.5)' }}>
+        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
           Assembling scenes, B-roll recommendations & sound design
         </span>
       </div>
@@ -77,7 +77,7 @@ export const FinalView: React.FC<FinalViewProps> = ({
       <div
         style={{
           paddingBottom: '20px',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          borderBottom: '1px solid var(--border-color)',
           marginBottom: '24px',
         }}
       >
@@ -86,7 +86,7 @@ export const FinalView: React.FC<FinalViewProps> = ({
             style={{
               padding: '3px 8px',
               borderRadius: '6px',
-              backgroundColor: 'rgba(216, 255, 0, 0.12)',
+              backgroundColor: 'var(--ai-soft, rgba(216, 255, 0, 0.12))',
               color: 'var(--ai-accent, #D8FF00)',
               fontSize: '11px',
               fontWeight: 700,
@@ -96,13 +96,13 @@ export const FinalView: React.FC<FinalViewProps> = ({
           >
             AI Production Blueprint
           </span>
-          <span style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.4)' }}>•</span>
-          <span style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.5)' }}>Ready to Shoot</span>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>•</span>
+          <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Ready to Shoot</span>
         </div>
-        <h1 style={{ margin: '0 0 6px 0', fontSize: '24px', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.25 }}>
+        <h1 style={{ margin: '0 0 6px 0', fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.25 }}>
           Your Content Plan
         </h1>
-        <p style={{ margin: 0, fontSize: '13px', color: 'rgba(255, 255, 255, 0.6)' }}>
+        <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
           Generated from selected storyboard references & tailored to your tone.
         </p>
       </div>
@@ -114,14 +114,14 @@ export const FinalView: React.FC<FinalViewProps> = ({
           style={{
             padding: '18px',
             borderRadius: '16px',
-            backgroundColor: '#161616',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-color)',
           }}
         >
-          <span style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: '6px' }}>
+          <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: '6px' }}>
             1. CONTENT IDEA
           </span>
-          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#FFFFFF', lineHeight: 1.3 }}>
+          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3 }}>
             "{draft.title}"
           </h2>
         </section>
@@ -131,14 +131,14 @@ export const FinalView: React.FC<FinalViewProps> = ({
           style={{
             padding: '18px',
             borderRadius: '16px',
-            backgroundColor: 'rgba(216, 255, 0, 0.06)',
-            border: '1px solid rgba(216, 255, 0, 0.25)',
+            backgroundColor: 'var(--ai-soft, rgba(216, 255, 0, 0.06))',
+            border: '1px solid var(--ai-border, rgba(216, 255, 0, 0.25))',
           }}
         >
           <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--ai-accent, #D8FF00)', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: '6px' }}>
             2. HOOK (0:00 - 0:04)
           </span>
-          <p style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#FFFFFF', lineHeight: 1.45 }}>
+          <p style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.45 }}>
             "{draft.hook}"
           </p>
         </section>
@@ -148,14 +148,14 @@ export const FinalView: React.FC<FinalViewProps> = ({
           style={{
             padding: '18px',
             borderRadius: '16px',
-            backgroundColor: '#161616',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-color)',
           }}
         >
-          <span style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: '6px' }}>
+          <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: '6px' }}>
             3. CORE MESSAGE
           </span>
-          <p style={{ margin: 0, fontSize: '14px', color: 'rgba(255, 255, 255, 0.85)', lineHeight: 1.6 }}>
+          <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
             {draft.coreMessage}
           </p>
         </section>
@@ -165,12 +165,12 @@ export const FinalView: React.FC<FinalViewProps> = ({
           style={{
             padding: '18px',
             borderRadius: '16px',
-            backgroundColor: '#161616',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-color)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
               4. SCRIPT (TELEPROMPTER READY)
             </span>
             <button
@@ -179,11 +179,11 @@ export const FinalView: React.FC<FinalViewProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '5px',
-                background: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                background: 'var(--bg-surface-2)',
+                border: '1px solid var(--border-color)',
                 borderRadius: '6px',
                 padding: '4px 8px',
-                color: copied ? '#00DC82' : 'rgba(255, 255, 255, 0.8)',
+                color: copied ? '#00DC82' : 'var(--text-secondary)',
                 fontSize: '11px',
                 cursor: 'pointer',
               }}
@@ -196,11 +196,11 @@ export const FinalView: React.FC<FinalViewProps> = ({
             style={{
               padding: '14px',
               borderRadius: '10px',
-              backgroundColor: '#101010',
-              border: '1px solid rgba(255, 255, 255, 0.05)',
+              backgroundColor: 'var(--bg-surface-2)',
+              border: '1px solid var(--border-color)',
               fontSize: '14px',
               lineHeight: 1.7,
-              color: '#FFFFFF',
+              color: 'var(--text-primary)',
               whiteSpace: 'pre-line',
             }}
           >
@@ -213,11 +213,11 @@ export const FinalView: React.FC<FinalViewProps> = ({
           style={{
             padding: '18px',
             borderRadius: '16px',
-            backgroundColor: '#161616',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-color)',
           }}
         >
-          <span style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: '14px' }}>
+          <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: '14px' }}>
             5. STORYBOARD SCENE BREAKDOWN
           </span>
 
@@ -228,15 +228,15 @@ export const FinalView: React.FC<FinalViewProps> = ({
                 style={{
                   padding: '14px',
                   borderRadius: '12px',
-                  backgroundColor: '#111111',
-                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  backgroundColor: 'var(--bg-surface-2)',
+                  border: '1px solid var(--border-color)',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '8px',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#FFFFFF' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
                     {sc.label || `Scene ${idx + 1}`}
                   </span>
                   <span
@@ -244,7 +244,7 @@ export const FinalView: React.FC<FinalViewProps> = ({
                       fontSize: '11px',
                       fontWeight: 700,
                       color: 'var(--ai-accent, #D8FF00)',
-                      backgroundColor: 'rgba(216, 255, 0, 0.1)',
+                      backgroundColor: 'var(--ai-soft, rgba(216, 255, 0, 0.1))',
                       padding: '2px 8px',
                       borderRadius: '999px',
                     }}
@@ -253,13 +253,13 @@ export const FinalView: React.FC<FinalViewProps> = ({
                   </span>
                 </div>
 
-                <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', lineHeight: 1.45 }}>
-                  <strong style={{ color: 'rgba(255, 255, 255, 0.5)', fontWeight: 600 }}>Visual: </strong>
+                <div style={{ fontSize: '13px', color: 'var(--text-primary)', lineHeight: 1.45 }}>
+                  <strong style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Visual: </strong>
                   {sc.visual}
                 </div>
 
-                <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', lineHeight: 1.45 }}>
-                  <strong style={{ color: 'rgba(255, 255, 255, 0.5)', fontWeight: 600 }}>Dialogue: </strong>
+                <div style={{ fontSize: '13px', color: 'var(--text-primary)', lineHeight: 1.45 }}>
+                  <strong style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Dialogue: </strong>
                   "{sc.dialogue}"
                 </div>
 
@@ -269,17 +269,17 @@ export const FinalView: React.FC<FinalViewProps> = ({
                     flexWrap: 'wrap',
                     gap: '12px',
                     paddingTop: '6px',
-                    borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+                    borderTop: '1px solid var(--border-color)',
                     fontSize: '11px',
-                    color: 'rgba(255, 255, 255, 0.5)',
+                    color: 'var(--text-muted)',
                   }}
                 >
                   <div>
-                    <span style={{ color: 'rgba(255, 255, 255, 0.3)' }}>Camera: </span>
+                    <span style={{ color: 'var(--text-muted)' }}>Camera: </span>
                     {sc.camera}
                   </div>
                   <div>
-                    <span style={{ color: 'rgba(255, 255, 255, 0.3)' }}>Movement: </span>
+                    <span style={{ color: 'var(--text-muted)' }}>Movement: </span>
                     {sc.movement}
                   </div>
                 </div>
@@ -293,25 +293,25 @@ export const FinalView: React.FC<FinalViewProps> = ({
           style={{
             padding: '18px',
             borderRadius: '16px',
-            backgroundColor: '#161616',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-color)',
           }}
         >
-          <span style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: '12px' }}>
+          <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: '12px' }}>
             6. VISUAL DIRECTION
           </span>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px', fontSize: '13px' }}>
-            <div style={{ padding: '8px 12px', borderRadius: '8px', backgroundColor: '#111111' }}>
-              <span style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '11px', display: 'block' }}>Camera Framing</span>
-              <span style={{ color: '#FFFFFF', fontWeight: 500 }}>{draft.visualDirection.camera}</span>
+            <div style={{ padding: '8px 12px', borderRadius: '8px', backgroundColor: 'var(--bg-surface-2)' }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: '11px', display: 'block' }}>Camera Framing</span>
+              <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{draft.visualDirection.camera}</span>
             </div>
-            <div style={{ padding: '8px 12px', borderRadius: '8px', backgroundColor: '#111111' }}>
-              <span style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '11px', display: 'block' }}>Motion & Movement</span>
-              <span style={{ color: '#FFFFFF', fontWeight: 500 }}>{draft.visualDirection.movement}</span>
+            <div style={{ padding: '8px 12px', borderRadius: '8px', backgroundColor: 'var(--bg-surface-2)' }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: '11px', display: 'block' }}>Motion & Movement</span>
+              <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{draft.visualDirection.movement}</span>
             </div>
-            <div style={{ padding: '8px 12px', borderRadius: '8px', backgroundColor: '#111111' }}>
-              <span style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '11px', display: 'block' }}>Lighting Mood</span>
-              <span style={{ color: '#FFFFFF', fontWeight: 500 }}>{draft.visualDirection.lighting}</span>
+            <div style={{ padding: '8px 12px', borderRadius: '8px', backgroundColor: 'var(--bg-surface-2)' }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: '11px', display: 'block' }}>Lighting Mood</span>
+              <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{draft.visualDirection.lighting}</span>
             </div>
           </div>
         </section>
@@ -321,16 +321,16 @@ export const FinalView: React.FC<FinalViewProps> = ({
           style={{
             padding: '18px',
             borderRadius: '16px',
-            backgroundColor: '#161616',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-color)',
           }}
         >
-          <span style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: '10px' }}>
+          <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: '10px' }}>
             7. B-ROLL LIST
           </span>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {draft.broll.map((item, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)' }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'var(--text-secondary)' }}>
                 <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--ai-accent, #D8FF00)' }} />
                 <span>{item}</span>
               </div>
@@ -343,20 +343,20 @@ export const FinalView: React.FC<FinalViewProps> = ({
           style={{
             padding: '18px',
             borderRadius: '16px',
-            backgroundColor: '#161616',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-color)',
           }}
         >
-          <span style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: '8px' }}>
+          <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: '8px' }}>
             8. MUSIC & AUDIO DIRECTION
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'rgba(255, 255, 255, 0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ai-accent, #D8FF00)' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'var(--bg-surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ai-accent, #D8FF00)' }}>
               <Music size={18} />
             </div>
             <div>
-              <div style={{ fontSize: '14px', fontWeight: 600, color: '#FFFFFF' }}>{draft.music.genre}</div>
-              <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.45)' }}>Recommended Tempo: {draft.music.bpm} BPM</div>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>{draft.music.genre}</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Recommended Tempo: {draft.music.bpm} BPM</div>
             </div>
           </div>
         </section>
@@ -366,12 +366,12 @@ export const FinalView: React.FC<FinalViewProps> = ({
           style={{
             padding: '18px',
             borderRadius: '16px',
-            backgroundColor: '#161616',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-color)',
             marginBottom: '16px',
           }}
         >
-          <span style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: '6px' }}>
+          <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block', marginBottom: '6px' }}>
             9. CALL TO ACTION
           </span>
           <p style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: 'var(--ai-accent, #D8FF00)' }}>
@@ -385,9 +385,9 @@ export const FinalView: React.FC<FinalViewProps> = ({
         style={{
           position: 'sticky',
           bottom: 0,
-          backgroundColor: '#111111',
+          backgroundColor: 'var(--bg-surface)',
           padding: '16px 0',
-          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+          borderTop: '1px solid var(--border-color)',
           display: 'grid',
           gridTemplateColumns: '1fr 1fr 1.3fr',
           gap: '10px',
@@ -399,9 +399,9 @@ export const FinalView: React.FC<FinalViewProps> = ({
           style={{
             padding: '12px',
             borderRadius: '12px',
-            backgroundColor: 'rgba(255, 255, 255, 0.08)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            color: '#FFFFFF',
+            backgroundColor: 'var(--bg-surface-2)',
+            border: '1px solid var(--border-color)',
+            color: 'var(--text-primary)',
             fontSize: '13px',
             fontWeight: 600,
             display: 'flex',
@@ -420,9 +420,9 @@ export const FinalView: React.FC<FinalViewProps> = ({
           style={{
             padding: '12px',
             borderRadius: '12px',
-            backgroundColor: 'rgba(255, 255, 255, 0.08)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            color: '#FFFFFF',
+            backgroundColor: 'var(--bg-surface-2)',
+            border: '1px solid var(--border-color)',
+            color: 'var(--text-primary)',
             fontSize: '13px',
             fontWeight: 600,
             display: 'flex',

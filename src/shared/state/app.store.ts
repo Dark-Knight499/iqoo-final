@@ -15,7 +15,10 @@ export type ScreenModal =
   | 'assets'
   | 'media-intelligence';
 
+export type AppTheme = 'dark' | 'light';
+
 interface AppState {
+  theme: AppTheme;
   activeTab: MainTab;
   activeModal: ScreenModal;
   isCopilotOpen: boolean;
@@ -24,7 +27,13 @@ interface AppState {
   toastMessage: string | null;
 }
 
+const savedTheme = storage.load<AppTheme>('app_theme', 'dark');
+if (typeof document !== 'undefined') {
+  document.documentElement.setAttribute('data-theme', savedTheme);
+}
+
 const INITIAL_APP_STATE: AppState = {
+  theme: savedTheme,
   activeTab: 'home',
   activeModal: storage.load('has_onboarded', false) ? null : 'onboarding',
   isCopilotOpen: false,
@@ -42,31 +51,57 @@ function notify() {
 
 export const appStore = {
   getState: () => appState,
+
+  setTheme: (theme: AppTheme) => {
+    storage.save('app_theme', theme);
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+    appState = { ...appState, theme };
+    notify();
+  },
+
+  toggleTheme: () => {
+    const nextTheme: AppTheme = appState.theme === 'dark' ? 'light' : 'dark';
+    storage.save('app_theme', nextTheme);
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', nextTheme);
+    }
+    appState = { ...appState, theme: nextTheme };
+    notify();
+  },
+
   setActiveTab: (tab: MainTab) => {
     appState = { ...appState, activeTab: tab, activeModal: null };
     notify();
   },
+
   openModal: (modal: ScreenModal) => {
     appState = { ...appState, activeModal: modal };
     notify();
   },
+
   closeModal: () => {
     appState = { ...appState, activeModal: null };
     notify();
   },
+
   openCopilot: (initialPrompt = '') => {
     appState = { ...appState, isCopilotOpen: true, copilotInitialPrompt: initialPrompt };
     notify();
   },
+
   closeCopilot: () => {
     appState = { ...appState, isCopilotOpen: false, copilotInitialPrompt: '' };
     notify();
   },
+
   completeOnboarding: () => {
     storage.save('has_onboarded', true);
     appState = { ...appState, hasCompletedOnboarding: true, activeModal: null, activeTab: 'home' };
     notify();
   },
+
   showToast: (msg: string) => {
     appState = { ...appState, toastMessage: msg };
     notify();
@@ -81,6 +116,7 @@ export const appStore = {
 
 export function useAppStore() {
   const [, setVersion] = useState(0);
+
   useEffect(() => {
     const update = () => setVersion((v) => v + 1);
     listeners.add(update);
@@ -91,6 +127,8 @@ export function useAppStore() {
 
   return {
     ...appState,
+    setTheme: appStore.setTheme,
+    toggleTheme: appStore.toggleTheme,
     setActiveTab: appStore.setActiveTab,
     openModal: appStore.openModal,
     closeModal: appStore.closeModal,

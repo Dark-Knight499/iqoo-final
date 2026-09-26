@@ -64,7 +64,7 @@ export const GenerateContentScreen: React.FC = () => {
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: '#0D0D0D',
+        backgroundColor: 'var(--bg-primary)',
         zIndex: 120,
         display: 'flex',
         flexDirection: 'column',
@@ -74,8 +74,8 @@ export const GenerateContentScreen: React.FC = () => {
       <div
         style={{
           padding: '12px 16px',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-          backgroundColor: '#121212',
+          borderBottom: '1px solid var(--border-color)',
+          backgroundColor: 'var(--bg-surface)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -86,7 +86,7 @@ export const GenerateContentScreen: React.FC = () => {
           style={{
             background: 'none',
             border: 'none',
-            color: '#FFFFFF',
+            color: 'var(--text-primary)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -104,10 +104,10 @@ export const GenerateContentScreen: React.FC = () => {
         <div
           style={{
             display: 'flex',
-            backgroundColor: '#1C1C1C',
+            backgroundColor: 'var(--bg-surface-2)',
             borderRadius: '10px',
             padding: '3px',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            border: '1px solid var(--border-color)',
           }}
         >
           <button
@@ -120,7 +120,7 @@ export const GenerateContentScreen: React.FC = () => {
               borderRadius: '8px',
               border: 'none',
               backgroundColor: activeGenerateTab === 'copilot' ? 'var(--ai-accent, #D8FF00)' : 'transparent',
-              color: activeGenerateTab === 'copilot' ? '#000000' : 'rgba(255, 255, 255, 0.7)',
+              color: activeGenerateTab === 'copilot' ? '#000000' : 'var(--text-secondary)',
               fontSize: '12px',
               fontWeight: 700,
               cursor: 'pointer',
@@ -141,7 +141,7 @@ export const GenerateContentScreen: React.FC = () => {
               borderRadius: '8px',
               border: 'none',
               backgroundColor: activeGenerateTab === 'final' ? 'var(--ai-accent, #D8FF00)' : 'transparent',
-              color: activeGenerateTab === 'final' ? '#000000' : 'rgba(255, 255, 255, 0.7)',
+              color: activeGenerateTab === 'final' ? '#000000' : 'var(--text-secondary)',
               fontSize: '12px',
               fontWeight: 700,
               cursor: 'pointer',
@@ -156,7 +156,7 @@ export const GenerateContentScreen: React.FC = () => {
         <button
           onClick={closeGenerateModal}
           style={{
-            background: 'rgba(255, 255, 255, 0.08)',
+            background: 'var(--bg-surface-3)',
             border: 'none',
             borderRadius: '50%',
             width: '32px',
@@ -164,7 +164,7 @@ export const GenerateContentScreen: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#FFFFFF',
+            color: 'var(--text-primary)',
             cursor: 'pointer',
           }}
         >
@@ -176,8 +176,8 @@ export const GenerateContentScreen: React.FC = () => {
       <div
         style={{
           padding: '10px 16px',
-          backgroundColor: '#141414',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+          backgroundColor: 'var(--bg-surface)',
+          borderBottom: '1px solid var(--border-color)',
           display: 'flex',
           flexWrap: 'wrap',
           gap: '8px',
@@ -190,9 +190,9 @@ export const GenerateContentScreen: React.FC = () => {
           value={generationInput.contentType}
           onChange={(e) => updateGenerationInput({ contentType: e.target.value as GenerateContentType })}
           style={{
-            backgroundColor: '#1E1E1E',
-            color: '#FFFFFF',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
+            backgroundColor: 'var(--bg-surface-2)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border-color)',
             borderRadius: '8px',
             padding: '5px 10px',
             fontSize: '12px',
@@ -210,9 +210,9 @@ export const GenerateContentScreen: React.FC = () => {
           value={generationInput.duration}
           onChange={(e) => updateGenerationInput({ duration: e.target.value as GenerateDuration })}
           style={{
-            backgroundColor: '#1E1E1E',
-            color: '#FFFFFF',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
+            backgroundColor: 'var(--bg-surface-2)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border-color)',
             borderRadius: '8px',
             padding: '5px 10px',
             fontSize: '12px',
@@ -230,9 +230,9 @@ export const GenerateContentScreen: React.FC = () => {
           value={generationInput.tone}
           onChange={(e) => updateGenerationInput({ tone: e.target.value as GenerateTone })}
           style={{
-            backgroundColor: '#1E1E1E',
-            color: '#FFFFFF',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
+            backgroundColor: 'var(--bg-surface-2)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border-color)',
             borderRadius: '8px',
             padding: '5px 10px',
             fontSize: '12px',
