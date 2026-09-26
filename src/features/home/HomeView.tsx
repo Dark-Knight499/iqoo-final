@@ -95,7 +95,7 @@ export const HomeView: React.FC = () => {
 
       {/* Hero Inspiration Card */}
       <div
-        onClick={() => openCopilot('Create video from on-device AI trends')}
+        onClick={() => setActiveTab('insights')}
         className="media-bg"
         style={{
           minHeight: '260px',

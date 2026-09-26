@@ -51,6 +51,9 @@ export const App: React.FC = () => {
   if (activeModal === 'assets') {
     return <AssetsView />;
   }
+  if (activeModal === 'media-intelligence') {
+    return <MediaIntelligenceView />;
+  }
 
   return (
     <AppShell>

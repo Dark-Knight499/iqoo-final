@@ -22,6 +22,14 @@ export const CreateView: React.FC = () => {
 
   const creationCards = [
     {
+      id: 'media-intel',
+      title: 'Media Intelligence',
+      description: 'Import & analyze video/audio to extract transcript, scenes, topics & AI ideas.',
+      badge: '🧠 Multimodal AI',
+      bg: '/assets/trend-on-device-ai.jpg',
+      action: () => openModal('media-intelligence'),
+    },
+    {
       id: 'edit',
       title: 'Edit a Video',
       description: 'Import footage and let on-device AI understand, cut, and reframe it.',
