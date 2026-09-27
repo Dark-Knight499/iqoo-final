@@ -6,3 +6,5 @@ dist
 .DS_Store
 .opencode/
 .pytest_cache/
+__pycache__/
+*.pyc

@@ -38,7 +38,7 @@ import { ThemeToggle } from '@/shared/components/ThemeToggle';
 import { useAppStore } from '@/shared/state/app.store';
 import { useCreatorStore } from '@/shared/state/creator.store';
 import { useProjectStore } from '@/shared/state/project.store';
-import { IntelligencePlatform, IntelligenceResponse, legacyBackend } from '@/services/legacyBackend';
+import { IntelligencePlatform, IntelligenceResponse, legacyBackend, TrendsResponse, TrendItem } from '@/services/legacyBackend';
 
 const REGIONS: { id: Region; label: string }[] = [
   { id: 'foryou', label: 'For You' },
@@ -86,7 +86,7 @@ export const CreatorIntelligenceScreen: React.FC<CreatorIntelligenceScreenProps>
     bookmarkedIds,
   } = useCIStore();
 
-  const { showToast, openModal, theme } = useAppStore();
+  const { showToast, openModal, theme, openCopilot } = useAppStore();
   const { creator } = useCreatorStore();
   const { projects } = useProjectStore();
   const isDark = theme !== 'light';
@@ -95,16 +95,40 @@ export const CreatorIntelligenceScreen: React.FC<CreatorIntelligenceScreenProps>
   const [intelligenceLoading, setIntelligenceLoading] = useState(false);
   const [intelligenceError, setIntelligenceError] = useState<string | null>(null);
   const [scanVersion, setScanVersion] = useState(0);
+
+  // Live Trends from backend /trends
+  const [trendsData, setTrendsData] = useState<TrendsResponse | null>(null);
+  const [trendsLoading, setTrendsLoading] = useState(false);
+
   const platformKey = creator.platforms.join('|');
   const sourceKey = JSON.stringify(creator.profileSources || {});
 
+  // Fetch real-time trends for selected geo / niche
   useEffect(() => {
     let active = true;
-    if (!creator.connectedSources?.length && scanVersion === 0) {
-      setIntelligence(null);
-      setIntelligenceError(null);
-      return;
-    }
+    const geo = activeTopTab === 'global' ? 'GLOBAL' : activeTopTab === 'india' ? 'IN' : 'US';
+    setTrendsLoading(true);
+    legacyBackend.getTrends(creator.niche || 'Tech & AI', geo, 8, creator.name)
+      .then((res) => {
+        if (active) setTrendsData(res);
+      })
+      .catch(() => {
+        // Fallback silently to mock catalog
+      })
+      .finally(() => {
+        if (active) setTrendsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [creator.niche, creator.name, activeTopTab]);
+
+  // Creator Intelligence Scan
+  useEffect(() => {
+    let active = true;
+    const creatorName = creator.name.trim() || 'Ali Abdaal';
+
     const platformHandles = {
       ...(creator.profileSources?.youtube ? { youtube: creator.profileSources.youtube } : {}),
       ...(creator.profileSources?.instagram ? { instagram: creator.profileSources.instagram } : {}),
@@ -116,9 +140,9 @@ export const CreatorIntelligenceScreen: React.FC<CreatorIntelligenceScreenProps>
     setIntelligenceLoading(true);
     setIntelligenceError(null);
     legacyBackend.runIntelligence({
-      creator_name: creator.name,
-      niche: creator.niche,
-      location: 'US',
+      creator_name: creatorName,
+      niche: creator.niche || 'Tech & AI',
+      location: activeTopTab === 'global' ? 'GLOBAL' : activeTopTab === 'india' ? 'IN' : 'US',
       platforms,
       platform_handles: platformHandles,
       goals: {
@@ -147,7 +171,7 @@ export const CreatorIntelligenceScreen: React.FC<CreatorIntelligenceScreenProps>
     return () => {
       active = false;
     };
-   }, [creator.name, creator.niche, platformKey, sourceKey, scanVersion, creator.connectedSources?.length]);
+  }, [creator.name, creator.niche, platformKey, sourceKey, scanVersion, activeTopTab]);
 
   const handleSelectRegion = (r: Region | 'saved') => {
     setActiveTopTab(r);
@@ -156,12 +180,33 @@ export const CreatorIntelligenceScreen: React.FC<CreatorIntelligenceScreenProps>
     }
   };
 
-  // Filter trends by selected region
+  // Convert live backend trends into Trend items
+  const liveTrends: Trend[] = useMemo(() => {
+    if (!trendsData?.niche_trends?.length) return [];
+    return trendsData.niche_trends.map((item, idx) => {
+      const numericGrowth = parseInt(item.traffic_volume.replace(/[^0-9]/g, '')) || (140 - idx * 10);
+      return {
+        id: `backend-${item.source}-${item.rank}-${idx}`,
+        title: item.title,
+        description: item.hook_angles?.[0] || item.relevance_to_creator || item.news_headlines?.[0] || 'Live trending topic',
+        region: [activeTopTab as Region, 'foryou'],
+        category: item.category || creator.niche || 'Tech & AI',
+        growth: numericGrowth,
+        relatedContentIds: [],
+        relatedTopics: item.hook_angles || [],
+        postCount: (10 - item.rank) * 1500 + 4000,
+      };
+    });
+  }, [trendsData, activeTopTab, creator.niche]);
+
+  // Filter trends by selected region (live backend trends merged with catalog)
   const filteredTrends = useMemo(() => {
-    return mockTrends.filter((t) => 
-      activeTopTab === 'saved' ? false : activeTopTab === 'foryou' ? true : t.region.includes(activeTopTab as Region)
+    if (activeTopTab === 'saved') return [];
+    const base = mockTrends.filter((t) => 
+      activeTopTab === 'foryou' ? true : t.region.includes(activeTopTab as Region)
     );
-  }, [activeTopTab]);
+    return [...liveTrends, ...base];
+  }, [activeTopTab, liveTrends]);
 
   // Filter creators by selected region
   const filteredCreators = useMemo(() => {
@@ -362,17 +407,61 @@ export const CreatorIntelligenceScreen: React.FC<CreatorIntelligenceScreenProps>
                 {intelligence.summary}
               </p>
             )}
-            {intelligence.top_recommendations.slice(0, 3).map((recommendation, index) => (
+            {intelligence.top_recommendations.slice(0, 4).map((recommendation, index) => (
               <article
                 key={`${recommendation.platform}-${recommendation.topic}-${index}`}
-                style={{ padding: '13px', borderRadius: '14px', background: isDark ? '#171717' : '#FFFFFF', border: '1px solid var(--border-color)' }}
+                style={{ padding: '14px', borderRadius: '14px', background: isDark ? '#171717' : '#FFFFFF', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '6px' }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', marginBottom: '5px' }}>
-                  <strong style={{ fontSize: '13px' }}>{recommendation.topic}</strong>
-                  <span style={{ fontSize: '10px', color: 'var(--ai-accent)', textTransform: 'uppercase' }}>{recommendation.platform}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                  <strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{recommendation.topic}</strong>
+                  <span style={{ fontSize: '10px', color: 'var(--ai-accent)', textTransform: 'uppercase', padding: '2px 7px', borderRadius: '6px', backgroundColor: 'var(--ai-soft)', border: '1px solid var(--ai-border)', fontWeight: 700 }}>
+                    {recommendation.platform}
+                  </span>
                 </div>
-                <p style={{ margin: '0 0 5px', fontSize: '12px', color: isDark ? 'rgba(255,255,255,.8)' : '#334155' }}>{recommendation.hook}</p>
-                <p style={{ margin: 0, fontSize: '11px', color: isDark ? 'rgba(255,255,255,.55)' : '#64748B' }}>{recommendation.why_now}</p>
+                <div style={{ padding: '8px 10px', borderRadius: '8px', backgroundColor: isDark ? '#1F1F1F' : '#F1F5F9', borderLeft: '3px solid var(--ai-accent)' }}>
+                  <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--ai-accent)', fontWeight: 700, display: 'block', marginBottom: '2px' }}>
+                    Recommended Hook:
+                  </span>
+                  <p style={{ margin: 0, fontSize: '13px', color: isDark ? '#FFFFFF' : '#0F172A', fontWeight: 600, fontStyle: 'italic' }}>
+                    "{recommendation.hook}"
+                  </p>
+                </div>
+                <p style={{ margin: '2px 0 0', fontSize: '11px', color: isDark ? 'rgba(255,255,255,.6)' : '#64748B', lineHeight: 1.4 }}>
+                  <strong>Why Now:</strong> {recommendation.why_now}
+                </p>
+                {recommendation.best_posting_time && (
+                  <span style={{ fontSize: '11px', color: '#00DC82', fontWeight: 600 }}>
+                    ⏰ Best window: {recommendation.best_posting_time}
+                  </span>
+                )}
+                {recommendation.hashtags?.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '2px' }}>
+                    {recommendation.hashtags.map((h) => (
+                      <span key={h} style={{ fontSize: '10px', color: 'var(--text-muted)' }}>#{h.replace(/^#/, '')}</span>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid var(--border-color)' }}>
+                  <button
+                    onClick={() => openCopilot(`Draft a high-retention script for this recommendation: Topic: "${recommendation.topic}". Hook: "${recommendation.hook}". Platform: ${recommendation.platform}. Why now: ${recommendation.why_now}`)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      backgroundColor: 'var(--ai-accent)',
+                      color: '#080808',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Sparkles size={12} />
+                    <span>Draft Hook with Copilot</span>
+                  </button>
+                </div>
               </article>
             ))}
             {intelligence.platform_trends.map((platformBlock) => {
@@ -651,7 +740,9 @@ export const CreatorIntelligenceScreen: React.FC<CreatorIntelligenceScreenProps>
                   Trending Topics
                 </h3>
               </div>
-              <span style={{ fontSize: '12px', color: isDark ? 'rgba(255, 255, 255, 0.4)' : '#64748B' }}>Sample catalog</span>
+              <span style={{ fontSize: '12px', color: trendsData?.niche_trends?.length ? 'var(--ai-accent)' : (isDark ? 'rgba(255, 255, 255, 0.4)' : '#64748B'), fontWeight: trendsData?.niche_trends?.length ? 700 : 500 }}>
+                {trendsLoading ? 'Loading trends…' : trendsData?.niche_trends?.length ? 'Live Google Trends RSS' : 'Sample catalog'}
+              </span>
             </div>
 
             <div

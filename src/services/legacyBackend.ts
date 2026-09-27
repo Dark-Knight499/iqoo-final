@@ -313,6 +313,7 @@ export function mapProfileResponseToCreatorUpdate(profile: ProfilingResponse) {
       userMd: profile.user_md,
       hookMd: profile.hook_md,
       catalogSummary: profile.catalog_summary,
+      analysis: profile.analysis,
     },
   };
 }
