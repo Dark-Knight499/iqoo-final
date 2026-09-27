@@ -560,7 +560,7 @@ export const legacyBackend = {
     }),
 
   getProfile: (slug: string) =>
-    request<Pick<ProfilingResponse, 'creator_slug' | 'user_md' | 'hook_md'>>(
+    request<Pick<ProfilingResponse, 'creator_slug' | 'user_md' | 'hook_md'> & { creator_comparison_md?: string | null }>(
       `/profiling/${encodeURIComponent(slug)}`
     ),
 

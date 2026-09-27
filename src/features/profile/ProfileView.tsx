@@ -7,35 +7,70 @@ import {
   RefreshCw, 
   Copy, 
   Check, 
-  Share2,
-  Globe,
+  Share2, 
+  Globe, 
   FileText, 
   ChevronDown, 
-  ChevronUp,
-  Video,
-  Clock,
-  Layers,
-  Flame,
-  MessageSquare,
-  ArrowLeft
+  ChevronUp, 
+  Video, 
+  Clock, 
+  Layers, 
+  Flame, 
+  MessageSquare, 
+  ArrowLeft,
+  Download,
+  Code,
+  Eye,
+  Search,
+  BarChart3,
+  TrendingUp,
+  Users,
+  FileCode
 } from 'lucide-react';
 import { useCreatorStore } from '@/shared/state/creator.store';
 import { useAppStore } from '@/shared/state/app.store';
 import { Card } from '@/shared/components/Card';
 import { Chip } from '@/shared/components/Chip';
 import { Button } from '@/shared/components/Button';
+import { MarkdownRenderer } from '@/shared/components/MarkdownRenderer';
 import { legacyBackend, mapProfileResponseToCreatorUpdate, ProfilingAnalysis } from '@/services/legacyBackend';
+
+const FEATURED_CREATORS = [
+  { name: 'Ali Abdaal', slug: 'ali_abdaal', niche: 'Productivity & Creator Systems', initials: 'AA' },
+  { name: 'Marques Brownlee', slug: 'marques_brownlee', niche: 'Consumer Tech & Gadgets', initials: 'MB' },
+  { name: 'Dhruv Rathee', slug: 'dhruv_rathee', niche: 'Civic Education & Analysis', initials: 'DR' },
+  { name: 'Technical Guruji', slug: 'technical_guruji', niche: 'Technology Reviews & Unboxing', initials: 'TG' },
+  { name: 'Finance with Sharan', slug: 'finance_with_sharan', niche: 'Personal Finance & Wealth', initials: 'FS' },
+  { name: 'Lex Fridman', slug: 'lex_fridman', niche: 'AI, Science & Long-form Deep Dives', initials: 'LF' },
+];
+
+function getCreatorSlug(name: string): string {
+  const n = (name || '').toLowerCase().trim();
+  if (!n) return 'ali_abdaal';
+  if (n.includes('abdaal')) return 'ali_abdaal';
+  if (n.includes('rathee')) return 'dhruv_rathee';
+  if (n.includes('brownlee') || n.includes('mkbhd')) return 'marques_brownlee';
+  if (n.includes('guruji')) return 'technical_guruji';
+  if (n.includes('sharan')) return 'finance_with_sharan';
+  if (n.includes('fridman')) return 'lex_fridman';
+  return n.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'ali_abdaal';
+}
 
 export const ProfileView: React.FC = () => {
   const { creator, updateProfile } = useCreatorStore();
   const { setActiveTab, openModal, showToast } = useAppStore();
-  const initials = creator.name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'C';
+  const initials = (creator.name || 'Ali Abdaal').trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'C';
 
   const [isProfiling, setIsProfiling] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [showSourcesEdit, setShowSourcesEdit] = useState(false);
-  const [activeDocTab, setActiveDocTab] = useState<'user' | 'hook'>('user');
+  
+  // Dossier interactive states
+  const [activeDocTab, setActiveDocTab] = useState<'user' | 'hook' | 'comparison'>('user');
+  const [viewMode, setViewMode] = useState<'rendered' | 'raw'>('rendered');
+  const [searchQuery, setSearchQuery] = useState('');
   const [copiedType, setCopiedType] = useState<string | null>(null);
+  const [isLoadingDossier, setIsLoadingDossier] = useState(false);
 
   const [sourceUrls, setSourceUrls] = useState({
     youtube: creator.profileSources?.youtube || '',
@@ -46,17 +81,21 @@ export const ProfileView: React.FC = () => {
 
   // Attempt to load existing profile documents from backend if slug exists but documents not yet cached
   useEffect(() => {
-    const slug = creator.profileDocuments?.creatorSlug || creator.name.toLowerCase().replace(/\s+/g, '_');
+    const slug = creator.profileDocuments?.creatorSlug || getCreatorSlug(creator.name);
     if (!creator.profileDocuments?.userMd && slug) {
+      setIsLoadingDossier(true);
       legacyBackend.getProfile(slug)
         .then((res) => {
           if (res.user_md && res.hook_md) {
             updateProfile({
+              name: creator.name || 'Ali Abdaal',
+              niche: creator.niche || 'Productivity & Creator Systems',
               profileDocuments: {
                 creatorSlug: res.creator_slug,
                 analyzedAt: new Date().toISOString(),
                 userMd: res.user_md,
                 hookMd: res.hook_md,
+                creatorComparisonMd: res.creator_comparison_md || undefined,
                 catalogSummary: { cached_profile: 1 },
               },
             });
@@ -64,22 +103,48 @@ export const ProfileView: React.FC = () => {
         })
         .catch(() => {
           // Profile not yet generated on backend; silent fallback
+        })
+        .finally(() => {
+          setIsLoadingDossier(false);
         });
     }
   }, [creator.name]);
 
-  const handleDeepProfile = async () => {
-    if (!creator.name.trim()) {
-      showToast('Please set a creator name first');
-      return;
+  const handleSelectFeaturedCreator = async (fc: typeof FEATURED_CREATORS[0]) => {
+    setIsLoadingDossier(true);
+    setProfileError(null);
+    try {
+      const res = await legacyBackend.getProfile(fc.slug);
+      if (res.user_md && res.hook_md) {
+        updateProfile({
+          name: fc.name,
+          niche: fc.niche,
+          profileDocuments: {
+            creatorSlug: res.creator_slug,
+            analyzedAt: new Date().toISOString(),
+            userMd: res.user_md,
+            hookMd: res.hook_md,
+            creatorComparisonMd: res.creator_comparison_md || undefined,
+            catalogSummary: { cached_profile: 1 },
+          },
+        });
+        showToast(`Loaded ${fc.name}'s verified blueprint!`);
+      }
+    } catch {
+      showToast(`Could not fetch dossier for ${fc.name}. Generating with default parameters...`);
+    } finally {
+      setIsLoadingDossier(false);
     }
+  };
 
+  const handleDeepProfile = async () => {
+    const targetName = creator.name.trim() || 'Ali Abdaal';
     setIsProfiling(true);
     setProfileError(null);
 
     try {
       const response = await legacyBackend.profile({
-        creator_name: creator.name.trim(),
+        creator_name: targetName,
         youtube_handle_or_url: sourceUrls.youtube.trim() || undefined,
         substack_handle_or_url: sourceUrls.substack.trim() || undefined,
         twitter_handle_or_url: sourceUrls.twitter.trim() || undefined,
@@ -106,14 +171,38 @@ export const ProfileView: React.FC = () => {
     }
   };
 
-  const handleCopyMarkdown = (text: string, type: 'user' | 'hook') => {
+  const getActiveContent = (): string => {
+    if (!creator.profileDocuments) return '';
+    if (activeDocTab === 'user') return creator.profileDocuments.userMd || '';
+    if (activeDocTab === 'hook') return creator.profileDocuments.hookMd || '';
+    if (activeDocTab === 'comparison') return creator.profileDocuments.creatorComparisonMd || '';
+    return '';
+  };
+
+  const handleCopyMarkdown = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
     setCopiedType(type);
-    showToast(`Copied ${type === 'user' ? 'user.md' : 'hook.md'} to clipboard!`);
+    showToast(`Copied ${type === 'user' ? 'user.md' : type === 'hook' ? 'hook.md' : 'creator_comparison.md'} to clipboard!`);
     setTimeout(() => setCopiedType(null), 2500);
   };
 
+  const handleDownloadMd = (content: string, filename: string) => {
+    if (!content) return;
+    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`Downloaded ${filename}`);
+  };
+
   const analysis: ProfilingAnalysis | undefined = creator.profileDocuments?.analysis as ProfilingAnalysis | undefined;
+  const activeContent = getActiveContent();
+  const currentSlug = creator.profileDocuments?.creatorSlug || getCreatorSlug(creator.name);
 
   return (
     <main className="screen-container" style={{ paddingBottom: '100px' }}>
@@ -155,7 +244,7 @@ export const ProfileView: React.FC = () => {
         </button>
 
         <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>
-          Creator Profile
+          Creator Intelligence Profile
         </span>
 
         <button
@@ -253,7 +342,7 @@ export const ProfileView: React.FC = () => {
       </div>
 
       {/* Creator Info & Avatar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '-36px', padding: '0 12px', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '-36px', padding: '0 12px', marginBottom: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div
             style={{
@@ -275,9 +364,11 @@ export const ProfileView: React.FC = () => {
           </div>
           <div style={{ marginTop: '28px' }}>
             <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
-              {creator.name}
+              {creator.name || 'Ali Abdaal'}
             </h2>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{creator.niche}</span>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              {creator.niche || 'Productivity & Creator Systems'}
+            </span>
           </div>
         </div>
 
@@ -304,6 +395,148 @@ export const ProfileView: React.FC = () => {
           <span>{isProfiling ? 'Analyzing...' : 'Deep Sync DNA'}</span>
         </button>
       </div>
+
+      {/* Quick Creator Blueprint Switcher */}
+      <section style={{ marginBottom: '18px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: 700 }}>
+            Featured Creator Blueprints
+          </span>
+          <span style={{ fontSize: '10px', color: 'var(--ai-accent)', fontWeight: 600 }}>
+            1-Tap Dossier Load
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
+          {FEATURED_CREATORS.map((fc) => {
+            const isSelected = currentSlug === fc.slug;
+            return (
+              <button
+                key={fc.slug}
+                onClick={() => handleSelectFeaturedCreator(fc)}
+                disabled={isLoadingDossier}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 12px',
+                  borderRadius: '999px',
+                  backgroundColor: isSelected ? 'var(--ai-accent)' : 'var(--bg-surface-2)',
+                  color: isSelected ? '#080808' : 'var(--text-secondary)',
+                  border: isSelected ? '1px solid var(--ai-accent)' : '1px solid var(--border-color)',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  whiteSpace: 'nowrap',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <span
+                  style={{
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '50%',
+                    backgroundColor: isSelected ? 'rgba(0,0,0,0.2)' : 'var(--ai-soft)',
+                    color: isSelected ? '#000' : 'var(--ai-accent)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '9px',
+                    fontWeight: 800,
+                  }}
+                >
+                  {fc.initials}
+                </span>
+                <span>{fc.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Creator Performance Metrics 4-Grid */}
+      <section style={{ marginBottom: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+          <div
+            style={{
+              padding: '10px 8px',
+              borderRadius: '14px',
+              backgroundColor: 'var(--bg-surface-2)',
+              border: '1px solid var(--border-color)',
+              textAlign: 'center',
+            }}
+          >
+            <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Total Views
+            </span>
+            <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)', display: 'block', margin: '2px 0' }}>
+              {creator.metrics?.views || '2.4M'}
+            </span>
+            <span style={{ fontSize: '10px', color: 'var(--success)', fontWeight: 700 }}>
+              {creator.metrics?.viewsChange || '+14.2%'}
+            </span>
+          </div>
+
+          <div
+            style={{
+              padding: '10px 8px',
+              borderRadius: '14px',
+              backgroundColor: 'var(--bg-surface-2)',
+              border: '1px solid var(--border-color)',
+              textAlign: 'center',
+            }}
+          >
+            <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Avg Watch
+            </span>
+            <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)', display: 'block', margin: '2px 0' }}>
+              {creator.metrics?.watchTime || '4m 32s'}
+            </span>
+            <span style={{ fontSize: '10px', color: 'var(--ai-accent)', fontWeight: 700 }}>
+              Top 5%
+            </span>
+          </div>
+
+          <div
+            style={{
+              padding: '10px 8px',
+              borderRadius: '14px',
+              backgroundColor: 'var(--bg-surface-2)',
+              border: '1px solid var(--border-color)',
+              textAlign: 'center',
+            }}
+          >
+            <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Engagement
+            </span>
+            <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)', display: 'block', margin: '2px 0' }}>
+              {creator.metrics?.engagement || '6.8%'}
+            </span>
+            <span style={{ fontSize: '10px', color: 'var(--success)', fontWeight: 700 }}>
+              {creator.metrics?.engagementChange || '+0.8%'}
+            </span>
+          </div>
+
+          <div
+            style={{
+              padding: '10px 8px',
+              borderRadius: '14px',
+              backgroundColor: 'var(--bg-surface-2)',
+              border: '1px solid var(--border-color)',
+              textAlign: 'center',
+            }}
+          >
+            <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              30d Growth
+            </span>
+            <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)', display: 'block', margin: '2px 0' }}>
+              {creator.metrics?.growth || '+8.5K'}
+            </span>
+            <span style={{ fontSize: '10px', color: 'var(--success)', fontWeight: 700 }}>
+              Subscribers
+            </span>
+          </div>
+        </div>
+      </section>
 
       {/* Sync Status / Error Banner */}
       {profileError && (
@@ -345,6 +578,333 @@ export const ProfileView: React.FC = () => {
           </div>
         </Card>
       )}
+
+      {/* PRODUCTION DOSSIER VIEWER (user.md, hook.md, creator_comparison.md) */}
+      <section style={{ marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+          <div>
+            <h3 style={{ fontSize: '16px', fontWeight: 800, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '7px' }}>
+              <FileCode size={18} color="var(--ai-accent)" />
+              <span>Production Dossier Studio</span>
+            </h3>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+              Live analyzed markdown specifications used across all AI generation pipelines
+            </span>
+          </div>
+          {creator.profileDocuments && (
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', backgroundColor: 'var(--bg-surface-2)', padding: '3px 8px', borderRadius: '6px' }}>
+              {new Date(creator.profileDocuments.analyzedAt).toLocaleDateString()}
+            </span>
+          )}
+        </div>
+
+        <Card variant="surface" padding="16px" style={{ border: '1px solid var(--border-color)', position: 'relative' }}>
+          {/* Dossier Tabs & Action Controls */}
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '8px',
+              marginBottom: '12px',
+              borderBottom: '1px solid var(--border-color)',
+              paddingBottom: '10px',
+            }}
+          >
+            {/* File Switcher Tabs */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              <button
+                onClick={() => setActiveDocTab('user')}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  backgroundColor: activeDocTab === 'user' ? 'var(--ai-accent)' : 'var(--bg-surface-2)',
+                  color: activeDocTab === 'user' ? '#080808' : 'var(--text-secondary)',
+                  border: 'none',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <FileText size={13} />
+                <span>user.md</span>
+              </button>
+
+              <button
+                onClick={() => setActiveDocTab('hook')}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  backgroundColor: activeDocTab === 'hook' ? 'var(--ai-accent)' : 'var(--bg-surface-2)',
+                  color: activeDocTab === 'hook' ? '#080808' : 'var(--text-secondary)',
+                  border: 'none',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <Flame size={13} />
+                <span>hook.md</span>
+              </button>
+
+              {creator.profileDocuments?.creatorComparisonMd && (
+                <button
+                  onClick={() => setActiveDocTab('comparison')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: activeDocTab === 'comparison' ? 'var(--ai-accent)' : 'var(--bg-surface-2)',
+                    color: activeDocTab === 'comparison' ? '#080808' : 'var(--text-secondary)',
+                    border: 'none',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <BarChart3 size={13} />
+                  <span>comparison.md</span>
+                </button>
+              )}
+            </div>
+
+            {/* Mode & Action Controls */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 'auto' }}>
+              {/* View Mode Toggle: Rendered vs Raw */}
+              <div
+                style={{
+                  display: 'flex',
+                  backgroundColor: 'var(--bg-surface-2)',
+                  borderRadius: '8px',
+                  padding: '2px',
+                  border: '1px solid var(--border-color)',
+                }}
+              >
+                <button
+                  onClick={() => setViewMode('rendered')}
+                  title="Rendered Rich Markdown View"
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    backgroundColor: viewMode === 'rendered' ? 'var(--bg-surface-3)' : 'transparent',
+                    color: viewMode === 'rendered' ? 'var(--ai-accent)' : 'var(--text-muted)',
+                    border: 'none',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <Eye size={12} />
+                  <span>Rendered</span>
+                </button>
+                <button
+                  onClick={() => setViewMode('raw')}
+                  title="Raw Markdown Source Code"
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    backgroundColor: viewMode === 'raw' ? 'var(--bg-surface-3)' : 'transparent',
+                    color: viewMode === 'raw' ? 'var(--ai-accent)' : 'var(--text-muted)',
+                    border: 'none',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <Code size={12} />
+                  <span>Raw .md</span>
+                </button>
+              </div>
+
+              {/* Copy Markdown */}
+              <button
+                onClick={() => handleCopyMarkdown(activeContent, activeDocTab)}
+                disabled={!activeContent}
+                title="Copy full markdown to clipboard"
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--bg-surface-2)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-primary)',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  cursor: activeContent ? 'pointer' : 'not-allowed',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                {copiedType === activeDocTab ? <Check size={12} color="#00DC82" /> : <Copy size={12} />}
+                <span>{copiedType === activeDocTab ? 'Copied' : 'Copy'}</span>
+              </button>
+
+              {/* Download Markdown */}
+              <button
+                onClick={() =>
+                  handleDownloadMd(
+                    activeContent,
+                    activeDocTab === 'user'
+                      ? 'user.md'
+                      : activeDocTab === 'hook'
+                      ? 'hook.md'
+                      : 'creator_comparison.md'
+                  )
+                }
+                disabled={!activeContent}
+                title="Download this markdown file"
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--bg-surface-2)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-primary)',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  cursor: activeContent ? 'pointer' : 'not-allowed',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <Download size={12} />
+                <span>Export</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Search within Markdown */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '6px 10px',
+              borderRadius: '8px',
+              backgroundColor: 'var(--bg-surface-2)',
+              border: '1px solid var(--border-color)',
+              marginBottom: '10px',
+            }}
+          >
+            <Search size={13} color="var(--text-muted)" />
+            <input
+              type="text"
+              placeholder={`Search in ${activeDocTab === 'user' ? 'user.md' : activeDocTab === 'hook' ? 'hook.md' : 'comparison.md'} (e.g. Archetype, Tone, Retention)...`}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                background: 'none',
+                border: 'none',
+                outline: 'none',
+                color: 'var(--text-primary)',
+                fontSize: '11px',
+                width: '100%',
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  fontSize: '10px',
+                  cursor: 'pointer',
+                  padding: '0 4px',
+                }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Dossier Content Body */}
+          {isLoadingDossier ? (
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div className="skeleton-shimmer" style={{ height: '24px', width: '60%', borderRadius: '6px' }} />
+              <div className="skeleton-shimmer" style={{ height: '14px', width: '90%', borderRadius: '4px' }} />
+              <div className="skeleton-shimmer" style={{ height: '14px', width: '75%', borderRadius: '4px' }} />
+              <div className="skeleton-shimmer" style={{ height: '80px', width: '100%', borderRadius: '8px', marginTop: '10px' }} />
+              <div className="skeleton-shimmer" style={{ height: '14px', width: '85%', borderRadius: '4px' }} />
+            </div>
+          ) : activeContent ? (
+            <div
+              style={{
+                backgroundColor: 'var(--bg-surface-2)',
+                borderRadius: '12px',
+                padding: '16px',
+                border: '1px solid var(--border-color)',
+              }}
+            >
+              {viewMode === 'rendered' ? (
+                <MarkdownRenderer content={activeContent} searchQuery={searchQuery} maxHeight="480px" />
+              ) : (
+                <pre
+                  style={{
+                    margin: 0,
+                    fontSize: '11px',
+                    fontFamily: 'monospace',
+                    whiteSpace: 'pre-wrap',
+                    overflowWrap: 'anywhere',
+                    lineHeight: 1.6,
+                    color: '#d4d4d4',
+                    maxHeight: '480px',
+                    overflowY: 'auto',
+                  }}
+                >
+                  {activeContent}
+                </pre>
+              )}
+            </div>
+          ) : (
+            <div
+              style={{
+                padding: '30px 20px',
+                textAlign: 'center',
+                backgroundColor: 'var(--bg-surface-2)',
+                borderRadius: '12px',
+                border: '1px dashed var(--border-color)',
+              }}
+            >
+              <FileCode size={32} color="var(--text-muted)" style={{ margin: '0 auto 10px', display: 'block' }} />
+              <h4 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 6px', color: 'var(--text-primary)' }}>
+                No {activeDocTab}.md cached yet
+              </h4>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 16px', maxWidth: '340px', marginLeft: 'auto', marginRight: 'auto' }}>
+                Run Deep Sync DNA or click one of the verified creator blueprints above to load their full dossier.
+              </p>
+              <Button
+                variant="ai"
+                size="sm"
+                onClick={handleDeepProfile}
+                disabled={isProfiling}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <RefreshCw size={13} className={isProfiling ? 'spin' : ''} />
+                <span>Generate Dossier Now</span>
+              </Button>
+            </div>
+          )}
+        </Card>
+      </section>
 
       {/* Channel Source Manager Accordion */}
       <section style={{ marginBottom: '22px' }}>
@@ -660,113 +1220,6 @@ export const ProfileView: React.FC = () => {
           ))}
         </div>
       </section>
-
-      {/* Interactive Dossier Viewer (user.md and hook.md) */}
-      {creator.profileDocuments && (
-        <section style={{ marginBottom: '22px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>
-              Generated Production Dossiers
-            </h3>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-              Analyzed {new Date(creator.profileDocuments.analyzedAt).toLocaleDateString()}
-            </span>
-          </div>
-
-          <Card variant="surface" padding="16px">
-            {/* Dossier Tabs */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
-              <button
-                onClick={() => setActiveDocTab('user')}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: '8px',
-                  backgroundColor: activeDocTab === 'user' ? 'var(--ai-accent)' : 'transparent',
-                  color: activeDocTab === 'user' ? '#080808' : 'var(--text-secondary)',
-                  border: 'none',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <FileText size={13} />
-                <span>user.md (Creator Persona)</span>
-              </button>
-
-              <button
-                onClick={() => setActiveDocTab('hook')}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: '8px',
-                  backgroundColor: activeDocTab === 'hook' ? 'var(--ai-accent)' : 'transparent',
-                  color: activeDocTab === 'hook' ? '#080808' : 'var(--text-secondary)',
-                  border: 'none',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <Flame size={13} />
-                <span>hook.md (Viral Formulas)</span>
-              </button>
-
-              <div style={{ marginLeft: 'auto' }}>
-                <button
-                  onClick={() => handleCopyMarkdown(activeDocTab === 'user' ? creator.profileDocuments!.userMd : creator.profileDocuments!.hookMd, activeDocTab)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    backgroundColor: 'var(--bg-surface-2)',
-                    border: '1px solid var(--border-color)',
-                    color: 'var(--text-primary)',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '5px',
-                  }}
-                >
-                  {copiedType === activeDocTab ? <Check size={12} color="#00DC82" /> : <Copy size={12} />}
-                  <span>{copiedType === activeDocTab ? 'Copied!' : 'Copy Markdown'}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Dossier Text Container */}
-            <div
-              style={{
-                maxHeight: '360px',
-                overflowY: 'auto',
-                backgroundColor: 'var(--bg-surface-2)',
-                borderRadius: '10px',
-                padding: '14px',
-                border: '1px solid var(--border-color)',
-              }}
-            >
-              <pre
-                style={{
-                  margin: 0,
-                  fontSize: '11px',
-                  fontFamily: 'monospace',
-                  whiteSpace: 'pre-wrap',
-                  overflowWrap: 'anywhere',
-                  lineHeight: 1.55,
-                  color: 'var(--text-secondary)',
-                }}
-              >
-                {activeDocTab === 'user' ? creator.profileDocuments.userMd : creator.profileDocuments.hookMd}
-              </pre>
-            </div>
-          </Card>
-        </section>
-      )}
 
       <Button
         variant="secondary"

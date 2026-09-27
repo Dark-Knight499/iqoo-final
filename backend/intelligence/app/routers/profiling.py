@@ -99,6 +99,7 @@ def get_existing_profile(creator_slug: str):
     creator_dir = settings.CREATORS_DIR / creator_slug.lower().strip()
     user_md_path = creator_dir / "user.md"
     hook_md_path = creator_dir / "hook.md"
+    comp_md_path = creator_dir / "creator_comparison.md"
 
     if not user_md_path.exists() or not hook_md_path.exists():
         raise HTTPException(status_code=404, detail=f"No profile found for '{creator_slug}'. Please run POST /profiling first.")
@@ -108,12 +109,19 @@ def get_existing_profile(creator_slug: str):
     with open(hook_md_path, "r", encoding="utf-8") as f:
         hook_md = f.read()
 
+    comp_md = None
+    if comp_md_path.exists():
+        with open(comp_md_path, "r", encoding="utf-8") as f:
+            comp_md = f.read()
+
     return {
         "creator_slug": creator_slug,
         "user_md": user_md,
         "hook_md": hook_md,
+        "creator_comparison_md": comp_md,
         "paths": {
             "user_md": str(user_md_path),
-            "hook_md": str(hook_md_path)
+            "hook_md": str(hook_md_path),
+            "creator_comparison_md": str(comp_md_path) if comp_md_path.exists() else None
         }
     }

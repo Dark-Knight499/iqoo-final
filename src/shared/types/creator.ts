@@ -39,6 +39,7 @@ export interface CreatorProfile {
     analyzedAt: string;
     userMd: string;
     hookMd: string;
+    creatorComparisonMd?: string;
     catalogSummary: Record<string, number>;
     analysis?: Record<string, any>;
   };
