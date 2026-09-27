@@ -388,9 +388,17 @@ export const BrainrotFeedView: React.FC = () => {
                 scrollbarWidth: 'none',
               }}
             >
-              {gallery.map((item) => {
+              {gallery.map((item, idx) => {
                 const url = brainrotEngine.mediaUrl(item.url);
                 const isActive = activeVideo?.url === url;
+                const assetPoster = [
+                  '/assets/catalog/midnight-glow.svg',
+                  '/assets/catalog/obsidian-grid.svg',
+                  '/assets/catalog/soft-spotlight.svg',
+                  '/assets/catalog/glow-ring.svg',
+                  '/assets/catalog/focus-frame.svg',
+                  '/assets/catalog/porcelain.svg',
+                ][idx % 6];
                 return (
                   <article
                     key={`${item.task_id}-${item.file}`}
@@ -405,13 +413,15 @@ export const BrainrotFeedView: React.FC = () => {
                       overflow: 'hidden',
                       cursor: 'pointer',
                       backgroundColor: '#000',
+                      backgroundImage: `url(${assetPoster})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
                       border: isActive ? '1px solid var(--ai-accent)' : '1px solid var(--border-color)',
                     }}
                   >
                     <video
-                      // The media fragment asks the browser to decode and show that
-                      // frame as a poster; without it the card renders a black box.
                       src={`${url}#t=0.5`}
+                      poster={assetPoster}
                       muted
                       playsInline
                       preload="metadata"

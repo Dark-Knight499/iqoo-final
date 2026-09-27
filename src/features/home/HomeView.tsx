@@ -17,6 +17,9 @@ import {
   Compass,
   User,
   BarChart3,
+  Smartphone,
+  ExternalLink,
+  QrCode,
 } from 'lucide-react';
 import { useAppStore } from '@/shared/state/app.store';
 import { useCreatorStore } from '@/shared/state/creator.store';
@@ -28,6 +31,42 @@ import { formatDuration } from '@/utils/format';
 import { MediaArt } from '@/shared/components/MediaArt';
 import { brainrotEngine, GalleryItem } from '@/features/brainrot/api';
 import { ciStore } from '@/features/creator-intelligence/state/creatorIntelligenceStore';
+
+const ASSET_CATALOG_THUMBNAILS = [
+  { url: '/assets/catalog/midnight-glow.svg', name: 'Midnight Glow' },
+  { url: '/assets/catalog/obsidian-grid.svg', name: 'Obsidian Grid' },
+  { url: '/assets/catalog/soft-spotlight.svg', name: 'Soft Spotlight' },
+  { url: '/assets/catalog/glow-ring.svg', name: 'Glow Ring' },
+  { url: '/assets/catalog/focus-frame.svg', name: 'Focus Frame' },
+  { url: '/assets/catalog/porcelain.svg', name: 'Porcelain' },
+];
+
+const PRESET_AI_SHORTS = [
+  {
+    id: 'preset-sigma',
+    title: 'The Secret Sigma Aura Paradox',
+    asset: ASSET_CATALOG_THUMBNAILS[0],
+    duration: '0:38',
+  },
+  {
+    id: 'preset-ocean',
+    title: 'Mariana Trench Deep Abyss Mystery',
+    asset: ASSET_CATALOG_THUMBNAILS[1],
+    duration: '0:45',
+  },
+  {
+    id: 'preset-phone',
+    title: 'The 3 AM Smartphone Screen Paradox',
+    asset: ASSET_CATALOG_THUMBNAILS[2],
+    duration: '0:32',
+  },
+  {
+    id: 'preset-rome',
+    title: 'Ancient Rome vs Subway Surfers Speed',
+    asset: ASSET_CATALOG_THUMBNAILS[3],
+    duration: '0:29',
+  },
+];
 
 const PROMPT_SUGGESTIONS = [
   '⚡ 60s reel script',
@@ -56,6 +95,7 @@ export const HomeView: React.FC = () => {
   const [attaching, setAttaching] = useState(false);
   const [attachError, setAttachError] = useState<string | null>(null);
   const [aiShorts, setAiShorts] = useState<GalleryItem[]>([]);
+  const [showExpoModal, setShowExpoModal] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -249,6 +289,26 @@ export const HomeView: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button
+            onClick={() => setShowExpoModal(true)}
+            style={{
+              padding: '6px 10px',
+              borderRadius: '10px',
+              backgroundColor: 'rgba(99, 102, 241, 0.15)',
+              border: '1px solid rgba(99, 102, 241, 0.35)',
+              color: '#818CF8',
+              fontSize: '11px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+            title="Scan with Expo Go on your phone"
+          >
+            <Smartphone size={12} color="#818CF8" />
+            <span>Expo Go</span>
+          </button>
           <button
             onClick={() => openModal('sign-in')}
             style={{
@@ -464,97 +524,180 @@ export const HomeView: React.FC = () => {
       </section>
 
       {/* ── AI Shorts Gallery ─────────────────────────── */}
-      {aiShorts.length > 0 && (
-        <section style={{ marginBottom: '28px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+      <section style={{ marginBottom: '28px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <h2 style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)', margin: 0 }}>
-              AI Shorts · {aiShorts.length}
+              AI Shorts · {aiShorts.length > 0 ? aiShorts.length : 'Viral Showcase'}
             </h2>
-            <button
-              onClick={() => openModal('brainrot')}
+            <span
               style={{
-                background: 'none',
-                border: 'none',
-                fontSize: '12px',
-                fontWeight: 600,
+                fontSize: '10px',
+                fontWeight: 700,
                 color: 'var(--ai-accent)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '2px',
-                padding: 0,
+                backgroundColor: 'var(--ai-soft)',
+                padding: '1px 6px',
+                borderRadius: '999px',
+                border: '1px solid var(--ai-border)',
               }}
             >
-              Open Feed <ChevronRight size={14} />
-            </button>
+              Asset Themed
+            </span>
           </div>
-
-          <div
+          <button
+            onClick={() => openModal('brainrot')}
             style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '12px',
+              fontWeight: 600,
+              color: 'var(--ai-accent)',
+              cursor: 'pointer',
               display: 'flex',
-              gap: '10px',
-              overflowX: 'auto',
-              paddingBottom: '4px',
-              scrollbarWidth: 'none',
+              alignItems: 'center',
+              gap: '2px',
+              padding: 0,
             }}
           >
-            {aiShorts.map((item) => {
-              const url = brainrotEngine.mediaUrl(item.url);
-              const label = item.subject.trim() || item.script.trim().slice(0, 60) || 'Untitled short';
-              return (
-                <article
-                  key={`${item.task_id}-${item.file}`}
-                  onClick={() => openModal('brainrot')}
-                  style={{
-                    minWidth: '130px',
-                    width: '130px',
-                    height: '180px',
-                    borderRadius: '14px',
-                    overflow: 'hidden',
-                    flexShrink: 0,
-                    position: 'relative',
-                    cursor: 'pointer',
-                    backgroundColor: '#000',
-                    border: '1px solid var(--border-color)',
-                  }}
-                >
+            <span>Open Feed</span>
+            <ChevronRight size={14} />
+          </button>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            gap: '12px',
+            overflowX: 'auto',
+            paddingBottom: '6px',
+            scrollbarWidth: 'none',
+          }}
+        >
+          {(aiShorts.length > 0 ? aiShorts : PRESET_AI_SHORTS).map((item, idx) => {
+            const isRendered = 'url' in item;
+            const videoUrl = isRendered ? brainrotEngine.mediaUrl(item.url) : null;
+            const label = isRendered
+              ? item.subject.trim() || item.script.trim().slice(0, 60) || 'Untitled short'
+              : item.title;
+            const assetThumbnail = ASSET_CATALOG_THUMBNAILS[idx % ASSET_CATALOG_THUMBNAILS.length];
+
+            return (
+              <article
+                key={isRendered ? `${item.task_id}-${item.file}` : item.id}
+                onClick={() => openModal('brainrot')}
+                style={{
+                  minWidth: '136px',
+                  width: '136px',
+                  height: '188px',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                  flexShrink: 0,
+                  position: 'relative',
+                  cursor: 'pointer',
+                  backgroundColor: '#050706',
+                  backgroundImage: `url(${assetThumbnail.url})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  border: '1px solid var(--border-color)',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)',
+                  transition: 'transform 0.15s ease, border-color 0.15s ease',
+                }}
+              >
+                {/* Real video if rendered, with the asset as poster */}
+                {videoUrl && (
                   <video
-                    src={`${url}#t=0.5`}
+                    src={`${videoUrl}#t=0.5`}
+                    poster={assetThumbnail.url}
                     muted
                     playsInline
                     preload="metadata"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.9 }}
-                  />
-                  <div
                     style={{
                       position: 'absolute',
                       inset: 0,
-                      background: 'linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.85) 100%)',
-                      pointerEvents: 'none',
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      opacity: 0.9,
                     }}
                   />
-                  <div style={{ position: 'absolute', bottom: '8px', left: '8px', right: '8px' }}>
-                    <div
-                      style={{
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        color: '#FFF',
-                        lineHeight: 1.25,
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {label}
-                    </div>
+                )}
+
+                {/* Vignette gradient overlay */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.88) 100%)',
+                    pointerEvents: 'none',
+                  }}
+                />
+
+                {/* Top badges: Asset name and format */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '8px',
+                    left: '8px',
+                    right: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '9px',
+                      fontWeight: 800,
+                      color: 'var(--ai-accent)',
+                      backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                      backdropFilter: 'blur(6px)',
+                      padding: '2px 6px',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(0, 220, 130, 0.3)',
+                    }}
+                  >
+                    {assetThumbnail.name}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '9px',
+                      fontWeight: 700,
+                      color: '#fff',
+                      backgroundColor: 'rgba(0, 0, 0, 0.65)',
+                      padding: '2px 5px',
+                      borderRadius: '4px',
+                    }}
+                  >
+                    9:16
+                  </span>
+                </div>
+
+                {/* Bottom title & metadata */}
+                <div style={{ position: 'absolute', bottom: '8px', left: '8px', right: '8px' }}>
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: '#FFF',
+                      lineHeight: 1.25,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+                    }}
+                  >
+                    {label}
                   </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      )}
+                  <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.7)', marginTop: '3px' }}>
+                    {isRendered ? 'Tap to play' : `${item.duration} · High Retention`}
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
 
       {/* ── Recent Projects ───────────────────────────── */}
       <section style={{ marginBottom: '28px' }}>
@@ -886,6 +1029,198 @@ export const HomeView: React.FC = () => {
           </button>
         ))}
       </nav>
+
+      {/* ── Expo Go Modal ────────────────────────────────────── */}
+      {showExpoModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setShowExpoModal(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100,
+            backgroundColor: 'rgba(0, 0, 0, 0.82)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '380px',
+              backgroundColor: 'var(--bg-surface)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '24px',
+              padding: '24px',
+              boxShadow: 'var(--shadow-modal)',
+              textAlign: 'center',
+              position: 'relative',
+            }}
+          >
+            <button
+              onClick={() => setShowExpoModal(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                backgroundColor: 'var(--bg-surface-2)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-muted)',
+                display: 'grid',
+                placeItems: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <X size={16} />
+            </button>
+
+            <div
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '16px',
+                backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                color: '#818CF8',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '12px',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
+              }}
+            >
+              <Smartphone size={24} />
+            </div>
+
+            <h3 style={{ fontSize: '18px', fontWeight: 800, margin: '0 0 4px', color: 'var(--text-primary)' }}>
+              Launch with Expo Go
+            </h3>
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 16px', lineHeight: 1.45 }}>
+              Scan the QR code with the <strong>Expo Go</strong> app on your Android phone or Camera app on iOS to open the native mobile experience.
+            </p>
+
+            {/* QR Code Container */}
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                padding: '12px',
+                borderRadius: '16px',
+                display: 'inline-block',
+                margin: '0 auto 16px',
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35)',
+              }}
+            >
+              <img
+                src="/expo-qr.png"
+                alt="Expo Go QR Code"
+                style={{ width: '200px', height: '200px', display: 'block', borderRadius: '8px' }}
+              />
+            </div>
+
+            {/* Server & Status Info */}
+            <div
+              style={{
+                backgroundColor: 'var(--bg-surface-2)',
+                borderRadius: '12px',
+                padding: '10px 12px',
+                border: '1px solid var(--border-color)',
+                textAlign: 'left',
+                marginBottom: '16px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>Metro Bundler:</span>
+                <span style={{ fontSize: '10px', color: '#00DC82', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#00DC82' }} />
+                  Active · Port 8081
+                </span>
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                  padding: '6px 8px',
+                  borderRadius: '6px',
+                }}
+              >
+                <code style={{ fontSize: '11px', color: 'var(--ai-accent)', fontFamily: 'monospace' }}>
+                  exp://10.2.36.170:8081
+                </code>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText('exp://10.2.36.170:8081');
+                    showToast('Copied Expo Metro URL!');
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    padding: '2px 4px',
+                  }}
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <a
+                href="http://10.2.36.170:8081"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '10px',
+                  borderRadius: '12px',
+                  backgroundColor: 'var(--bg-surface-2)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-primary)',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                }}
+              >
+                <ExternalLink size={13} />
+                <span>Web Preview</span>
+              </a>
+              <button
+                onClick={() => setShowExpoModal(false)}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: '12px',
+                  backgroundColor: 'var(--ai-accent)',
+                  color: '#080808',
+                  border: 'none',
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 };
