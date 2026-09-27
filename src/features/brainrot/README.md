@@ -16,7 +16,9 @@ npm run mpt:server
 npm run dev -- --host 127.0.0.1
 ```
 
-Then **Create → Brainrot Feed**.
+Then **Create → Brainrot Feed**. Finished renders also appear on **Home** as an
+**AI Shorts** gallery strip (it hides itself when the engine is offline), and
+inside the feed as the **Gallery** row.
 
 ## How it is wired
 

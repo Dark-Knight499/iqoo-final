@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Sparkles,
   Plus,
@@ -27,6 +27,7 @@ import { ciStore } from '@/features/creator-intelligence/state/creatorIntelligen
 import { attachVideoToProject } from '@/shared/services/projectMedia';
 import { formatDuration } from '@/utils/format';
 import { MediaArt } from '@/shared/components/MediaArt';
+import { brainrotEngine, GalleryItem } from '@/features/brainrot/api';
 
 const PROMPT_SUGGESTIONS = [
   '⚡ 60s high-retention reel script',
@@ -43,10 +44,28 @@ export const HomeView: React.FC = () => {
   const [reviewProjectId, setReviewProjectId] = useState<string | null>(null);
   const [attaching, setAttaching] = useState(false);
   const [attachError, setAttachError] = useState<string | null>(null);
+  const [aiShorts, setAiShorts] = useState<GalleryItem[]>([]);
 
   const reviewProject = projects.find((project) => project.id === reviewProjectId);
   const initials = creator.name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'C';
   const firstName = creator.name.trim().split(/\s+/)[0] || 'Creator';
+
+  // Gallery of rendered shorts. Optional: hide the section when the local
+  // render engine is not running rather than showing an empty shell.
+  useEffect(() => {
+    let cancelled = false;
+    brainrotEngine
+      .listGallery()
+      .then((items) => {
+        if (!cancelled) setAiShorts(items);
+      })
+      .catch(() => {
+        if (!cancelled) setAiShorts([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Time-based greeting
   const hour = new Date().getHours();
@@ -745,6 +764,137 @@ export const HomeView: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* AI Shorts Gallery (rendered by the local engine) */}
+      {aiShorts.length > 0 && (
+        <section style={{ marginBottom: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <div>
+              <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                AI Shorts
+              </h2>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                {aiShorts.length} generated {aiShorts.length === 1 ? 'video' : 'videos'}
+              </span>
+            </div>
+            <button
+              onClick={() => openModal('brainrot')}
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: '12px',
+                fontWeight: 600,
+                color: 'var(--ai-accent)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '2px',
+                padding: 0,
+              }}
+            >
+              <span>Open Feed</span>
+              <ChevronRight size={15} />
+            </button>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              gap: '10px',
+              overflowX: 'auto',
+              paddingBottom: '8px',
+              marginRight: '-18px',
+              paddingRight: '18px',
+              scrollbarWidth: 'none',
+            }}
+          >
+            {aiShorts.map((item) => {
+              const url = brainrotEngine.mediaUrl(item.url);
+              const label = item.subject.trim() || item.script.trim().slice(0, 60) || 'Untitled short';
+              return (
+                <article
+                  key={`${item.task_id}-${item.file}`}
+                  onClick={() => openModal('brainrot')}
+                  style={{
+                    minWidth: '150px',
+                    width: '150px',
+                    height: '200px',
+                    borderRadius: '18px',
+                    overflow: 'hidden',
+                    flexShrink: 0,
+                    position: 'relative',
+                    cursor: 'pointer',
+                    backgroundColor: '#000',
+                    border: '1px solid var(--border-color)',
+                    transition: 'transform 0.15s ease, border-color 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.borderColor = 'var(--ai-border)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.borderColor = 'var(--border-color)';
+                  }}
+                >
+                  <video
+                    src={`${url}#t=0.5`}
+                    muted
+                    playsInline
+                    preload="metadata"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.9 }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: 'linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.88) 100%)',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '10px',
+                      left: '10px',
+                      padding: '3px 8px',
+                      borderRadius: '999px',
+                      backgroundColor: 'rgba(0,0,0,0.7)',
+                      backdropFilter: 'blur(6px)',
+                      fontSize: '9px',
+                      color: '#fff',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.4px',
+                    }}
+                  >
+                    AI Short
+                  </div>
+                  <div style={{ position: 'absolute', bottom: '10px', left: '10px', right: '10px' }}>
+                    <div
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        color: '#FFFFFF',
+                        lineHeight: 1.25,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {label}
+                    </div>
+                    <div style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.65)', marginTop: '3px' }}>
+                      {new Date(item.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Projects Section */}
       <section style={{ marginBottom: '24px' }}>

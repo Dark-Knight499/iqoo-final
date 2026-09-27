@@ -370,7 +370,9 @@ export const BrainrotFeedView: React.FC = () => {
                     }}
                   >
                     <video
-                      src={url}
+                      // The media fragment asks the browser to decode and show that
+                      // frame as a poster; without it the card renders a black box.
+                      src={`${url}#t=0.5`}
                       muted
                       playsInline
                       preload="metadata"
