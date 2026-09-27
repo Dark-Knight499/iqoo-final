@@ -62,6 +62,14 @@ export const CreateView: React.FC = () => {
       action: () => openModal('media-intelligence'),
     },
     {
+      id: 'clipping',
+      title: 'Clipping Studio',
+      description: 'Upload a video to identify compelling moments with AI.',
+      badge: 'AI Clipping',
+      badgeIcon: Film,
+      action: () => openModal('clipping'),
+    },
+    {
       id: 'edit',
       title: 'Edit a Video',
       description: 'Import real footage, review a trim and export a playable video.',

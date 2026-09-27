@@ -1,4 +1,4 @@
-# Video clipping and burning planning
+-----------------------------------teru# Video clipping and burning planning
 
 **Session ID:** ses_f1f57d5dcffe1Cjs8DEkkxKZuH
 **Created:** 9/27/2026, 7:48:32 AM

@@ -1,29 +1,16 @@
-"""
-Viral Video Clipping & On-Device SmolVLM Models
-================================================
-Schemas for automated viral short detection, context management,
-and on-device SmolVLM multimodal visual hook evaluation.
-"""
+"""Schemas for OpenAI-assisted video clipping."""
 
-from enum import Enum
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
-class ClipSourceType(str, Enum):
-    YOUTUBE = "youtube"
-    LIVESTREAM = "livestream"
-    LOCAL_FILE = "local_file"
-    DIRECT_URL = "direct_url"
-
-
 class VisualAssessment(BaseModel):
-    visual_hook_score: float = Field(..., description="Visual engagement score (0.0 to 10.0) based on facial expression and eye contact")
-    facial_expression: str = Field(..., description="Observed facial expression (e.g. 'Shocked / Intense eye contact', 'Passionate debate gesture')")
-    face_crop_center_x: float = Field(50.0, description="Recommended horizontal crop center percentage (0-100%) for 9:16 vertical framing")
-    active_speaker_identified: bool = Field(True, description="Whether active speaker was confirmed in frame")
-    visual_hook_summary: str = Field(..., description="Why the visual frame stops viewer scroll in first 3 seconds")
-    keyframe_timestamp: Optional[float] = Field(None, description="Timestamp in seconds of the primary keyframe analyzed")
+    visual_hook_score: float = Field(..., ge=0, le=10, description="Visual engagement score")
+    facial_expression: str = Field(..., description="Scene description")
+    face_crop_center_x: float = Field(..., ge=0, le=100, description="Recommended horizontal crop center percentage")
+    active_speaker_identified: bool = Field(..., description="Whether an active speaker was identified")
+    visual_hook_summary: str = Field(..., description="Visual assessment")
+    keyframe_timestamp: Optional[float] = Field(None, description="Timestamp in seconds of the analyzed keyframe")
 
 
 class ViralClipItem(BaseModel):
@@ -39,35 +26,18 @@ class ViralClipItem(BaseModel):
     why_viral: str = Field(..., description="Editorial rationale explaining narrative payoff and audience retention")
     suggested_title: str = Field(..., description="High-CTR title for YouTube Shorts / Instagram Reels")
     suggested_caption: str = Field(..., description="Engagement-optimized caption with call-to-action")
-    hashtags: List[str] = Field(default_factory=list, description="Surging hashtags for algorithmic distribution")
+    hashtags: List[str] = Field(..., description="Clip hashtags")
     transcript_snippet: str = Field(..., description="Full self-contained transcript snippet for this segment")
-    visual_assessment: Optional[VisualAssessment] = Field(None, description="SmolVLM on-device visual analysis")
-    recommended_aspect_ratio: str = Field("9:16", description="Target video aspect ratio")
-
-
-class ClipAnalysisRequest(BaseModel):
-    video_url: str = Field(..., description="YouTube URL, live stream replay, or MP4 URL/local path")
-    creator_name: Optional[str] = Field("Creator", description="Creator's display name or handle")
-    target_duration_seconds: int = Field(50, description="Target short duration in seconds (typically 30-60s)")
-    min_virality_score: int = Field(70, description="Minimum score threshold to include in response (0-100)")
-    max_clips: int = Field(5, description="Maximum number of top viral clips to return")
-    use_on_device_smolvlm: bool = Field(True, description="Enable SmolVLM 2.2B on-device multimodal visual inspection")
-    on_device_endpoint: Optional[str] = Field("http://localhost:8080/v1", description="Local on-device endpoint (e.g. iQOO 15 phone or Termux server)")
+    visual_assessment: VisualAssessment = Field(..., description="OpenAI vision analysis")
+    recommended_aspect_ratio: str = Field(..., description="Target video aspect ratio")
 
 
 class ClipAnalysisResponse(BaseModel):
     status: str = Field("success", description="Status of the clipping operation")
     video_title: str = Field(..., description="Extracted video title")
     video_duration: str = Field(..., description="Total duration of the source video")
-    source_type: str = Field(..., description="Detected video source type (youtube, livestream, direct_file)")
+    source_type: str = Field("local_file", description="Uploaded video source")
     signals_used: List[str] = Field(..., description="List of multi-modal signals leveraged for analysis")
-    on_device_model: str = Field("SmolVLM-2.2B (Snapdragon 8 Elite)", description="Multimodal model deployed for visual hook verification")
+    analysis_model: str = Field("gpt-4o-mini", description="Video analysis model")
     total_candidates_analyzed: int = Field(..., description="Number of candidate segments evaluated")
     top_viral_clips: List[ViralClipItem] = Field(default_factory=list, description="Ranked viral clips with timestamps")
-
-
-class ClipToPublishRequest(BaseModel):
-    clip: ViralClipItem = Field(..., description="The viral clip item to publish")
-    creator_id: str = Field(..., description="Creator identifier")
-    platform: str = Field("youtube", description="Target platform ('youtube', 'instagram', 'twitter', 'tiktok')")
-    require_human_approval: bool = Field(True, description="Enforce Human-In-The-Loop approval gate in /publish")

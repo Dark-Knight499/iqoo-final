@@ -1,100 +1,102 @@
-"""
-Viral Video Clipping & SmolVLM Router
-=====================================
-FastAPI routes for automated video clipping, on-device SmolVLM visual verification,
-and direct handoff to the /publish Human-In-The-Loop queue.
-"""
+"""OpenAI-backed clipping endpoints for uploaded local videos."""
 
-import logging
-from typing import Dict, Any, Optional
-from fastapi import APIRouter, HTTPException, Query
+import shutil
+import subprocess
+import tempfile
+import math
+from pathlib import Path
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 
-from app.models.clipping import (
-    ClipAnalysisRequest,
-    ClipAnalysisResponse,
-    ClipToPublishRequest,
-    ViralClipItem
-)
-from app.models.publish import (
-    PublishCreateRequest,
-    PublishResponse,
-    PlatformType,
-    ContentFormat
-)
-from app.services.clipping_service import clipping_service
-from app.services.smolvlm_service import smolvlm_service
-from app.services.composio_service import composio_service
+from app.models.clipping import ClipAnalysisResponse
+from app.services.openai_clipping_service import openai_clipping_service
 
-logger = logging.getLogger(__name__)
-
-router = APIRouter(prefix="/clipping", tags=["Viral Video Clipping & On-Device SmolVLM"])
+router = APIRouter(prefix="/clipping", tags=["OpenAI Video Clipping"])
 
 
-@router.post("/analyze", response_model=ClipAnalysisResponse, summary="Analyze video for viral short clips with context management & SmolVLM")
-def analyze_video_for_clips(req: ClipAnalysisRequest):
-    """
-    Ingests any video (YouTube, live stream, or direct MP4), extracts timed transcript
-    and retention signals, resolves context and dangling pronouns, executes on-device
-    SmolVLM visual hook verification, and returns ranked viral shorts with exact timestamps.
-    """
+@router.post("/analyze-file", response_model=ClipAnalysisResponse)
+def analyze_local_video(
+    file: UploadFile = File(...),
+    target_duration_seconds: int = Form(45),
+    max_clips: int = Form(5),
+):
+    """Analyze an uploaded local video using FFmpeg signals and GPT-4o mini vision."""
+    suffix = Path(file.filename or "").suffix.lower()
+    if suffix not in {".mp4", ".mov", ".mkv", ".webm", ".avi"}:
+        raise HTTPException(status_code=415, detail="Upload an MP4, MOV, MKV, WebM, or AVI video.")
+    if not 15 <= target_duration_seconds <= 90 or not 1 <= max_clips <= 10:
+        raise HTTPException(status_code=422, detail="Clip length must be 15–90 seconds and result count 1–10.")
+
+    with tempfile.TemporaryDirectory(prefix="creator-local-video-") as temp_dir:
+        video_path = Path(temp_dir) / f"source{suffix}"
+        with video_path.open("wb") as destination:
+            shutil.copyfileobj(file.file, destination)
+        if video_path.stat().st_size == 0:
+            raise HTTPException(status_code=422, detail="The uploaded video is empty.")
+        try:
+            return openai_clipping_service.analyze_local(video_path, file.filename or video_path.name, target_duration_seconds, max_clips)
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=422, detail=f"Local video analysis failed: {exc}") from exc
+
+
+@router.post("/render-file")
+def render_local_clip(
+    file: UploadFile = File(...),
+    start_seconds: float = Form(...),
+    end_seconds: float = Form(...),
+):
+    """Render and return a trimmed MP4 for download."""
+    suffix = Path(file.filename or "").suffix.lower()
+    if suffix not in {".mp4", ".mov", ".mkv", ".webm", ".avi"}:
+        raise HTTPException(status_code=415, detail="Upload an MP4, MOV, MKV, WebM, or AVI video.")
+    if not math.isfinite(start_seconds) or not math.isfinite(end_seconds) or start_seconds < 0 or end_seconds <= start_seconds:
+        raise HTTPException(status_code=422, detail="Clip start and end times are invalid.")
+
+    temp_dir = tempfile.TemporaryDirectory(prefix="creator-rendered-clip-")
+    temp_path = Path(temp_dir.name)
+    source_path = temp_path / f"source{suffix}"
+    output_path = temp_path / "clipped-video.mp4"
     try:
-        return clipping_service.analyze_video(req)
-    except Exception as e:
-        logger.error(f"[Clipping] Analysis error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to analyze video for clipping: {str(e)}")
+        with source_path.open("wb") as destination:
+            shutil.copyfileobj(file.file, destination)
+        if source_path.stat().st_size == 0:
+            raise HTTPException(status_code=422, detail="The uploaded video is empty.")
 
-
-@router.post("/to-publish", response_model=PublishResponse, summary="Handoff viral clip to /publish Human Approval Queue")
-def send_clip_to_publish_queue(req: ClipToPublishRequest):
-    """
-    Converts a chosen viral clip directly into a PublishJob inside the /publish
-    Human-In-The-Loop approval queue. Reviewers can approve or reject before Composio
-    dispatches it to YouTube Shorts, Instagram Reels, or TikTok.
-    """
-    try:
-        # Map target platform
-        platform_map = {
-            "youtube": PlatformType.YOUTUBE,
-            "instagram": PlatformType.TWITTER, # Fallback to social stream
-            "twitter": PlatformType.TWITTER,
-            "tiktok": PlatformType.YOUTUBE
-        }
-        chosen_platform = platform_map.get(req.platform.lower(), PlatformType.YOUTUBE)
-
-        # Build publishing request
-        full_content = (
-            f"🎬 {req.clip.suggested_title}\n\n"
-            f"{req.clip.suggested_caption}\n\n"
-            f"⏱️ Timestamp: {req.clip.start_time} - {req.clip.end_time} ({req.clip.duration_seconds}s)\n\n"
-            f"🎣 Opening Hook: \"{req.clip.hook_line}\"\n\n"
-            f"{' '.join(req.clip.hashtags)}"
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-v", "error", "-ss", str(start_seconds), "-i", str(source_path),
+                "-t", str(end_seconds - start_seconds), "-map", "0:v:0", "-map", "0:a?",
+                "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-c:a", "aac",
+                "-movflags", "+faststart", str(output_path),
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=600,
         )
-
-        pub_req = PublishCreateRequest(
-            creator_id=req.creator_id,
-            platform=chosen_platform,
-            content_format=ContentFormat.SHORT if chosen_platform == PlatformType.YOUTUBE else ContentFormat.POST,
-            title=req.clip.suggested_title,
-            content=full_content,
-            tags=req.clip.hashtags,
-            require_human_approval=req.require_human_approval
+        if not output_path.exists() or output_path.stat().st_size == 0:
+            raise HTTPException(status_code=422, detail="Could not render the selected clip.")
+        return FileResponse(
+            output_path,
+            media_type="video/mp4",
+            filename="clipped-video.mp4",
+            background=BackgroundTask(temp_dir.cleanup),
         )
+    except HTTPException:
+        temp_dir.cleanup()
+        raise
+    except (subprocess.SubprocessError, OSError) as exc:
+        temp_dir.cleanup()
+        detail = "Could not render the selected clip."
+        if isinstance(exc, subprocess.CalledProcessError) and exc.stderr:
+            detail = exc.stderr.strip()[-500:]
+        raise HTTPException(status_code=422, detail=detail) from exc
 
-        job = composio_service.create_publish_job(pub_req)
-        return PublishResponse(
-            status="success",
-            message=f"Viral clip '{req.clip.suggested_title}' ({req.clip.start_time}-{req.clip.end_time}) dispatched to Human Approval Queue as Job {job.job_id}!",
-            job=job
-        )
-    except Exception as e:
-        logger.error(f"[Clipping] Error creating publish job: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to hand off clip to publish queue: {str(e)}")
 
-
-@router.get("/status", summary="Check on-device SmolVLM health & connectivity on iQOO 15")
-def check_on_device_status(endpoint: Optional[str] = Query(None, description="Optional custom IP/port for iQOO 15")):
-    """
-    Pings the on-device SmolVLM server running on the Snapdragon 8 Elite (iQOO 15).
-    Verifies NPU acceleration readiness and model availability.
-    """
-    return smolvlm_service.check_on_device_health(endpoint)
+@router.get("/status")
+def check_openai_status():
+    """Report whether the configured OpenAI model is ready to analyze clips."""
+    return openai_clipping_service.openai_status()

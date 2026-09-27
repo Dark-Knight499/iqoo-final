@@ -19,6 +19,7 @@ import { MediaIntelligenceView } from '@/features/media-intelligence/MediaIntell
 import { BrainrotFeedView } from '@/features/brainrot/BrainrotFeedView';
 import { ExportModal } from '@/features/export/ExportModal';
 import { CopilotSheet } from '@/features/copilot/CopilotSheet';
+import { ClippingView } from '@/features/clipping/ClippingView';
 
 export const App: React.FC = () => {
   const { activeTab, activeModal, returnFromExport, closeModal } = useAppStore();
@@ -62,6 +63,9 @@ export const App: React.FC = () => {
   }
   if (activeModal === 'brainrot') {
     return <BrainrotFeedView />;
+  }
+  if (activeModal === 'clipping') {
+    return <ClippingView />;
   }
   if (activeModal === 'creator-intelligence') {
     return <CreatorIntelligenceScreen onBack={closeModal} />;

@@ -16,7 +16,8 @@ export type ScreenModal =
   | 'assets'
   | 'media-intelligence'
   | 'creator-intelligence'
-  | 'brainrot';
+  | 'brainrot'
+  | 'clipping';
 
 export type AppTheme = 'dark' | 'light';
 
