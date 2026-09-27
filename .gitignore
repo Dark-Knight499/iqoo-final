@@ -8,3 +8,11 @@ dist
 .pytest_cache/
 __pycache__/
 *.pyc
+*.mp4
+*.mov
+*.webm
+*.avi
+clipping/frames/
+clipping/exports/
+clipping/cache/
+clipping/uploads/
