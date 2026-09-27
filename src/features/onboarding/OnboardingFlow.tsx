@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { Sparkles, ArrowRight, Check, CheckCircle2, Plus, FolderOpen, UserRound } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Sparkles, ArrowRight, Check, CheckCircle2, Plus, FolderOpen, UserRound, Search, Loader2 } from 'lucide-react';
 import { useAppStore } from '@/shared/state/app.store';
 import { useCreatorStore } from '@/shared/state/creator.store';
 import { Button } from '@/shared/components/Button';
-import { legacyBackend, mapProfileResponseToCreatorUpdate } from '@/services/legacyBackend';
+import { legacyBackend, mapProfileResponseToCreatorUpdate, DomainArchetype, CreatorDomainProfile } from '@/services/legacyBackend';
 import { enterDemoWorkspace } from '@/features/creator-intelligence/services/demoWorkspace';
 import { creatorStore } from '@/shared/state/creator.store';
 import { featuredCreators } from './featuredCreators';
@@ -89,14 +89,56 @@ export const OnboardingFlow: React.FC = () => {
     completeOnboarding();
   };
 
-  const niches = [
-    'Technology & AI',
-    'Coding & Engineering',
-    'Startups & Indie Hacking',
-    'Hardware & Gadgets',
-    'Design & Creative',
-    'Gaming & Media',
-  ];
+  const [availableDomains, setAvailableDomains] = useState<DomainArchetype[]>([]);
+  const [domainSearchQuery, setDomainSearchQuery] = useState('');
+  const [domainProfile, setDomainProfile] = useState<CreatorDomainProfile | null>(null);
+  const [isCalibratingDomain, setIsCalibratingDomain] = useState(false);
+
+  useEffect(() => {
+    legacyBackend.getDomains()
+      .then((res) => {
+        if (res?.domains?.length) {
+          setAvailableDomains(res.domains);
+        }
+      })
+      .catch((err) => {
+        console.warn('Could not load domains from API:', err);
+      });
+  }, []);
+
+  const handleSelectDomain = (domainTitle: string) => {
+    setSelectedNiche(domainTitle);
+    setDomainSearchQuery(domainTitle);
+    setIsCalibratingDomain(true);
+    legacyBackend.identifyDomain({
+      creator_name: creatorName.trim() || 'Creator',
+      niche_hint: domainTitle
+    }).then((profile) => {
+      setDomainProfile(profile);
+    }).catch((err) => {
+      console.warn('Domain calibration warning:', err);
+    }).finally(() => {
+      setIsCalibratingDomain(false);
+    });
+  };
+
+  const filteredDomainArchetypes = useMemo(() => {
+    if (!availableDomains.length) {
+      return [
+        { domain_id: 'tech_gadgets', domain_name: 'Consumer Technology & AI', sub_niche: 'Hardware & AI', core_verticals: [], primary_search_topics: [], methodology: '' },
+        { domain_id: 'personal_finance', domain_name: 'Personal Finance & Investing', sub_niche: 'Wealth & Tax', core_verticals: [], primary_search_topics: [], methodology: '' },
+        { domain_id: 'productivity_growth', domain_name: 'Productivity Systems & Deep Work', sub_niche: 'Habits & Systems', core_verticals: [], primary_search_topics: [], methodology: '' },
+        { domain_id: 'civic_social_issues', domain_name: 'Civic Rights & Public Policy', sub_niche: 'Policy & Fact-Checking', core_verticals: [], primary_search_topics: [], methodology: '' },
+        { domain_id: 'startups_business', domain_name: 'Startups & Business Strategy', sub_niche: 'GTM & Unit Economics', core_verticals: [], primary_search_topics: [], methodology: '' },
+        { domain_id: 'health_fitness', domain_name: 'Health Optimization & Fitness', sub_niche: 'Exercise Science', core_verticals: [], primary_search_topics: [], methodology: '' },
+      ];
+    }
+    if (!domainSearchQuery.trim()) return availableDomains;
+    const q = domainSearchQuery.toLowerCase();
+    return availableDomains.filter(
+      (d) => d.domain_name.toLowerCase().includes(q) || d.sub_niche.toLowerCase().includes(q)
+    );
+  }, [availableDomains, domainSearchQuery]);
 
   const platforms = ['YouTube', 'YouTube Shorts', 'Instagram Reels', 'TikTok', 'X / Twitter', 'LinkedIn'];
 
@@ -247,28 +289,131 @@ export const OnboardingFlow: React.FC = () => {
               style={{ ...inputStyle, marginBottom: '20px' }}
             />
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '32px' }}>
-              {niches.map((n) => {
-                const isSelected = selectedNiche === n;
+            <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '7px' }}>
+              Creator domain & niche (search or select below)
+            </label>
+            <div style={{ position: 'relative', marginBottom: '14px' }}>
+              <Search size={15} style={{ position: 'absolute', left: 14, top: 12, color: 'var(--text-muted)', pointerEvents: 'none' }} />
+              <input
+                value={domainSearchQuery}
+                onChange={(event) => {
+                  setDomainSearchQuery(event.target.value);
+                  if (event.target.value.trim()) {
+                    setSelectedNiche(event.target.value.trim());
+                  }
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && domainSearchQuery.trim()) {
+                    handleSelectDomain(domainSearchQuery.trim());
+                  }
+                }}
+                placeholder="Search or enter any domain (e.g. AI Agents, Personal Finance, Fitness...)"
+                style={{ ...inputStyle, paddingLeft: '38px', paddingRight: domainSearchQuery.trim() ? '140px' : '14px' }}
+              />
+              {domainSearchQuery.trim() && (
+                <button
+                  type="button"
+                  onClick={() => handleSelectDomain(domainSearchQuery.trim())}
+                  disabled={isCalibratingDomain}
+                  style={{
+                    position: 'absolute',
+                    right: 6,
+                    top: 6,
+                    bottom: 6,
+                    padding: '0 12px',
+                    borderRadius: '9px',
+                    backgroundColor: 'var(--ai-accent)',
+                    color: '#080808',
+                    border: 'none',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: isCalibratingDomain ? 'wait' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                  }}
+                >
+                  {isCalibratingDomain ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                  <span>Calibrate Domain</span>
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
+              {filteredDomainArchetypes.map((arch) => {
+                const isSelected = selectedNiche.toLowerCase() === arch.domain_name.toLowerCase();
                 return (
                   <button
-                    key={n}
-                    onClick={() => setSelectedNiche(n)}
+                    key={arch.domain_id}
+                    type="button"
+                    onClick={() => handleSelectDomain(arch.domain_name)}
                     style={{
-                      padding: '10px 16px',
+                      padding: '9px 14px',
                       borderRadius: 'var(--radius-pill)',
                       backgroundColor: isSelected ? 'var(--ai-accent)' : 'var(--bg-surface-2)',
                       color: isSelected ? '#080808' : '#fff',
-                      fontSize: '13px',
+                      fontSize: '12px',
                       fontWeight: 600,
                       border: isSelected ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      transition: 'all 0.15s ease',
                     }}
                   >
-                    {n}
+                    {isSelected && <Check size={13} />}
+                    <span>{arch.domain_name}</span>
                   </button>
                 );
               })}
             </div>
+
+            {isCalibratingDomain && (
+              <div style={{ padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-surface-2)', border: '1px solid var(--border-color)', marginBottom: '22px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Loader2 size={16} className="animate-spin" style={{ color: 'var(--ai-accent)' }} />
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  Calibrating domain moat, content pillars & audience psychographics via Intelligence API…
+                </span>
+              </div>
+            )}
+
+            {domainProfile && !isCalibratingDomain && (
+              <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--bg-surface-2)', border: '1px solid var(--ai-border)', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--ai-accent)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <CheckCircle2 size={13} /> AI Calibrated Profile
+                  </span>
+                  <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '6px', background: 'var(--ai-soft)', color: 'var(--ai-accent)', fontWeight: 700 }}>
+                    {domainProfile.domain_id}
+                  </span>
+                </div>
+                <strong style={{ fontSize: '14px', display: 'block', marginBottom: '4px', color: 'var(--text-primary)' }}>
+                  {domainProfile.domain_name}
+                </strong>
+                <p style={{ margin: '0 0 10px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  {domainProfile.sub_niche}
+                </p>
+
+                {domainProfile.domain_positioning_and_moat?.competitive_moat && (
+                  <p style={{ margin: '0 0 10px', fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.4, padding: '7px 10px', background: 'rgba(0,0,0,0.25)', borderRadius: '8px' }}>
+                    <strong style={{ color: 'var(--text-secondary)' }}>Moat: </strong>
+                    {domainProfile.domain_positioning_and_moat.competitive_moat}
+                  </p>
+                )}
+
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+                  Content Verticals:
+                </span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {domainProfile.core_verticals.slice(0, 4).map((vert, idx) => (
+                    <span key={idx} style={{ fontSize: '11px', padding: '4px 9px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', color: 'var(--text-secondary)' }}>
+                      {vert}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

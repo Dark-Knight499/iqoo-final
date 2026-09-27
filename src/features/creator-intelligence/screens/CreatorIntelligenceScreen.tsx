@@ -12,24 +12,30 @@ import {
   Users,
   Film,
   Play,
-  CheckCircle2
+  CheckCircle2,
+  ExternalLink,
+  Plus,
+  Check,
+  Radio,
+  Globe2,
+  RefreshCw,
+  Loader2,
+  Share2,
+  Compass,
+  MessageSquare,
+  ShieldCheck,
+  Target,
+  Zap,
+  BarChart3,
+  Video
 } from 'lucide-react';
 import { 
   Region, 
   ContentItem, 
-  DiscoverCreator, 
   Trend, 
   Topic 
 } from '../types/creatorIntelligence';
 import { useCIStore } from '../state/creatorIntelligenceStore';
-import { mockTrends } from '../data/mockTrends';
-import { mockCreators } from '../data/mockCreators';
-import { mockVideos, mockReels } from '../data/mockContent';
-import { mockTopics } from '../data/mockTopics';
-import { SearchBar } from '../components/SearchBar';
-import { TrendCard } from '../components/TrendCard';
-import { ContentCard } from '../components/ContentCard';
-import { CreatorCard } from '../components/CreatorCard';
 import { StoryboardButton } from '../components/StoryboardButton';
 import { StoryboardSheet } from '../components/StoryboardSheet';
 import { ContentDetailSheet } from '../components/ContentDetailSheet';
@@ -38,25 +44,26 @@ import { ThemeToggle } from '@/shared/components/ThemeToggle';
 import { useAppStore } from '@/shared/state/app.store';
 import { useCreatorStore } from '@/shared/state/creator.store';
 import { useProjectStore } from '@/shared/state/project.store';
-import { IntelligencePlatform, IntelligenceResponse, legacyBackend, TrendsResponse, TrendItem } from '@/services/legacyBackend';
+import { 
+  legacyBackend, 
+  TrendsResponse, 
+  IntelligenceResponse, 
+  IntelligencePlatform, 
+  DomainArchetype, 
+  CreatorDomainProfile,
+  YouTubeTrendItem,
+  InstagramTrendItem,
+  LinkedInTrendItem,
+  XTwitterTrendItem
+} from '@/services/legacyBackend';
 
-const REGIONS: { id: Region; label: string }[] = [
-  { id: 'foryou', label: 'For You' },
-  { id: 'global', label: 'Global' },
-  { id: 'india', label: 'India' },
-  { id: 'hyderabad', label: 'Hyderabad' },
-  { id: 'myniche', label: 'My Niche' },
+const GEO_REGIONS = [
+  { id: 'GLOBAL', label: 'Global' },
+  { id: 'US', label: 'United States' },
+  { id: 'IN', label: 'India' },
 ];
 
-function getIntelligencePlatforms(platforms: string[], handles?: Record<string, string>): IntelligencePlatform[] {
-  const selected = new Set(platforms.map((platform) => platform.toLowerCase()));
-  const supported: IntelligencePlatform[] = [];
-  if (selected.has('youtube') || selected.has('youtube shorts') || handles?.youtube) supported.push('youtube');
-  if (selected.has('instagram reels') || selected.has('instagram') || handles?.instagram) supported.push('instagram');
-  if (selected.has('linkedin') || handles?.linkedin) supported.push('linkedin');
-  if (selected.has('x / twitter') || selected.has('twitter') || handles?.x_twitter) supported.push('x_twitter');
-  return supported.length ? supported : ['youtube'];
-}
+type PlatformTab = 'all' | 'youtube' | 'instagram' | 'x_twitter' | 'linkedin' | 'formats' | 'dna';
 
 interface CreatorIntelligenceScreenProps {
   onBack?: () => void;
@@ -64,12 +71,6 @@ interface CreatorIntelligenceScreenProps {
 
 export const CreatorIntelligenceScreen: React.FC<CreatorIntelligenceScreenProps> = ({ onBack }) => {
   const {
-    selectedRegion,
-    setRegion,
-    searchQuery,
-    setSearchQuery,
-    clearSearch,
-    searchResults,
     storyboardItems,
     addToStoryboard,
     removeFromStoryboard,
@@ -87,64 +88,88 @@ export const CreatorIntelligenceScreen: React.FC<CreatorIntelligenceScreenProps>
   } = useCIStore();
 
   const { showToast, openModal, theme, openCopilot } = useAppStore();
-  const { creator } = useCreatorStore();
+  const { creator, updateProfile } = useCreatorStore();
   const { projects } = useProjectStore();
   const isDark = theme !== 'light';
-  const [activeTopTab, setActiveTopTab] = React.useState<Region | 'saved'>(selectedRegion);
-  const [intelligence, setIntelligence] = useState<IntelligenceResponse | null>(null);
-  const [intelligenceLoading, setIntelligenceLoading] = useState(false);
-  const [intelligenceError, setIntelligenceError] = useState<string | null>(null);
-  const [scanVersion, setScanVersion] = useState(0);
 
-  // Live Trends from backend /trends
+  // Domain & Region State
+  const [activeDomain, setActiveDomain] = useState<string>(creator.niche || 'Consumer Technology, Hardware & AI Gadgets');
+  const [domainInput, setDomainInput] = useState<string>(creator.niche || 'Consumer Technology, Hardware & AI Gadgets');
+  const [activeGeo, setActiveGeo] = useState<string>('US');
+  const [activePlatformFilter, setActivePlatformFilter] = useState<PlatformTab>('all');
+  const [searchFilter, setSearchFilter] = useState<string>('');
+
+  // Available Archetypes from API
+  const [availableDomains, setAvailableDomains] = useState<DomainArchetype[]>([]);
+  
+  // API Responses
   const [trendsData, setTrendsData] = useState<TrendsResponse | null>(null);
-  const [trendsLoading, setTrendsLoading] = useState(false);
+  const [trendsLoading, setTrendsLoading] = useState<boolean>(false);
+  const [trendsError, setTrendsError] = useState<string | null>(null);
 
-  const platformKey = creator.platforms.join('|');
-  const sourceKey = JSON.stringify(creator.profileSources || {});
+  const [intelligence, setIntelligence] = useState<IntelligenceResponse | null>(null);
+  const [intelligenceLoading, setIntelligenceLoading] = useState<boolean>(false);
+  const [intelligenceError, setIntelligenceError] = useState<string | null>(null);
 
-  // Fetch real-time trends for selected geo / niche
+  const [domainProfile, setDomainProfile] = useState<CreatorDomainProfile | null>(null);
+  const [domainLoading, setDomainLoading] = useState<boolean>(false);
+
+  // Fetch recognized domains on mount
   useEffect(() => {
-    let active = true;
-    const geo = activeTopTab === 'global' ? 'GLOBAL' : activeTopTab === 'india' ? 'IN' : 'US';
-    setTrendsLoading(true);
-    legacyBackend.getTrends(creator.niche || 'Tech & AI', geo, 8, creator.name)
+    legacyBackend.getDomains()
       .then((res) => {
-        if (active) setTrendsData(res);
+        if (res?.domains?.length) {
+          setAvailableDomains(res.domains);
+        }
       })
-      .catch(() => {
-        // Fallback silently to mock catalog
+      .catch((err) => {
+        console.warn('Failed to load domains from API:', err);
+      });
+  }, []);
+
+  // Fetch Live Domain Intelligence whenever activeDomain or activeGeo changes
+  const fetchDomainData = (domainToFetch: string, geoToFetch: string) => {
+    const cleanDomain = domainToFetch.trim() || 'Tech & AI';
+    const creatorName = creator.name.trim() || 'Creator';
+
+    // 1. Fetch Real-time Multi-Platform Trends
+    setTrendsLoading(true);
+    setTrendsError(null);
+    legacyBackend.getTrends(cleanDomain, geoToFetch, 12, creatorName)
+      .then((res) => {
+        setTrendsData(res);
+      })
+      .catch((err) => {
+        setTrendsError(err instanceof Error ? err.message : 'Trends API unavailable');
       })
       .finally(() => {
-        if (active) setTrendsLoading(false);
+        setTrendsLoading(false);
       });
 
-    return () => {
-      active = false;
-    };
-  }, [creator.niche, creator.name, activeTopTab]);
+    // 2. Fetch Creator Domain Profile & Moat
+    setDomainLoading(true);
+    legacyBackend.identifyDomain({
+      creator_name: creatorName,
+      niche_hint: cleanDomain,
+    })
+      .then((prof) => {
+        setDomainProfile(prof);
+      })
+      .catch((err) => {
+        console.warn('Domain identification warning:', err);
+      })
+      .finally(() => {
+        setDomainLoading(false);
+      });
 
-  // Creator Intelligence Scan
-  useEffect(() => {
-    let active = true;
-    const creatorName = creator.name.trim() || 'Ali Abdaal';
-
-    const platformHandles = {
-      ...(creator.profileSources?.youtube ? { youtube: creator.profileSources.youtube } : {}),
-      ...(creator.profileSources?.instagram ? { instagram: creator.profileSources.instagram } : {}),
-      ...(creator.profileSources?.linkedin ? { linkedin: creator.profileSources.linkedin } : {}),
-      ...(creator.profileSources?.twitter ? { x_twitter: creator.profileSources.twitter } : {}),
-    };
-    const platforms = getIntelligencePlatforms(creator.platforms, platformHandles);
-
+    // 3. Run Full Intelligence Scan
     setIntelligenceLoading(true);
     setIntelligenceError(null);
     legacyBackend.runIntelligence({
       creator_name: creatorName,
-      niche: creator.niche || 'Tech & AI',
-      location: activeTopTab === 'global' ? 'GLOBAL' : activeTopTab === 'india' ? 'IN' : 'US',
-      platforms,
-      platform_handles: platformHandles,
+      niche: cleanDomain,
+      location: geoToFetch,
+      platforms: ['youtube', 'instagram', 'linkedin', 'x_twitter'],
       goals: {
         youtube: 'increase_subscribers',
         instagram: 'more_views_and_followers',
@@ -153,186 +178,117 @@ export const CreatorIntelligenceScreen: React.FC<CreatorIntelligenceScreenProps>
       },
       generate_platform_md: false,
       generate_user_hook_md: false,
-    }).then((result) => {
-      if (!Array.isArray(result.platforms_analyzed) || !Array.isArray(result.top_recommendations) || !Array.isArray(result.platform_trends)
-        || !result.platform_trends.every((block) => block && typeof block.platform === 'string'
-          && Array.isArray(block.domain_trends) && Array.isArray(block.location_trends) && Array.isArray(block.global_trends)
-          && [...block.domain_trends, ...block.location_trends, ...block.global_trends].every((item) => item && typeof item.title === 'string'))
-        || !result.top_recommendations.every((item) => item && typeof item.platform === 'string' && typeof item.topic === 'string')) {
-        throw new Error('Intelligence service returned an incomplete scan.');
-      }
-      if (active) setIntelligence(result);
-    }).catch((error) => {
-      if (active) setIntelligenceError(error instanceof Error ? error.message : 'Creator intelligence scan failed.');
-    }).finally(() => {
-      if (active) setIntelligenceLoading(false);
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [creator.name, creator.niche, platformKey, sourceKey, scanVersion, activeTopTab]);
-
-  const handleSelectRegion = (r: Region | 'saved') => {
-    setActiveTopTab(r);
-    if (r !== 'saved') {
-      setRegion(r);
-    }
+    })
+      .then((res) => {
+        setIntelligence(res);
+      })
+      .catch((err) => {
+        setIntelligenceError(err instanceof Error ? err.message : 'Intelligence scan unavailable');
+      })
+      .finally(() => {
+        setIntelligenceLoading(false);
+      });
   };
 
-  // Convert live backend trends into Trend items
-  const liveTrends: Trend[] = useMemo(() => {
-    if (!trendsData?.niche_trends?.length) return [];
-    return trendsData.niche_trends.map((item, idx) => {
-      const numericGrowth = parseInt(item.traffic_volume.replace(/[^0-9]/g, '')) || (140 - idx * 10);
-      return {
-        id: `backend-${item.source}-${item.rank}-${idx}`,
-        title: item.title,
-        description: item.hook_angles?.[0] || item.relevance_to_creator || item.news_headlines?.[0] || 'Live trending topic',
-        region: [activeTopTab as Region, 'foryou'],
-        category: item.category || creator.niche || 'Tech & AI',
-        growth: numericGrowth,
-        relatedContentIds: [],
-        relatedTopics: item.hook_angles || [],
-        postCount: (10 - item.rank) * 1500 + 4000,
-      };
-    });
-  }, [trendsData, activeTopTab, creator.niche]);
+  useEffect(() => {
+    fetchDomainData(activeDomain, activeGeo);
+  }, [activeDomain, activeGeo]);
 
-  // Filter trends by selected region (live backend trends merged with catalog)
-  const filteredTrends = useMemo(() => {
-    if (activeTopTab === 'saved') return [];
-    const base = mockTrends.filter((t) => 
-      activeTopTab === 'foryou' ? true : t.region.includes(activeTopTab as Region)
-    );
-    return [...liveTrends, ...base];
-  }, [activeTopTab, liveTrends]);
-
-  // Filter creators by selected region
-  const filteredCreators = useMemo(() => {
-    if (activeTopTab === 'saved') return [];
-    if (activeTopTab === 'foryou') return mockCreators;
-    return mockCreators.filter((c) => c.region.includes(activeTopTab as Region));
-  }, [activeTopTab]);
-
-  // Filter videos by selected region
-  const filteredVideos = useMemo(() => {
-    if (activeTopTab === 'saved') {
-      return mockVideos.filter((v) => isBookmarked(v.id));
-    }
-    if (activeTopTab === 'foryou') return mockVideos;
-    return mockVideos.filter((v) => v.region.includes(activeTopTab as Region));
-  }, [activeTopTab, bookmarkedIds]);
-
-  // Filter reels by selected region
-  const filteredReels = useMemo(() => {
-    if (activeTopTab === 'saved') {
-      return mockReels.filter((r) => isBookmarked(r.id));
-    }
-    if (activeTopTab === 'foryou') return mockReels;
-    return mockReels.filter((r) => r.region.includes(activeTopTab as Region));
-  }, [activeTopTab, bookmarkedIds]);
-
-  // Handlers
-  const handleToggleBookmark = (id: string, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    const isNowBookmarked = toggleBookmark(id);
-    showToast(isNowBookmarked ? 'Saved to bookmarks' : 'Removed from bookmarks');
+  const handleApplyDomain = (newDomain: string) => {
+    const cleaned = newDomain.trim();
+    if (!cleaned) return;
+    setActiveDomain(cleaned);
+    setDomainInput(cleaned);
+    updateProfile({ niche: cleaned });
+    showToast(`Switched domain to "${cleaned}"`);
   };
 
-  const handleAddToStoryboard = (id: string, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    const alreadyIn = storyboardItems.some((s) => s.contentId === id);
-    if (alreadyIn) {
-      showToast('Already in storyboard');
+  // Convert YouTube / Instagram items to ContentItem for Detail Sheet
+  const handleOpenItemDetail = (title: string, creatorName: string, platform: 'youtube' | 'instagram' | 'x_twitter' | 'linkedin', why?: string, url?: string | null) => {
+    // Open external URL directly or trigger Copilot script
+    if (url) {
+      window.open(url, '_blank');
     } else {
-      addToStoryboard(id);
-      showToast('Added to storyboard');
+      openCopilot(`Analyze this ${platform} trending topic for our project: "${title}". Why trending: ${why || 'Surging velocity'}`);
     }
   };
 
-  const handleTrendClick = (trend: Trend) => {
-    setSearchQuery(trend.title);
+  const handleAddTrendToStoryboard = (title: string, reason?: string) => {
+    addToStoryboard(title, reason);
+    showToast(`Added "${title.slice(0, 30)}..." to Storyboard`);
   };
 
-  const handleTopicClick = (topic: Topic) => {
-    setSearchQuery(topic.title);
+  // Filtering lists by search filter
+  const filterBySearch = (text: string) => {
+    if (!searchFilter.trim()) return true;
+    return text.toLowerCase().includes(searchFilter.toLowerCase());
   };
 
-  const allContent = useMemo(() => [...mockVideos, ...mockReels], []);
-  const selectedContent = useMemo(
-    () => (selectedContentId ? allContent.find((c) => c.id === selectedContentId) || null : null),
-    [selectedContentId, allContent]
-  );
-
-  const isSearching = searchQuery.trim().length > 0;
+  const youtubeItems = (trendsData?.youtube_trending || []).filter(item => filterBySearch(item.title || ''));
+  const instagramItems = (trendsData?.instagram_trending || []).filter(item => filterBySearch(item.title || ''));
+  const xTwitterItems = (trendsData?.x_twitter_trending || []).filter(item => filterBySearch(item.title || ''));
+  const linkedinItems = (trendsData?.linkedin_trending || []).filter(item => filterBySearch(item.title || ''));
+  const viralFormats = (trendsData?.viral_formats || []).filter(item => filterBySearch(item.format_name || ''));
+  const velocityTopics = (trendsData?.velocity_topics || []).filter(item => filterBySearch(item.topic || ''));
 
   return (
     <div
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: '100%',
+        minHeight: '100vh',
         backgroundColor: isDark ? '#0A0A0A' : '#F8FAFC',
         color: isDark ? '#FFFFFF' : '#0F172A',
-        paddingBottom: '130px',
-        transition: 'background-color 0.25s ease, color 0.25s ease',
+        paddingBottom: '90px',
       }}
     >
-      {/* Top Header */}
-      <div
+      {/* TOP COMMAND HEADER */}
+      <header
         style={{
-          padding: '24px 20px 16px 20px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '16px',
+          position: 'sticky',
+          top: 0,
+          zIndex: 40,
+          backgroundColor: isDark ? 'rgba(10, 10, 10, 0.95)' : 'rgba(248, 250, 252, 0.95)',
+          backdropFilter: 'blur(16px)',
+          borderBottom: '1px solid var(--border-color)',
+          padding: '16px 20px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {onBack && (
               <button
                 onClick={onBack}
-                aria-label="Back to insights"
                 style={{
-                  width: '34px',
-                  height: '34px',
-                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '12px',
                   border: '1px solid var(--border-color)',
                   background: 'var(--bg-surface-2)',
                   color: 'var(--text-primary)',
                   cursor: 'pointer',
-                  flexShrink: 0,
                 }}
               >
                 <ArrowLeft size={16} />
               </button>
             )}
-            <div style={{ minWidth: 0 }}>
-            <h1
-              style={{
-                margin: 0,
-                 fontSize: 'clamp(18px, 6vw, 26px)',
-                fontWeight: 800,
-                letterSpacing: '-0.5px',
-                color: isDark ? '#FFFFFF' : '#0F172A',
-              }}
-            >
-              Creator Intelligence
-            </h1>
-            <p
-              style={{
-                margin: '4px 0 0 0',
-                fontSize: '13px',
-                color: isDark ? 'rgba(255, 255, 255, 0.6)' : '#64748B',
-              }}
-            >
-              What's happening. What's worth creating.
-            </p>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px', color: 'var(--ai-accent)' }}>
+                  Intelligence Engine
+                </span>
+                <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: 'var(--ai-soft)', color: 'var(--ai-accent)', fontWeight: 700 }}>
+                  LIVE API
+                </span>
+              </div>
+              <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 800, letterSpacing: '-0.4px' }}>
+                Creator Intelligence
+              </h1>
             </div>
           </div>
 
-           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <ThemeToggle />
             <button
               onClick={() => openModal('media-intelligence')}
@@ -348,7 +304,6 @@ export const CreatorIntelligenceScreen: React.FC<CreatorIntelligenceScreenProps>
                 fontSize: '12px',
                 fontWeight: 700,
                 cursor: 'pointer',
-                flexShrink: 0,
               }}
             >
               <Sparkles size={13} />
@@ -358,568 +313,858 @@ export const CreatorIntelligenceScreen: React.FC<CreatorIntelligenceScreenProps>
           </div>
         </div>
 
-        {/* Big Search Bar */}
-        <SearchBar
-          value={searchQuery}
-          onChange={setSearchQuery}
-          onClear={clearSearch}
-          placeholder="Search creators, topics, videos, reels..."
-        />
-      </div>
-
-      {/* Backend intelligence scan */}
-      <section style={{ padding: '0 20px 24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>Creator intelligence scan</h2>
-            <span style={{ fontSize: '11px', color: isDark ? 'rgba(255,255,255,.55)' : '#64748B' }}>
-               {intelligenceLoading ? 'Scanning selected platforms…' : intelligence ? `Scanned ${intelligence.platforms_analyzed.join(', ')}` : 'Optional live scan · requires intelligence service'}
-            </span>
+        {/* DOMAIN SEARCH BAR & ENGINE SELECTOR */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <Search size={16} style={{ position: 'absolute', left: 14, color: 'var(--text-muted)', pointerEvents: 'none' }} />
+            <input
+              value={domainInput}
+              onChange={(e) => setDomainInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleApplyDomain(domainInput);
+              }}
+              placeholder="Search or enter any domain (e.g. AI Agents, Personal Finance, Fitness, Gaming, Civic Policy)..."
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                padding: '11px 110px 11px 40px',
+                borderRadius: '14px',
+                backgroundColor: 'var(--bg-surface-2)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-primary)',
+                fontSize: '13px',
+                fontWeight: 600,
+                outline: 'none',
+              }}
+            />
+            <button
+              onClick={() => handleApplyDomain(domainInput)}
+              disabled={trendsLoading || intelligenceLoading}
+              style={{
+                position: 'absolute',
+                right: 6,
+                padding: '6px 14px',
+                borderRadius: '10px',
+                backgroundColor: 'var(--ai-accent)',
+                color: '#080808',
+                border: 'none',
+                fontSize: '12px',
+                fontWeight: 800,
+                cursor: trendsLoading ? 'wait' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+              }}
+            >
+              {trendsLoading ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+              <span>Scan Domain</span>
+            </button>
           </div>
-          <button
-            onClick={() => setScanVersion((version) => version + 1)}
-            disabled={intelligenceLoading}
+
+          {/* DYNAMIC DOMAIN ARCHETYPE CHIPS */}
+          <div
             style={{
-              padding: '7px 11px',
-              borderRadius: '10px',
-              border: '1px solid var(--border-color)',
-              background: 'var(--bg-surface-2)',
-              color: 'var(--text-primary)',
-              fontSize: '11px',
-              fontWeight: 700,
-              cursor: intelligenceLoading ? 'wait' : 'pointer',
-            }}
-          >
-            {intelligenceLoading ? 'Scanning…' : 'Refresh scan'}
-          </button>
-        </div>
-
-        {intelligenceError && (
-          <div role="alert" style={{ padding: '12px', borderRadius: '12px', color: '#FCA5A5', background: 'rgba(127,29,29,.25)', fontSize: '12px' }}>
-             {intelligenceError} Sample discovery remains available below.
-          </div>
-        )}
-
-        {intelligence && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {intelligence.summary && (
-              <p style={{ margin: 0, fontSize: '12px', lineHeight: 1.5, color: isDark ? 'rgba(255,255,255,.72)' : '#475569' }}>
-                {intelligence.summary}
-              </p>
-            )}
-            {intelligence.top_recommendations.slice(0, 4).map((recommendation, index) => (
-              <article
-                key={`${recommendation.platform}-${recommendation.topic}-${index}`}
-                style={{ padding: '14px', borderRadius: '14px', background: isDark ? '#171717' : '#FFFFFF', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '6px' }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-                  <strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{recommendation.topic}</strong>
-                  <span style={{ fontSize: '10px', color: 'var(--ai-accent)', textTransform: 'uppercase', padding: '2px 7px', borderRadius: '6px', backgroundColor: 'var(--ai-soft)', border: '1px solid var(--ai-border)', fontWeight: 700 }}>
-                    {recommendation.platform}
-                  </span>
-                </div>
-                <div style={{ padding: '8px 10px', borderRadius: '8px', backgroundColor: isDark ? '#1F1F1F' : '#F1F5F9', borderLeft: '3px solid var(--ai-accent)' }}>
-                  <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--ai-accent)', fontWeight: 700, display: 'block', marginBottom: '2px' }}>
-                    Recommended Hook:
-                  </span>
-                  <p style={{ margin: 0, fontSize: '13px', color: isDark ? '#FFFFFF' : '#0F172A', fontWeight: 600, fontStyle: 'italic' }}>
-                    "{recommendation.hook}"
-                  </p>
-                </div>
-                <p style={{ margin: '2px 0 0', fontSize: '11px', color: isDark ? 'rgba(255,255,255,.6)' : '#64748B', lineHeight: 1.4 }}>
-                  <strong>Why Now:</strong> {recommendation.why_now}
-                </p>
-                {recommendation.best_posting_time && (
-                  <span style={{ fontSize: '11px', color: '#00DC82', fontWeight: 600 }}>
-                    ⏰ Best window: {recommendation.best_posting_time}
-                  </span>
-                )}
-                {recommendation.hashtags?.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '2px' }}>
-                    {recommendation.hashtags.map((h) => (
-                      <span key={h} style={{ fontSize: '10px', color: 'var(--text-muted)' }}>#{h.replace(/^#/, '')}</span>
-                    ))}
-                  </div>
-                )}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid var(--border-color)' }}>
-                  <button
-                    onClick={() => openCopilot(`Draft a high-retention script for this recommendation: Topic: "${recommendation.topic}". Hook: "${recommendation.hook}". Platform: ${recommendation.platform}. Why now: ${recommendation.why_now}`)}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      padding: '6px 12px',
-                      borderRadius: '8px',
-                      backgroundColor: 'var(--ai-accent)',
-                      color: '#080808',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      border: 'none',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <Sparkles size={12} />
-                    <span>Draft Hook with Copilot</span>
-                  </button>
-                </div>
-              </article>
-            ))}
-            {intelligence.platform_trends.map((platformBlock) => {
-              const items = [...platformBlock.domain_trends, ...platformBlock.location_trends, ...platformBlock.global_trends].slice(0, 2);
-              return (
-                <article
-                  key={platformBlock.platform}
-                  style={{ padding: '13px', borderRadius: '14px', background: isDark ? '#111111' : '#F8FAFC', border: '1px solid var(--border-color)' }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', marginBottom: '8px' }}>
-                    <strong style={{ fontSize: '12px', textTransform: 'capitalize' }}>{platformBlock.platform}</strong>
-                    {platformBlock.creator_profile?.follower_or_sub_count && (
-                      <span style={{ fontSize: '10px', color: isDark ? 'rgba(255,255,255,.55)' : '#64748B' }}>
-                        {platformBlock.creator_profile.follower_or_sub_count} followers/subscribers
-                      </span>
-                    )}
-                  </div>
-                  {items.length ? items.map((item) => (
-                    <div key={`${platformBlock.platform}-${item.rank}-${item.title}`} style={{ paddingTop: '8px', marginTop: '8px', borderTop: '1px solid var(--border-color)' }}>
-                      {item.url ? (
-                        <a href={item.url} target="_blank" rel="noreferrer" style={{ color: 'var(--ai-accent)', fontSize: '12px', fontWeight: 700 }}>
-                          {item.title}
-                        </a>
-                      ) : (
-                        <strong style={{ color: 'var(--text-primary)', fontSize: '12px' }}>{item.title}</strong>
-                      )}
-                      {(item.why_trending || item.relevance_to_niche || item.suggested_angle) && (
-                        <p style={{ margin: '4px 0 0', color: isDark ? 'rgba(255,255,255,.6)' : '#64748B', fontSize: '11px', lineHeight: 1.4 }}>
-                          {item.why_trending || item.relevance_to_niche || item.suggested_angle}
-                        </p>
-                      )}
-                    </div>
-                  )) : (
-                    <p style={{ margin: 0, fontSize: '11px', color: isDark ? 'rgba(255,255,255,.5)' : '#64748B' }}>No trend items returned for this platform.</p>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      {/* What's Happening Region Tabs */}
-      <div style={{ padding: '0 20px 4px 20px' }}>
-        <span
-          style={{
-            fontSize: '11px',
-            fontWeight: 800,
-            textTransform: 'uppercase',
-            letterSpacing: '0.6px',
-            color: isDark ? 'rgba(255, 255, 255, 0.45)' : '#64748B',
-            display: 'block',
-            marginBottom: '8px',
-          }}
-        >
-          What's Happening
-        </span>
-        <div
-          style={{
-             overflowX: 'auto',
-             maxWidth: '100%',
-            whiteSpace: 'nowrap',
-            display: 'flex',
-            gap: '8px',
-            scrollbarWidth: 'none',
-            marginBottom: '20px',
-          }}
-        >
-          {REGIONS.map((r) => {
-            const isActive = activeTopTab === r.id;
-            return (
-              <button
-                key={r.id}
-                onClick={() => handleSelectRegion(r.id)}
-                style={{
-                  padding: '7px 16px',
-                  borderRadius: '999px',
-                  backgroundColor: isActive ? (isDark ? '#FFFFFF' : '#0F172A') : (isDark ? '#181818' : '#FFFFFF'),
-                  color: isActive ? (isDark ? '#000000' : '#FFFFFF') : (isDark ? 'rgba(255, 255, 255, 0.7)' : '#475569'),
-                  border: isActive ? (isDark ? '1px solid #FFFFFF' : '1px solid #0F172A') : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #E2E8F0'),
-                  fontSize: '13px',
-                  fontWeight: isActive ? 700 : 500,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  flexShrink: 0,
-                }}
-              >
-                {r.label}
-              </button>
-            );
-          })}
-
-          {/* Saved Tab */}
-          <button
-            onClick={() => handleSelectRegion('saved')}
-            style={{
-              padding: '7px 16px',
-              borderRadius: '999px',
-              backgroundColor: activeTopTab === 'saved' ? 'var(--ai-accent)' : (isDark ? '#181818' : '#FFFFFF'),
-              color: activeTopTab === 'saved' ? (isDark ? '#000000' : '#FFFFFF') : (isDark ? 'rgba(255, 255, 255, 0.7)' : '#475569'),
-              border: activeTopTab === 'saved' ? '1px solid var(--ai-accent)' : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #E2E8F0'),
-              fontSize: '13px',
-              fontWeight: activeTopTab === 'saved' ? 700 : 500,
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-              flexShrink: 0,
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
+              overflowX: 'auto',
+              scrollbarWidth: 'none',
+              paddingBottom: '2px',
             }}
           >
-            <Bookmark size={13} fill={activeTopTab === 'saved' ? 'currentColor' : 'none'} />
-            <span>Saved ({bookmarkedIds.length})</span>
-          </button>
-        </div>
-      </div>
-
-      <div style={{ margin: '0 20px 20px', padding: '9px 12px', borderRadius: '10px', background: isDark ? '#171717' : '#F1F5F9', color: isDark ? 'rgba(255,255,255,.55)' : '#64748B', fontSize: '11px' }}>
-        The creator, video, and reel catalog below is sample content; the backend scan above is creator-specific.
-      </div>
-
-      {projects.some(project => project.blueprint) && (
-        <section style={{ padding: '0 20px 20px' }}>
-          <h2 style={{ fontSize: '15px', margin: '0 0 8px' }}>Saved project blueprints</h2>
-          {projects.filter(project => project.blueprint).map(project => (
-            <button key={project.id} onClick={() => project.blueprint && openSavedBlueprint(project.blueprint, project.id)}
-              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px', marginBottom: '6px', borderRadius: '9px', border: '1px solid var(--border-color)', background: 'var(--bg-surface-2)', color: 'var(--text-primary)', cursor: 'pointer' }}>
-              {project.title} · View saved blueprint
-            </button>
-          ))}
-        </section>
-      )}
-
-      {/* SEARCH VIEW (When User Searches) */}
-      {isSearching && searchResults && (
-        <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '26px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '14px', fontWeight: 600, color: isDark ? 'rgba(255, 255, 255, 0.6)' : '#64748B' }}>
-              Search results for "{searchQuery}"
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0, marginRight: '4px' }}>
+              Domains:
             </span>
+            {(availableDomains.length ? availableDomains : [
+              { domain_id: 'tech', domain_name: 'Tech & AI' },
+              { domain_id: 'finance', domain_name: 'Personal Finance' },
+              { domain_id: 'productivity', domain_name: 'Productivity Systems' },
+              { domain_id: 'civic', domain_name: 'Civic Rights & Policy' },
+              { domain_id: 'startups', domain_name: 'Startups & Business' },
+              { domain_id: 'fitness', domain_name: 'Health & Fitness' },
+              { domain_id: 'science', domain_name: 'Science & Physics' },
+            ]).map((arch: any) => {
+              const isSelected = activeDomain.toLowerCase().includes(arch.domain_name.toLowerCase()) || 
+                                 arch.domain_name.toLowerCase().includes(activeDomain.toLowerCase());
+              return (
+                <button
+                  key={arch.domain_id}
+                  onClick={() => handleApplyDomain(arch.domain_name)}
+                  style={{
+                    padding: '5px 12px',
+                    borderRadius: '999px',
+                    backgroundColor: isSelected ? 'var(--ai-accent)' : 'var(--bg-surface-2)',
+                    color: isSelected ? '#080808' : 'var(--text-secondary)',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    border: isSelected ? '1px solid var(--ai-accent)' : '1px solid var(--border-color)',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {arch.domain_name}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* GEO SELECTOR & IN-FEED FILTER */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', paddingTop: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Globe2 size={13} style={{ color: 'var(--text-muted)' }} />
+              {GEO_REGIONS.map((geo) => (
+                <button
+                  key={geo.id}
+                  onClick={() => setActiveGeo(geo.id)}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '8px',
+                    backgroundColor: activeGeo === geo.id ? (isDark ? '#FFFFFF' : '#0F172A') : 'transparent',
+                    color: activeGeo === geo.id ? (isDark ? '#000000' : '#FFFFFF') : 'var(--text-muted)',
+                    border: 'none',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {geo.label}
+                </button>
+              ))}
+            </div>
+
             <button
-              onClick={clearSearch}
+              onClick={() => fetchDomainData(activeDomain, activeGeo)}
+              disabled={trendsLoading || intelligenceLoading}
               style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
                 background: 'none',
                 border: 'none',
-                color: 'var(--ai-accent, #D8FF00)',
-                fontSize: '13px',
-                fontWeight: 600,
+                color: 'var(--ai-accent)',
+                fontSize: '11px',
+                fontWeight: 700,
                 cursor: 'pointer',
               }}
             >
-              Clear search
+              <RefreshCw size={12} className={trendsLoading ? 'animate-spin' : ''} />
+              <span>{trendsLoading ? 'Updating…' : 'Live Refresh'}</span>
             </button>
           </div>
+        </div>
+      </header>
 
-          {/* If No Results */}
-          {searchResults.trends.length === 0 &&
-            searchResults.creators.length === 0 &&
-            searchResults.videos.length === 0 &&
-            searchResults.reels.length === 0 &&
-            searchResults.topics.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '40px 20px', color: isDark ? 'rgba(255, 255, 255, 0.4)' : '#64748B' }}>
-                <Search size={36} style={{ marginBottom: '12px', opacity: 0.3 }} />
-                <h4 style={{ margin: '0 0 6px 0', fontSize: '16px', color: isDark ? '#FFFFFF' : '#0F172A' }}>No results found</h4>
-                <p style={{ margin: 0, fontSize: '13px' }}>Try another topic like "AI Agents", "NPU", or "Video".</p>
-              </div>
-            )}
-
-          {/* TOPICS */}
-          {searchResults.topics.length > 0 && (
-            <div>
-              <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: isDark ? 'rgba(255, 255, 255, 0.45)' : '#64748B', display: 'block', marginBottom: '10px' }}>
-                Topics
+      {/* DOMAIN SUMMARY BADGE BANNER */}
+      <section style={{ padding: '16px 20px 8px' }}>
+        <div
+          style={{
+            padding: '14px 16px',
+            borderRadius: '16px',
+            background: isDark ? 'linear-gradient(135deg, rgba(216, 255, 0, 0.08) 0%, rgba(20, 20, 20, 0.8) 100%)' : 'linear-gradient(135deg, rgba(216, 255, 0, 0.15) 0%, #FFFFFF 100%)',
+            border: '1px solid var(--ai-border)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', borderRadius: '50%', background: 'var(--ai-soft)', color: 'var(--ai-accent)' }}>
+                <Zap size={14} />
               </span>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {searchResults.topics.map((tp) => (
-                  <button
-                    key={tp.id}
-                    onClick={() => handleTopicClick(tp)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '8px 14px',
-                      borderRadius: '10px',
-                      backgroundColor: isDark ? '#181818' : '#F1F5F9',
-                      border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #E2E8F0',
-                      color: isDark ? '#FFFFFF' : '#0F172A',
-                      fontSize: '13px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <Hash size={13} color="var(--ai-accent, #D8FF00)" />
-                    <span>{tp.title}</span>
-                    <span style={{ fontSize: '11px', color: '#00DC82', fontWeight: 600 }}>+{tp.growth}%</span>
-                  </button>
-                ))}
-              </div>
+              <strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>
+                Active Domain: {activeDomain}
+              </strong>
             </div>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+              Geo: {activeGeo}
+            </span>
+          </div>
+
+          {domainProfile && (
+            <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+              <strong>Sub-Niche: </strong>{domainProfile.sub_niche} · 
+              <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>
+                {domainProfile.core_verticals.slice(0, 3).join(' • ')}
+              </span>
+            </p>
           )}
 
-          {/* CREATORS */}
-          {searchResults.creators.length > 0 && (
-            <div>
-              <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: isDark ? 'rgba(255, 255, 255, 0.45)' : '#64748B', display: 'block', marginBottom: '10px' }}>
-                Creators
+          {domainProfile?.domain_positioning_and_moat?.competitive_moat && (
+            <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'rgba(0,0,0,0.25)', borderLeft: '3px solid var(--ai-accent)' }}>
+              <span style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--ai-accent)', display: 'block', marginBottom: '2px' }}>
+                Competitive Moat & Retention Standard:
               </span>
-              <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '6px' }}>
-                {searchResults.creators.map((c) => (
-                  <div key={c.id} style={{ width: '180px', flexShrink: 0 }}>
-                    <CreatorCard creator={c} onClick={() => setSearchQuery(c.name)} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* VIDEOS */}
-          {searchResults.videos.length > 0 && (
-            <div>
-              <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: isDark ? 'rgba(255, 255, 255, 0.45)' : '#64748B', display: 'block', marginBottom: '10px' }}>
-                Videos
-              </span>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
-                {searchResults.videos.map((v) => (
-                  <ContentCard
-                    key={v.id}
-                    item={v}
-                    isBookmarked={isBookmarked(v.id)}
-                    isStoryboarding={storyboardItems.some((s) => s.contentId === v.id)}
-                    onToggleBookmark={handleToggleBookmark}
-                    onAddToStoryboard={handleAddToStoryboard}
-                    onClick={() => setSelectedContent(v.id)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* REELS */}
-          {searchResults.reels.length > 0 && (
-            <div>
-              <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: isDark ? 'rgba(255, 255, 255, 0.45)' : '#64748B', display: 'block', marginBottom: '10px' }}>
-                Reels
-              </span>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '14px' }}>
-                {searchResults.reels.map((r) => (
-                  <ContentCard
-                    key={r.id}
-                    item={r}
-                    isBookmarked={isBookmarked(r.id)}
-                    isStoryboarding={storyboardItems.some((s) => s.contentId === r.id)}
-                    onToggleBookmark={handleToggleBookmark}
-                    onAddToStoryboard={handleAddToStoryboard}
-                    onClick={() => setSelectedContent(r.id)}
-                  />
-                ))}
-              </div>
+              <p style={{ margin: 0, fontSize: '11px', color: isDark ? '#E2E8F0' : '#334155' }}>
+                {domainProfile.domain_positioning_and_moat.competitive_moat}
+              </p>
             </div>
           )}
         </div>
+      </section>
+
+      {/* PLATFORM FILTER TABS */}
+      <nav
+        style={{
+          padding: '12px 20px',
+          display: 'flex',
+          gap: '8px',
+          overflowX: 'auto',
+          scrollbarWidth: 'none',
+        }}
+      >
+        {[
+          { id: 'all', label: 'All Streams' },
+          { id: 'youtube', label: `YouTube (${youtubeItems.length})` },
+          { id: 'instagram', label: `Reels (${instagramItems.length})` },
+          { id: 'x_twitter', label: `X / Twitter (${xTwitterItems.length})` },
+          { id: 'linkedin', label: `LinkedIn (${linkedinItems.length})` },
+          { id: 'formats', label: `Viral Formats (${viralFormats.length})` },
+          { id: 'dna', label: 'Domain DNA & Moat' },
+        ].map((tab) => {
+          const isActive = activePlatformFilter === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActivePlatformFilter(tab.id as PlatformTab)}
+              style={{
+                padding: '7px 14px',
+                borderRadius: '999px',
+                backgroundColor: isActive ? 'var(--ai-accent)' : 'var(--bg-surface)',
+                color: isActive ? '#080808' : 'var(--text-secondary)',
+                border: isActive ? '1px solid var(--ai-accent)' : '1px solid var(--border-color)',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                transition: 'all 0.15s ease',
+              }}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* LOADING & ERROR STATES */}
+      {trendsLoading && (
+        <div style={{ padding: '30px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+          <Loader2 size={24} className="animate-spin" style={{ color: 'var(--ai-accent)' }} />
+          <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
+            Scraping live YouTube videos, Instagram Reels, X trends & LinkedIn discussions for <strong>{activeDomain}</strong>…
+          </p>
+        </div>
       )}
 
-      {/* NORMAL BROWSE VIEW (ALL 4 CORE SECTIONS AS SPECIFIED) */}
-      {!isSearching && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-          {activeTopTab === 'saved' && bookmarkedIds.length === 0 && (
-            <p style={{ padding: '0 20px', color: 'var(--text-secondary)' }}>No sample catalog bookmarks yet. Bookmark a video or reel to see it here.</p>
-          )}
-          {/* SECTION 1: TRENDING TOPICS (Horizontal Cards) */}
-          {activeTopTab !== 'saved' && <div>
-            <div style={{ padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+      {trendsError && !trendsLoading && (
+        <div style={{ margin: '0 20px 16px', padding: '12px 16px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#FCA5A5', fontSize: '12px' }}>
+          {trendsError}
+        </div>
+      )}
+
+      {/* CONTENT STREAMS */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', padding: '0 20px' }}>
+
+        {/* 1. YOUTUBE SECTION */}
+        {(activePlatformFilter === 'all' || activePlatformFilter === 'youtube') && (
+          <section>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Flame size={17} color="#FF6B00" />
-                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: isDark ? '#FFFFFF' : '#0F172A' }}>
-                  Trending Topics
-                </h3>
+                <Video size={18} color="#FF0000" />
+                <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>
+                  Suggested & Trending YouTube Content
+                </h2>
               </div>
-              <span style={{ fontSize: '12px', color: trendsData?.niche_trends?.length ? 'var(--ai-accent)' : (isDark ? 'rgba(255, 255, 255, 0.4)' : '#64748B'), fontWeight: trendsData?.niche_trends?.length ? 700 : 500 }}>
-                {trendsLoading ? 'Loading trends…' : trendsData?.niche_trends?.length ? 'Live Google Trends RSS' : 'Sample catalog'}
+              <span style={{ fontSize: '11px', color: 'var(--ai-accent)', fontWeight: 700 }}>
+                {youtubeItems.length} videos found
               </span>
             </div>
 
-            <div
-              style={{
-                display: 'flex',
-                gap: '12px',
-                overflowX: 'auto',
-                padding: '0 20px 8px 20px',
-                scrollbarWidth: 'none',
-              }}
-            >
-              {filteredTrends.map((t) => (
-                <TrendCard key={t.id} trend={t} onClick={handleTrendClick} />
-              ))}
-            </div>
-          </div>}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
+              {youtubeItems.map((yt) => (
+                <div
+                  key={`${yt.rank}-${yt.title}`}
+                  style={{
+                    borderRadius: '16px',
+                    backgroundColor: 'var(--bg-surface)',
+                    border: '1px solid var(--border-color)',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div style={{ padding: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', backgroundColor: 'rgba(255, 0, 0, 0.15)', color: '#FF4D4D', textTransform: 'uppercase' }}>
+                        #{yt.rank} YouTube · {yt.views || 'Trending'}
+                      </span>
+                      {yt.url && (
+                        <a href={yt.url} target="_blank" rel="noreferrer" style={{ color: 'var(--text-muted)' }}>
+                          <ExternalLink size={14} />
+                        </a>
+                      )}
+                    </div>
 
-          {/* SECTION 2: TOP CREATORS (Horizontal Cards) */}
-          {activeTopTab !== 'saved' && <div>
-            <div style={{ padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Users size={17} color="var(--ai-accent, #D8FF00)" />
-                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: isDark ? '#FFFFFF' : '#0F172A' }}>
-                  Top Creators
-                </h3>
-              </div>
-              <span style={{ fontSize: '12px', color: isDark ? 'rgba(255, 255, 255, 0.4)' : '#64748B' }}>Sample catalog</span>
-            </div>
+                    <strong style={{ display: 'block', fontSize: '14px', lineHeight: 1.35, marginBottom: '6px', color: 'var(--text-primary)' }}>
+                      {yt.title}
+                    </strong>
 
-            <div
-              style={{
-                display: 'flex',
-                gap: '12px',
-                overflowX: 'auto',
-                padding: '0 20px 8px 20px',
-                scrollbarWidth: 'none',
-              }}
-            >
-              {filteredCreators.map((c) => (
-                <div key={c.id} style={{ width: '200px', flexShrink: 0 }}>
-                  <CreatorCard creator={c} onClick={() => setSearchQuery(c.name)} />
+                    <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                      Channel: <strong>{yt.creator || 'Verified Creator'}</strong>
+                    </span>
+
+                    {yt.why_trending && (
+                      <p style={{ margin: 0, fontSize: '11px', color: isDark ? 'rgba(255,255,255,0.6)' : '#64748B', lineHeight: 1.4, padding: '6px 10px', background: 'var(--bg-surface-2)', borderRadius: '8px' }}>
+                        💡 {yt.why_trending}
+                      </p>
+                    )}
+                  </div>
+
+                  <div style={{ padding: '10px 14px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-surface-2)', display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={() => handleAddTrendToStoryboard(yt.title, yt.why_trending || undefined)}
+                      style={{
+                        flex: 1,
+                        padding: '7px 10px',
+                        borderRadius: '8px',
+                        backgroundColor: 'var(--bg-surface-3)',
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border-color)',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 4,
+                      }}
+                    >
+                      <Plus size={12} />
+                      <span>Storyboard</span>
+                    </button>
+                    <button
+                      onClick={() => openCopilot(`Draft a high-retention YouTube blueprint based on this trending video: Title: "${yt.title}". Channel: "${yt.creator}". Domain: "${activeDomain}". Why trending: ${yt.why_trending}`)}
+                      style={{
+                        flex: 1,
+                        padding: '7px 10px',
+                        borderRadius: '8px',
+                        backgroundColor: 'var(--ai-accent)',
+                        color: '#080808',
+                        border: 'none',
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 4,
+                      }}
+                    >
+                      <Sparkles size={12} />
+                      <span>Script Video</span>
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
-          </div>}
+          </section>
+        )}
 
-          {/* SECTION 3: TOP VIDEOS (Large Cards) */}
-          <div>
-            <div style={{ padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+        {/* 2. INSTAGRAM REELS SECTION */}
+        {(activePlatformFilter === 'all' || activePlatformFilter === 'instagram') && (
+          <section>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Film size={17} color="#2563EB" />
-                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: isDark ? '#FFFFFF' : '#0F172A' }}>
-                   {activeTopTab === 'saved' ? 'Bookmarked Videos' : 'Sample Videos'}
-                </h3>
+                <Film size={18} color="#E1306C" />
+                <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>
+                  Viral Instagram Reels
+                </h2>
               </div>
-              <span style={{ fontSize: '12px', color: isDark ? 'rgba(255, 255, 255, 0.4)' : '#64748B' }}>Deep dives</span>
-            </div>
-
-            <div style={{ padding: '0 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
-              {filteredVideos.slice(0, 6).map((v) => (
-                <ContentCard
-                  key={v.id}
-                  item={v}
-                  isBookmarked={isBookmarked(v.id)}
-                  isStoryboarding={storyboardItems.some((s) => s.contentId === v.id)}
-                  onToggleBookmark={handleToggleBookmark}
-                  onAddToStoryboard={handleAddToStoryboard}
-                  onClick={() => setSelectedContent(v.id)}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* SECTION 4: TOP REELS (Vertical/Reel Cards) */}
-          <div>
-            <div style={{ padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Play size={17} color="#FF4560" />
-                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: isDark ? '#FFFFFF' : '#0F172A' }}>
-                   {activeTopTab === 'saved' ? 'Bookmarked Reels' : 'Sample Reels'}
-                </h3>
-              </div>
-              <span style={{ fontSize: '12px', color: isDark ? 'rgba(255, 255, 255, 0.4)' : '#64748B' }}>High velocity</span>
-            </div>
-
-            <div style={{ padding: '0 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '14px' }}>
-              {filteredReels.slice(0, 6).map((r) => (
-                <ContentCard
-                  key={r.id}
-                  item={r}
-                  isBookmarked={isBookmarked(r.id)}
-                  isStoryboarding={storyboardItems.some((s) => s.contentId === r.id)}
-                  onToggleBookmark={handleToggleBookmark}
-                  onAddToStoryboard={handleAddToStoryboard}
-                  onClick={() => setSelectedContent(r.id)}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Floating Bottom Bar: Generate Content CTA */}
-      <div
-        style={{
-          position: 'fixed',
-          bottom: '76px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 'min(calc(100% - 32px), 480px)',
-          zIndex: 40,
-        }}
-      >
-        <button
-          onClick={openGenerateModal}
-          disabled={storyboardItems.length === 0}
-          style={{
-            width: '100%',
-            padding: '14px 20px',
-            borderRadius: '999px',
-            backgroundColor: storyboardItems.length > 0 ? 'var(--ai-accent, #D8FF00)' : (isDark ? '#222222' : '#E2E8F0'),
-            color: storyboardItems.length > 0 ? '#000000' : (isDark ? 'rgba(255, 255, 255, 0.4)' : '#94A3B8'),
-            border: storyboardItems.length > 0 ? 'none' : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #CBD5E1'),
-            fontSize: '14px',
-            fontWeight: 800,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            cursor: storyboardItems.length > 0 ? 'pointer' : 'not-allowed',
-            boxShadow: storyboardItems.length > 0 ? '0 8px 30px rgba(216, 255, 0, 0.35)' : 'none',
-            transition: 'all 0.2s ease',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Sparkles size={17} />
-             <span>Build Reference Template</span>
-            {storyboardItems.length > 0 && (
-              <span
-                style={{
-                  backgroundColor: '#000000',
-                  color: 'var(--ai-accent, #D8FF00)',
-                  fontSize: '11px',
-                  fontWeight: 800,
-                  borderRadius: '999px',
-                  padding: '2px 8px',
-                }}
-              >
-                {storyboardItems.length} Ref{storyboardItems.length > 1 ? 's' : ''}
+              <span style={{ fontSize: '11px', color: 'var(--ai-accent)', fontWeight: 700 }}>
+                {instagramItems.length} reels surging
               </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '14px' }}>
+              {instagramItems.map((ig) => (
+                <div
+                  key={`${ig.rank}-${ig.title}`}
+                  style={{
+                    borderRadius: '16px',
+                    backgroundColor: 'var(--bg-surface)',
+                    border: '1px solid var(--border-color)',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div style={{ padding: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', backgroundColor: 'rgba(225, 48, 108, 0.15)', color: '#FF5E97' }}>
+                        Reel #{ig.rank} · {ig.views || 'Viral'}
+                      </span>
+                      {ig.url && (
+                        <a href={ig.url} target="_blank" rel="noreferrer" style={{ color: 'var(--text-muted)' }}>
+                          <ExternalLink size={14} />
+                        </a>
+                      )}
+                    </div>
+
+                    <strong style={{ display: 'block', fontSize: '13px', lineHeight: 1.35, marginBottom: '6px' }}>
+                      "{ig.title}"
+                    </strong>
+
+                    <span style={{ display: 'block', fontSize: '12px', color: 'var(--ai-accent)', fontWeight: 600, marginBottom: '8px' }}>
+                      {ig.creator_handle || '@creator'}
+                    </span>
+
+                    {ig.why_trending && (
+                      <p style={{ margin: 0, fontSize: '11px', color: isDark ? 'rgba(255,255,255,0.6)' : '#64748B', lineHeight: 1.4 }}>
+                        ⚡ {ig.why_trending}
+                      </p>
+                    )}
+                  </div>
+
+                  <div style={{ padding: '10px 14px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-surface-2)', display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={() => handleAddTrendToStoryboard(ig.title, ig.why_trending || undefined)}
+                      style={{
+                        flex: 1,
+                        padding: '7px 10px',
+                        borderRadius: '8px',
+                        backgroundColor: 'var(--bg-surface-3)',
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border-color)',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      + Storyboard
+                    </button>
+                    <button
+                      onClick={() => openCopilot(`Draft a high-conversion 45-second Instagram Reel hook based on: "${ig.title}". Creator Handle: ${ig.creator_handle}. Domain: ${activeDomain}`)}
+                      style={{
+                        flex: 1,
+                        padding: '7px 10px',
+                        borderRadius: '8px',
+                        backgroundColor: 'var(--ai-accent)',
+                        color: '#080808',
+                        border: 'none',
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Reel Hook
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 3. WHAT'S ON X (TWITTER) SECTION */}
+        {(activePlatformFilter === 'all' || activePlatformFilter === 'x_twitter') && (
+          <section>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Hash size={18} color="#1DA1F2" />
+                <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>
+                  What's Happening on X (Twitter Threads)
+                </h2>
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--ai-accent)', fontWeight: 700 }}>
+                {xTwitterItems.length} viral threads
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
+              {xTwitterItems.map((x) => (
+                <div
+                  key={`${x.rank}-${x.title}`}
+                  style={{
+                    borderRadius: '16px',
+                    backgroundColor: 'var(--bg-surface)',
+                    border: '1px solid var(--border-color)',
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#1DA1F2' }}>
+                        {x.creator || '@tech_insider'}
+                      </span>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                        {x.engagement || 'High retweets'}
+                      </span>
+                    </div>
+
+                    <p style={{ margin: '0 0 10px', fontSize: '13px', lineHeight: 1.45, color: 'var(--text-primary)' }}>
+                      "{x.title}"
+                    </p>
+
+                    {x.why_trending && (
+                      <span style={{ fontSize: '11px', color: isDark ? 'rgba(255,255,255,0.55)' : '#64748B', display: 'block', marginBottom: '10px' }}>
+                        📈 {x.why_trending}
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => openCopilot(`Turn this viral X breakdown into a punchy 60-second video script for ${activeDomain}: "${x.title}" by ${x.creator}`)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      backgroundColor: 'var(--bg-surface-2)',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--ai-accent)',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    <Sparkles size={12} />
+                    <span>Turn X Thread into Video</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 4. LINKEDIN SECTION */}
+        {(activePlatformFilter === 'all' || activePlatformFilter === 'linkedin') && (
+          <section>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Users size={18} color="#0A66C2" />
+                <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>
+                  High-Authority LinkedIn Discussions
+                </h2>
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--ai-accent)', fontWeight: 700 }}>
+                {linkedinItems.length} discussions
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
+              {linkedinItems.map((li) => (
+                <div
+                  key={`${li.rank}-${li.title}`}
+                  style={{
+                    borderRadius: '16px',
+                    backgroundColor: 'var(--bg-surface)',
+                    border: '1px solid var(--border-color)',
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#0A66C2' }}>
+                        {li.creator || 'Executive Leader'}
+                      </span>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                        {li.engagement || 'High saves'}
+                      </span>
+                    </div>
+
+                    <strong style={{ display: 'block', fontSize: '13px', lineHeight: 1.4, marginBottom: '8px', color: 'var(--text-primary)' }}>
+                      {li.title}
+                    </strong>
+
+                    {li.suggested_angle && (
+                      <p style={{ margin: '0 0 10px', fontSize: '11px', color: isDark ? 'rgba(255,255,255,0.6)' : '#64748B', lineHeight: 1.4 }}>
+                        🎯 <strong>Angle:</strong> {li.suggested_angle}
+                      </p>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => openCopilot(`Draft a LinkedIn video carousel & text hook on: "${li.title}". Angle: ${li.suggested_angle || 'Thought leadership'}`)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      backgroundColor: 'var(--bg-surface-2)',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--text-primary)',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    <Sparkles size={12} />
+                    <span>Draft Authority Post</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 5. VIRAL FORMATS & RETENTION FRAMEWORKS */}
+        {(activePlatformFilter === 'all' || activePlatformFilter === 'formats') && (
+          <section>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Flame size={18} color="#FF6B00" />
+                <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>
+                  Proven Viral Formats ({activeDomain})
+                </h2>
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--ai-accent)', fontWeight: 700 }}>
+                {viralFormats.length} blueprints
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '14px' }}>
+              {viralFormats.map((fmt) => (
+                <div
+                  key={fmt.format_name}
+                  style={{
+                    borderRadius: '16px',
+                    backgroundColor: 'var(--bg-surface)',
+                    border: '1px solid var(--border-color)',
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 800, padding: '3px 8px', borderRadius: '6px', backgroundColor: 'var(--ai-soft)', color: 'var(--ai-accent)' }}>
+                      Virality {fmt.virality_score}%
+                    </span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                      ⏱ {fmt.ideal_length}
+                    </span>
+                  </div>
+
+                  <strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>
+                    {fmt.format_name}
+                  </strong>
+
+                  <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                    <strong>Why It Works: </strong>{fmt.why_it_works}
+                  </p>
+
+                  <div style={{ padding: '8px 10px', borderRadius: '8px', backgroundColor: 'var(--bg-surface-2)', borderLeft: '3px solid var(--ai-accent)' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--ai-accent)', textTransform: 'uppercase', display: 'block', marginBottom: '3px' }}>
+                      Structure Blueprint:
+                    </span>
+                    <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-primary)', fontStyle: 'italic' }}>
+                      {fmt.structure_template}
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      {fmt.platform_fit.map((p) => (
+                        <span key={p} style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', background: 'var(--bg-surface-3)', color: 'var(--text-muted)' }}>
+                          {p}
+                        </span>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => openCopilot(`Apply the "${fmt.format_name}" format to create a video script in our domain "${activeDomain}". Template: ${fmt.structure_template}`)}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        backgroundColor: 'var(--ai-accent)',
+                        color: '#080808',
+                        border: 'none',
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Use Format
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 6. HIGH-VELOCITY SEARCH RADAR & KEYWORDS */}
+        {(activePlatformFilter === 'all' || activePlatformFilter === 'formats') && (
+          <section>
+            <div style={{ marginBottom: '12px' }}>
+              <h2 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: 800 }}>
+                High-Velocity Search Queries & Keyword Radar
+              </h2>
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                Surging discussion queries with traffic volumes and actionable hooks
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+              {velocityTopics.map((top) => (
+                <div
+                  key={top.topic}
+                  style={{
+                    padding: '14px',
+                    borderRadius: '14px',
+                    backgroundColor: 'var(--bg-surface)',
+                    border: '1px solid var(--border-color)',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <strong style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{top.topic}</strong>
+                    <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '6px', background: 'var(--ai-soft)', color: 'var(--ai-accent)', fontWeight: 700 }}>
+                      {top.traffic_volume}
+                    </span>
+                  </div>
+                  {top.hook_angles?.length > 0 && (
+                    <p style={{ margin: '0 0 8px', fontSize: '11px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                      "{top.hook_angles[0]}"
+                    </p>
+                  )}
+                  <button
+                    onClick={() => openCopilot(`Draft a script on trending search: "${top.topic}". Opening Hook: "${top.hook_angles?.[0] || ''}"`)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--ai-accent)',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
+                  >
+                    Draft Hook →
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Keyword Pills */}
+            {trendsData?.trending_keywords?.length ? (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {trendsData.trending_keywords.map((kw) => (
+                  <button
+                    key={kw}
+                    onClick={() => {
+                      setDomainInput(kw);
+                      handleApplyDomain(kw);
+                    }}
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: '8px',
+                      backgroundColor: 'var(--bg-surface-2)',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--text-secondary)',
+                      fontSize: '11px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    #{kw}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </section>
+        )}
+
+        {/* 7. DOMAIN DNA & MOAT DOSSIER SECTION */}
+        {(activePlatformFilter === 'all' || activePlatformFilter === 'dna') && domainProfile && (
+          <section
+            style={{
+              padding: '20px',
+              borderRadius: '20px',
+              backgroundColor: 'var(--bg-surface)',
+              border: '1px solid var(--ai-border)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--ai-accent)' }}>
+                  Calibrated Domain Profile
+                </span>
+                <h3 style={{ margin: '2px 0 0', fontSize: '18px', fontWeight: 800 }}>
+                  {domainProfile.domain_name}
+                </h3>
+              </div>
+              <span style={{ fontSize: '11px', padding: '3px 9px', borderRadius: '6px', background: 'var(--ai-soft)', color: 'var(--ai-accent)', fontWeight: 700 }}>
+                {domainProfile.domain_id}
+              </span>
+            </div>
+
+            {/* Audience Psychographics */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
+              <div style={{ padding: '12px', borderRadius: '12px', background: 'var(--bg-surface-2)' }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+                  Target Audience Demographics
+                </span>
+                <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                  {domainProfile.audience_profile.demographics}
+                </p>
+              </div>
+
+              <div style={{ padding: '12px', borderRadius: '12px', background: 'var(--bg-surface-2)' }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+                  Audience Mindset & Retention Triggers
+                </span>
+                <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                  {domainProfile.audience_profile.psychographics}
+                </p>
+              </div>
+            </div>
+
+            {/* Spoken Monologue Archetype */}
+            {domainProfile.domain_monologues?.thesis_monologue && (
+              <div style={{ padding: '14px', borderRadius: '14px', background: 'var(--bg-surface-2)', borderLeft: '3px solid var(--ai-accent)' }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--ai-accent)', display: 'block', marginBottom: '4px' }}>
+                  Spoken Thesis Monologue: {domainProfile.domain_monologues.thesis_monologue.title}
+                </span>
+                <p style={{ margin: '0 0 8px', fontSize: '13px', fontStyle: 'italic', color: 'var(--text-primary)', lineHeight: 1.5 }}>
+                  "{domainProfile.domain_monologues.thesis_monologue.speech}"
+                </p>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                  🎬 Staging: {domainProfile.domain_monologues.thesis_monologue.staging_breakdown}
+                </span>
+              </div>
             )}
-          </div>
-          <ArrowRight size={17} />
-        </button>
+          </section>
+        )}
+
       </div>
 
-      {/* OVERLAYS & MODALS */}
+      {/* STORYBOARD DRAWER & DETAIL SHEETS */}
       <StoryboardSheet
         isOpen={storyboardOpen}
         onClose={closeStoryboard}
         items={storyboardItems}
         onRemoveItem={removeFromStoryboard}
         onClearAll={clearStoryboard}
-        onOpenGenerate={openGenerateModal}
-        onSelectItem={(id) => {
-          closeStoryboard();
-          setSelectedContent(id);
-        }}
-      />
-
-      <ContentDetailSheet
-        item={selectedContent}
-        isOpen={!!selectedContentId}
-        onClose={() => setSelectedContent(null)}
-        isBookmarked={selectedContent ? isBookmarked(selectedContent.id) : false}
-        isInStoryboard={selectedContent ? storyboardItems.some((s) => s.contentId === selectedContent.id) : false}
-        onToggleBookmark={(id) => handleToggleBookmark(id)}
-        onAddToStoryboard={(id) => handleAddToStoryboard(id)}
+        onOpenGenerate={() => openGenerateModal()}
+        onSelectItem={(contentId) => setSelectedContent(contentId)}
       />
 
       <GenerateContentScreen />

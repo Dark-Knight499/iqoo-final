@@ -244,17 +244,111 @@ export interface TrendItem {
   hook_angles: string[];
 }
 
+export interface YouTubeTrendItem {
+  rank: number;
+  title: string;
+  creator?: string;
+  views?: string | number | null;
+  url?: string | null;
+  thumbnail_url?: string | null;
+  why_trending?: string | null;
+}
+
+export interface InstagramTrendItem {
+  rank: number;
+  title: string;
+  creator_handle?: string;
+  url?: string | null;
+  views?: string | null;
+  why_trending?: string | null;
+}
+
+export interface LinkedInTrendItem {
+  rank: number;
+  title: string;
+  creator?: string;
+  url?: string | null;
+  engagement?: string | null;
+  why_trending?: string | null;
+  suggested_angle?: string | null;
+}
+
+export interface XTwitterTrendItem {
+  rank: number;
+  title: string;
+  creator?: string;
+  url?: string | null;
+  engagement?: string | null;
+  why_trending?: string | null;
+  hook?: string | null;
+}
+
+export interface VelocityTopicItem {
+  rank: number;
+  topic: string;
+  traffic_volume: string;
+  category: string;
+  suggested_angle?: string;
+  hook_angles: string[];
+}
+
+export interface DomainArchetype {
+  domain_id: string;
+  domain_name: string;
+  sub_niche: string;
+  core_verticals: string | string[];
+  primary_search_topics: string | string[];
+  methodology: string;
+}
+
+export interface CreatorDomainProfile {
+  domain_id: string;
+  domain_name: string;
+  sub_niche: string;
+  primary_search_topics: string[];
+  core_verticals: string[];
+  content_portfolio: string[];
+  investigation_methodology: string;
+  audience_profile: {
+    demographics: string;
+    psychographics: string;
+    consumption_habits: string;
+  };
+  domain_positioning_and_moat?: {
+    mission: string;
+    positioning: string;
+    competitive_moat: string;
+  };
+  domain_monologues?: Record<string, {
+    title: string;
+    speech: string;
+    staging_breakdown: string;
+  }>;
+  vocal_cadence_dynamics?: {
+    pitch_modulation: string;
+    micro_pause_timing: string;
+    articulation_and_pacing: string;
+    inclusive_pronoun_habit: string;
+  };
+  signature_phrases?: {
+    phrase: string;
+    category: string;
+    sample_context: string;
+  }[];
+  sample_hooks?: string[];
+}
+
 export interface TrendsResponse {
   creator_name: string | null;
   domain: string;
   geo: string;
   fetched_at: string;
-  youtube_trending?: Record<string, unknown>[];
-  instagram_trending?: Record<string, unknown>[];
-  linkedin_trending?: Record<string, unknown>[];
-  x_twitter_trending?: Record<string, unknown>[];
+  youtube_trending?: YouTubeTrendItem[];
+  instagram_trending?: InstagramTrendItem[];
+  linkedin_trending?: LinkedInTrendItem[];
+  x_twitter_trending?: XTwitterTrendItem[];
   trending_keywords?: string[];
-  velocity_topics?: Record<string, unknown>[];
+  velocity_topics?: VelocityTopicItem[];
   niche_trends: TrendItem[];
   world_trends: TrendItem[];
   viral_formats: {
@@ -405,5 +499,25 @@ export const legacyBackend = {
         platform: 'youtube',
         require_human_approval: true,
       }),
+    }),
+
+  getDomains: () =>
+    request<{ domains: DomainArchetype[]; total: number }>('/intelligence/domains'),
+
+  identifyDomain: (payload: { creator_name: string; niche_hint?: string; sample_titles?: string[]; bio?: string; language?: string }) =>
+    request<CreatorDomainProfile>('/intelligence/identify-domain', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  getDomainTrends: (domain: string, geo = 'US', limit = 10) =>
+    request<TrendsResponse>(
+      `/trends/domain?domain=${encodeURIComponent(domain)}&geo=${encodeURIComponent(geo)}&limit=${limit}`
+    ),
+
+  compareCreator: (payload: { creator_name: string; base_creator?: string; niche_hint?: string; location?: string }) =>
+    request<Record<string, unknown>>('/intelligence/compare', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     }),
 };
