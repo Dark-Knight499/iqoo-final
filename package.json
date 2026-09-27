@@ -5,6 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "media:server": "node server/index.mjs",
+    "mpt:setup": "cd MoneyPrinterTurbo && uv sync --python 3.11",
+    "mpt:server": "cd MoneyPrinterTurbo && uv run python main.py",
+    "test:media": "node server/engine.test.mjs",
+    "analysis:server": "npm --prefix legacy/static-analysis run server:dev",
+    "test:analysis": "npm --prefix legacy/static-analysis test",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },

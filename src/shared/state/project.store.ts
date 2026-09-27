@@ -35,8 +35,14 @@ export const projectStore = {
     notify();
   },
   addProject: (newProj: Partial<Project>) => {
-    const owner = creatorStore.get().id;
-    if (!owner) throw new Error('Save a creator workspace before adding a project.');
+    let owner = creatorStore.get().id;
+    if (!owner) {
+      if (!creatorStore.get().name) {
+        creatorStore.updateProfile({ name: 'Creator Workspace' });
+      }
+      creatorStore.saveWorkspace();
+      owner = creatorStore.get().id;
+    }
     const p: Project = {
       id: `proj_${Date.now()}_${Math.random().toString(36).slice(2)}`,
       creatorId: owner,
@@ -44,8 +50,16 @@ export const projectStore = {
       description: newProj.description || '',
       thumbnailUrl: newProj.thumbnailUrl ?? '',
       durationSeconds: newProj.durationSeconds ?? 30,
+      mediaUrl: newProj.mediaUrl,
       mediaId: newProj.mediaId,
       mediaName: newProj.mediaName,
+      mediaMimeType: newProj.mediaMimeType,
+      mediaSizeBytes: newProj.mediaSizeBytes,
+      mediaWidth: newProj.mediaWidth,
+      mediaHeight: newProj.mediaHeight,
+      captionText: newProj.captionText,
+      captionsEnabled: newProj.captionsEnabled,
+      safeZonePreset: newProj.safeZonePreset,
       trimStartSeconds: newProj.trimStartSeconds,
       trimEndSeconds: newProj.trimEndSeconds,
       proposedTrim: newProj.proposedTrim,

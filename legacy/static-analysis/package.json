@@ -1,0 +1,33 @@
+{
+  "name": "creator-video-analysis",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k \"npm:server:dev\" \"npm:web:dev\"",
+    "server:dev": "tsx watch server/index.ts",
+    "web:dev": "vite --host 127.0.0.1",
+    "setup:python": "node scripts/setup-python.mjs",
+    "build": "tsc -b && vite build",
+    "test": "tsx --test tests/demo_video.test.tsx",
+    "start": "npm run dev"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "multer": "^2.0.2",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^22.18.6",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^4.7.0",
+    "concurrently": "^9.2.1",
+    "tsx": "^4.20.5",
+    "typescript": "~5.9.2",
+    "vite": "^6.4.3"
+  }
+}

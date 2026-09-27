@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <path id="corners" d="M230 680v-90h90m440 0h90v90m0 560v90h-90m-440 0h-90v-90" fill="none" stroke="#d8ff98" stroke-linecap="round" stroke-linejoin="round"/>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="12"/>
+    </filter>
+  </defs>
+  <use href="#corners" stroke-width="24" stroke-opacity=".65" filter="url(#glow)"/>
+  <use href="#corners" stroke-width="5"/>
+</svg>

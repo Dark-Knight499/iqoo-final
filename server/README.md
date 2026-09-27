@@ -1,0 +1,5 @@
+# Local media renderer (first slice)
+
+Run `npm run media:server` and `npm run dev` in separate terminals. FFmpeg and FFprobe must be installed and available on PATH. Open Create > Edit a Video and import an MP4 (up to 500 MB). Add up to 11 more MP4 clips in the editor, trim and reorder them in Cut, select background noise reduction in Audio, and export an MP4. Run `npm run test:media` to test rendering and the HTTP flow.
+
+Sources and renders are stored in `server/data/` (ignored by Git). They persist across server restarts but there is no retention policy or authentication: the server binds to localhost and is only suitable for local development. Do not expose the Vite dev proxy to untrusted users. Preview plays original audio; noise reduction is applied during export using FFmpeg `afftdn`. Clips with different sizes are fitted inside the first clip's frame. Mixing clips with and without audio is not supported yet. Captions, overlays, reframe, and other demo controls do not render yet. Do not use this server as a production upload service.

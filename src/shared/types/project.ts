@@ -37,8 +37,16 @@ export interface Project {
   title: string;
   description?: string;
   thumbnailUrl: string;
-  mediaId?: string;
+  mediaUrl?: string;
+  mediaId?: string | null;
   mediaName?: string;
+  mediaMimeType?: string;
+  mediaSizeBytes?: number;
+  mediaWidth?: number;
+  mediaHeight?: number;
+  captionText?: string;
+  captionsEnabled?: boolean;
+  safeZonePreset?: 'reels' | 'tiktok';
   trimStartSeconds?: number;
   trimEndSeconds?: number;
   /** Suggested source range; does not affect playback or export until applied. */

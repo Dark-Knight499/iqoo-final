@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="25"/>
+    </filter>
+  </defs>
+  <ellipse cx="540" cy="960" rx="310" ry="310" fill="none" stroke="#cfff8a" stroke-opacity=".72" stroke-width="54" filter="url(#glow)"/>
+  <ellipse cx="540" cy="960" rx="310" ry="310" fill="none" stroke="#d8ff9d" stroke-opacity=".92" stroke-width="5"/>
+</svg>

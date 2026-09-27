@@ -1,5 +1,3 @@
-import type { ViralClip } from '@/services/legacyBackend';
-
 export type MediaType = 'video' | 'audio' | 'image';
 
 export type MediaIntelligenceScreenId =
@@ -21,8 +19,9 @@ export interface MediaItem {
   fps?: number;
   size?: string;
   thumbnail: string;
-  analyzedAt?: string;
+  previewUrl?: string;
   sourceUrl?: string;
+  analyzedAt?: string;
 }
 
 export type AnalysisStageId =
@@ -42,6 +41,8 @@ export interface AnalysisStage {
   label: string;
   completed: boolean;
   active: boolean;
+  status?: 'pending' | 'success' | 'partial' | 'failed';
+  message?: string;
 }
 
 export interface TranscriptSegment {
@@ -91,5 +92,5 @@ export interface AISuggestion {
   approved?: boolean;
   plan?: string[];
   relevanceScore?: number;
-  backendClip?: ViralClip;
+  backendClip?: any;
 }

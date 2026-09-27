@@ -8,7 +8,7 @@ type Kind = 'video' | 'audio' | 'image' | 'project';
 const authenticSource = (src?: string) => src && !src.startsWith('/assets/') && !src.startsWith('data:image/svg+xml') ? src : null;
 
 export const MediaArt: React.FC<{
-  src?: string; mediaId?: string; label?: string; kind?: Kind;
+  src?: string; mediaId?: string | null; label?: string; kind?: Kind;
   style?: React.CSSProperties; className?: string;
 }> = ({ src, mediaId, label = 'No media attached', kind = 'video', style, className = '' }) => {
   const [frame, setFrame] = useState<string | null>(null);

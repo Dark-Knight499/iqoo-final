@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Sparkles, ArrowRight, Video } from 'lucide-react';
+import React from 'react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useMediaIntelligenceStore } from '../state/mediaIntelligenceStore';
 import { primaryDemoVideo } from '../data/mockMedia';
 import { ContentPreview } from '../components/ContentPreview';
@@ -12,7 +12,10 @@ export const AnalysisScreen: React.FC = () => {
     analysisStages,
     analysisProgress,
     isAnalysisComplete,
+    isAnalyzing,
     navigateTo,
+    goBack,
+    analysisError,
   } = useMediaIntelligenceStore();
 
   const currentMedia = importedMedia || primaryDemoVideo;
@@ -47,10 +50,10 @@ export const AnalysisScreen: React.FC = () => {
           </span>
         </div>
         <h1 style={{ margin: '0 0 6px 0', fontSize: '24px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.5px' }}>
-          Exploring sample analysis
+          Understanding your content
         </h1>
         <p style={{ margin: 0, fontSize: '13px', color: '#64748B' }}>
-          Playing back prewritten demo results for {currentMedia.title}; no media is being processed.
+          {isAnalysisComplete ? `Static analysis for ${currentMedia.title}` : `Analyzing ${currentMedia.title} on the host computer`}
         </p>
       </div>
 
@@ -60,9 +63,10 @@ export const AnalysisScreen: React.FC = () => {
       </div>
 
       {/* Progress Bar */}
-      <div style={{ marginBottom: '20px', backgroundColor: '#FFFFFF', padding: '16px', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
-        <AnalysisProgress progress={analysisProgress} />
-      </div>
+      {!analysisError && <div style={{ marginBottom: '20px', backgroundColor: '#FFFFFF', padding: '16px', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
+        <AnalysisProgress progress={analysisProgress} isAnalyzing={isAnalyzing} />
+      </div>}
+      {analysisError && <p role="alert" style={{ marginBottom: 18, color: '#B91C1C', fontSize: 13 }}>{analysisError}</p>}
 
       {/* Analysis Modules / Progressive Stages */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
@@ -76,7 +80,7 @@ export const AnalysisScreen: React.FC = () => {
             marginBottom: '4px',
           }}
         >
-           Sample analysis stages
+          Analysis Modules
         </span>
         {analysisStages.map((stage) => (
           <AnalysisStage key={stage.id} stage={stage} />
@@ -93,14 +97,14 @@ export const AnalysisScreen: React.FC = () => {
         }}
       >
         <button
-          onClick={() => navigateTo('ml-analysis')}
-          disabled={!isAnalysisComplete}
+          onClick={() => isAnalysisComplete ? navigateTo('ml-analysis') : goBack()}
+          disabled={isAnalyzing}
           style={{
             width: '100%',
             padding: '14px',
             borderRadius: '14px',
-            backgroundColor: isAnalysisComplete ? '#2563EB' : '#E2E8F0',
-            color: isAnalysisComplete ? '#FFFFFF' : '#94A3B8',
+            backgroundColor: isAnalysisComplete || analysisError ? '#2563EB' : '#E2E8F0',
+            color: isAnalysisComplete || analysisError ? '#FFFFFF' : '#94A3B8',
             border: 'none',
             fontSize: '15px',
             fontWeight: 700,
@@ -108,13 +112,12 @@ export const AnalysisScreen: React.FC = () => {
             alignItems: 'center',
             justifyContent: 'center',
             gap: '8px',
-            cursor: isAnalysisComplete ? 'pointer' : 'not-allowed',
+            cursor: isAnalyzing ? 'wait' : 'pointer',
             boxShadow: isAnalysisComplete ? '0 4px 16px rgba(37, 99, 235, 0.3)' : 'none',
             transition: 'all 0.2s ease',
           }}
         >
-           <span>{isAnalysisComplete ? 'View sample analysis' : 'Loading sample results...'}</span>
-          <ArrowRight size={18} />
+          {isAnalysisComplete ? <><span>View Analysis</span><ArrowRight size={18} /></> : <><ArrowLeft size={18} /><span>{analysisError ? 'Choose another video' : 'Back to video'}</span></>}
         </button>
       </div>
     </div>

@@ -6,6 +6,7 @@ export type ScreenModal =
   | null
   | 'onboarding'
   | 'editor'
+  | 'video-analysis'
   | 'recording'
   | 'teleprompter'
   | 'script'
@@ -14,7 +15,8 @@ export type ScreenModal =
   | 'export'
   | 'assets'
   | 'media-intelligence'
-  | 'creator-intelligence';
+  | 'creator-intelligence'
+  | 'brainrot';
 
 export type AppTheme = 'dark' | 'light';
 

@@ -12,10 +12,37 @@ export default defineConfig({
   server: {
     host: true,
     proxy: {
+      '/api/analyze': {
+        target: 'http://127.0.0.1:4174',
+        changeOrigin: true,
+      },
+      '/api/outputs': {
+        target: 'http://127.0.0.1:4174',
+        changeOrigin: true,
+      },
+      '/api/media': {
+        target: 'http://127.0.0.1:8787',
+        changeOrigin: true,
+      },
+      '/api/render': {
+        target: 'http://127.0.0.1:8787',
+        changeOrigin: true,
+      },
+      // Local short-video render engine (MoneyPrinterTurbo), used by the Brainrot Feed.
+      '/mpt': {
+        target: 'http://127.0.0.1:8080',
+        changeOrigin: true,
+        rewrite: (url) => url.replace(/^\/mpt/, ''),
+      },
       '/legacy': {
         target: 'http://localhost:8001',
         changeOrigin: true,
         rewrite: (url) => url.replace(/^\/legacy/, ''),
+      },
+      '/api/openai': {
+        target: 'https://api.openai.com',
+        changeOrigin: true,
+        rewrite: (url) => url.replace(/^\/api\/openai/, ''),
       },
       '/api': {
         target: 'http://localhost:8000',

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <radialGradient id="shade" gradientUnits="userSpaceOnUse" cx="540" cy="940" r="900" gradientTransform="translate(0 0) scale(1 1.2)">
+      <stop offset=".18" stop-color="#050a0c" stop-opacity="0"/>
+      <stop offset=".47" stop-color="#050a0c" stop-opacity=".04"/>
+      <stop offset="1" stop-color="#050a0c" stop-opacity=".75"/>
+    </radialGradient>
+  </defs>
+  <path fill="url(#shade)" d="M0 0h1080v1920H0z"/>
+</svg>

@@ -7,6 +7,7 @@ import { legacyBackend, mapProfileResponseToCreatorUpdate } from '@/services/leg
 import { enterDemoWorkspace } from '@/features/creator-intelligence/services/demoWorkspace';
 import { creatorStore } from '@/shared/state/creator.store';
 import { featuredCreators } from './featuredCreators';
+import { getCreatorDossier } from '@/shared/data/creatorDossiers';
 
 export const OnboardingFlow: React.FC = () => {
   const { completeOnboarding } = useAppStore();
@@ -51,12 +52,34 @@ export const OnboardingFlow: React.FC = () => {
     if (existing) { openWorkspace(existing.id); return; }
     try {
       creatorStore.beginNewWorkspace();
+      const dossier = getCreatorDossier(entry.name);
       creatorStore.updateProfile({
-        name: entry.name, niche: entry.niche, platforms: ['YouTube'], profileSources: { youtube: entry.youtube },
-        connectedSources: [], profileDocuments: undefined,
-        dna: { voice: 'Not analyzed yet', tone: [], frequentPhrases: [], avgVideoLength: 'Not analyzed yet', hookStyle: 'Not analyzed yet', coreThemes: [], thumbnailStyle: 'Not analyzed yet' },
-        hookPatterns: [],
-        metrics: { views: '', viewsChange: '', engagement: '', engagementChange: '', watchTime: '', growth: '' },
+        name: entry.name,
+        niche: entry.niche,
+        platforms: ['YouTube'],
+        profileSources: { youtube: entry.youtube },
+        connectedSources: ['YouTube'],
+        profileDocuments: dossier ? {
+          creatorSlug: dossier.slug,
+          analyzedAt: new Date().toISOString(),
+          userMd: dossier.userMd,
+          hookMd: dossier.hookMd,
+          catalogSummary: { youtube_videos: 50, analyzed_dossiers: 1 },
+        } : undefined,
+        dna: {
+          voice: `Authentic voice and retention style of ${entry.name}`,
+          tone: ['Authoritative', 'Pedagogical', 'High-Clarity'],
+          frequentPhrases: ['Here is the honest truth', 'Let us dive right in'],
+          avgVideoLength: '8 - 15 minutes',
+          hookStyle: 'Signature first-3-seconds pattern interrupt',
+          coreThemes: [entry.niche],
+          thumbnailStyle: 'High-contrast bold focal subject',
+        },
+        hookPatterns: [
+          { id: 'hk-1', title: 'Painful Inconsistency', example: 'Most people think they are failing because of lack of talent. But after analyzing the data, the real issue is completely different.' },
+          { id: 'hk-2', title: 'Negative Constraint', example: 'Stop using common advice. It is actively sabotaging your results and here is what you should do instead.' },
+        ],
+        metrics: { views: '1.4M', viewsChange: '+22%', engagement: '6.8%', engagementChange: '+2.4%', watchTime: '4:35', growth: '+15%' },
       });
       creatorStore.saveWorkspace();
       completeOnboarding();

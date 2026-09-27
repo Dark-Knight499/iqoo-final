@@ -200,3 +200,9 @@ a {
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(0, 0, 0, 0.08);
 }
+
+@keyframes analysis-indeterminate {
+  from { transform: translateX(0); }
+  to { transform: translateX(160%); }
+}
+

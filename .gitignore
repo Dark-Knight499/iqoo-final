@@ -6,3 +6,17 @@ dist
 .DS_Store
 .opencode/
 .pytest_cache/
+.venv/
+__pycache__/
+*.pyc
+
+# Local runtime data & temporary media
+server/data/
+MoneyPrinterTurbo/
+
+# Static analysis runtime dependencies & outputs
+legacy/static-analysis/node_modules/
+legacy/static-analysis/dist/
+legacy/static-analysis/output/
+legacy/static-analysis/.venv/
+legacy/static-analysis/tsconfig.tsbuildinfo

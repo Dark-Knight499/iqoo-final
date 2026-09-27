@@ -8,6 +8,7 @@ import { CreateView } from '@/features/create/CreateView';
 import { ProfileView } from '@/features/profile/ProfileView';
 import { OnboardingFlow } from '@/features/onboarding/OnboardingFlow';
 import { EditorPage } from '@/features/editor/page';
+import { VideoImportAnalysis } from '@/features/create/VideoImportAnalysis';
 import { RecordingView } from '@/features/recording/RecordingView';
 import { TeleprompterView } from '@/features/teleprompter/TeleprompterView';
 import { ScriptView } from '@/features/script/ScriptView';
@@ -15,6 +16,7 @@ import { GameStudioView } from '@/features/game-studio/GameStudioView';
 import { EffectsStudioView } from '@/features/effects/EffectsStudioView';
 import { AssetsView } from '@/features/assets/AssetsView';
 import { MediaIntelligenceView } from '@/features/media-intelligence/MediaIntelligenceView';
+import { BrainrotFeedView } from '@/features/brainrot/BrainrotFeedView';
 import { ExportModal } from '@/features/export/ExportModal';
 import { CopilotSheet } from '@/features/copilot/CopilotSheet';
 
@@ -33,6 +35,9 @@ export const App: React.FC = () => {
         <CopilotSheet />
       </>
     );
+  }
+  if (activeModal === 'video-analysis') {
+    return <VideoImportAnalysis />;
   }
   if (activeModal === 'recording') {
     return <RecordingView />;
@@ -54,6 +59,9 @@ export const App: React.FC = () => {
   }
   if (activeModal === 'media-intelligence') {
     return <MediaIntelligenceView />;
+  }
+  if (activeModal === 'brainrot') {
+    return <BrainrotFeedView />;
   }
   if (activeModal === 'creator-intelligence') {
     return <CreatorIntelligenceScreen onBack={closeModal} />;

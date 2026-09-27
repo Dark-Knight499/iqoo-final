@@ -1,0 +1,10 @@
+node_modules/
+.venv/
+dist/
+coverage/
+*.tsbuildinfo
+.env
+output/
+models/*.bin
+tools/whisper-bin-x64.zip
+CreatorIQOO/

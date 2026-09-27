@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Film, Lightbulb, Gamepad2, Wand2, ArrowLeft, Brain, Sparkles } from 'lucide-react';
+import { ArrowRight, Film, Lightbulb, Gamepad2, Wand2, ArrowLeft, Brain, Sparkles, Flame } from 'lucide-react';
 import { useAppStore } from '@/shared/state/app.store';
 import { useProjectStore } from '@/shared/state/project.store';
 import { files } from '@/utils/files';
@@ -15,15 +15,30 @@ export const CreateView: React.FC = () => {
       addProject({
         title: picked.name.replace(/\.[^/.]+$/, ''),
         thumbnailUrl: '',
+        mediaUrl: picked.url,
         mediaId: picked.mediaId,
         mediaName: picked.name,
+        mediaMimeType: picked.type,
+        mediaSizeBytes: picked.size,
+        mediaWidth: picked.width,
+        mediaHeight: picked.height,
         durationSeconds: picked.duration,
         trimStartSeconds: 0,
         trimEndSeconds: picked.duration,
         aspectRatio: picked.width >= picked.height ? '16:9' : '9:16',
+        clips: picked.duration > 0 ? [{
+          id: `clip_${Date.now()}`,
+          mediaUrl: picked.url,
+          title: picked.name,
+          start: 0,
+          duration: picked.duration,
+          cutIn: 0,
+          cutOut: picked.duration,
+          speed: 1,
+          volume: 1,
+        }] : [],
       });
-      URL.revokeObjectURL(picked.url);
-      openModal('editor');
+      openModal('video-analysis');
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'Unable to import video');
     }
@@ -53,6 +68,14 @@ export const CreateView: React.FC = () => {
       badge: 'End-to-End',
       badgeIcon: Lightbulb,
       action: () => openModal('script'),
+    },
+    {
+      id: 'brainrot',
+      title: 'Brainrot Feed',
+      description: 'Type a topic and render a vertical short with voiceover and burned-in captions.',
+      badge: 'Local Engine',
+      badgeIcon: Flame,
+      action: () => openModal('brainrot'),
     },
     {
       id: 'game',
