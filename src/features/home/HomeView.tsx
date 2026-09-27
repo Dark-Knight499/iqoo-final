@@ -2,42 +2,50 @@ import React, { useState, useEffect } from 'react';
 import {
   Sparkles,
   Plus,
-  Play,
   ChevronRight,
-  SlidersHorizontal,
   ArrowUpRight,
   Brain,
   Film,
   Flame,
   ArrowRight,
   Mic,
-  TrendingUp,
   Zap,
   X,
-  FileText,
   Clock,
   Video,
-  CheckCircle2,
-  RefreshCw,
+  Scissors,
+  Compass,
+  User,
+  BarChart3,
 } from 'lucide-react';
 import { useAppStore } from '@/shared/state/app.store';
 import { useCreatorStore } from '@/shared/state/creator.store';
 import { useProjectStore } from '@/shared/state/project.store';
 import { Button } from '@/shared/components/Button';
 import { ThemeToggle } from '@/shared/components/ThemeToggle';
-import { ciStore } from '@/features/creator-intelligence/state/creatorIntelligenceStore';
-import { legacyBackend, DashboardResponse } from '@/services/legacyBackend';
 import { attachVideoToProject } from '@/shared/services/projectMedia';
 import { formatDuration } from '@/utils/format';
 import { MediaArt } from '@/shared/components/MediaArt';
 import { brainrotEngine, GalleryItem } from '@/features/brainrot/api';
+import { ciStore } from '@/features/creator-intelligence/state/creatorIntelligenceStore';
 
 const PROMPT_SUGGESTIONS = [
-  '⚡ 60s high-retention reel script',
-  '🎬 Contrarian teardown hook',
-  '📈 Explain on-device AI agents',
-  '🔍 Analyze viral trends in tech',
+  '⚡ 60s reel script',
+  '🎬 Viral hook ideas',
+  '📈 Trending topics',
+  '🔍 Analyze my content',
 ];
+
+/* ── Feature tile data ─────────────────────────────────── */
+interface FeatureTile {
+  label: string;
+  desc: string;
+  icon: React.ReactNode;
+  color: string;
+  bgColor: string;
+  hoverBorder: string;
+  action: () => void;
+}
 
 export const HomeView: React.FC = () => {
   const { creator } = useCreatorStore();
@@ -49,62 +57,21 @@ export const HomeView: React.FC = () => {
   const [attachError, setAttachError] = useState<string | null>(null);
   const [aiShorts, setAiShorts] = useState<GalleryItem[]>([]);
 
-  const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
-  const [dashboardLoading, setDashboardLoading] = useState(false);
-  const [dashboardError, setDashboardError] = useState<string | null>(null);
-
-  const fetchDashboard = () => {
-    const creatorName = creator.name.trim() || 'Ali Abdaal';
-    setDashboardLoading(true);
-    legacyBackend.getDashboard(creatorName, '30d')
-      .then((data) => {
-        setDashboard(data);
-        setDashboardError(null);
-      })
-      .catch((err) => {
-        setDashboardError(err instanceof Error ? err.message : 'Dashboard unavailable');
-      })
-      .finally(() => {
-        setDashboardLoading(false);
-      });
-  };
-
-  useEffect(() => {
-    fetchDashboard();
-  }, [creator.name]);
-
-  const reviewProject = projects.find((project) => project.id === reviewProjectId);
-  const initials = creator.name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'C';
-  const firstName = creator.name.trim().split(/\s+/)[0] || 'Creator';
-
-  // Gallery of rendered shorts. Optional: hide the section when the local
-  // render engine is not running rather than showing an empty shell.
   useEffect(() => {
     let cancelled = false;
     brainrotEngine
       .listGallery()
-      .then((items) => {
-        if (!cancelled) setAiShorts(items);
-      })
-      .catch(() => {
-        if (!cancelled) setAiShorts([]);
-      });
-    return () => {
-      cancelled = true;
-    };
+      .then((items) => { if (!cancelled) setAiShorts(items); })
+      .catch(() => { if (!cancelled) setAiShorts([]); });
+    return () => { cancelled = true; };
   }, []);
 
-  // Time-based greeting
+  const reviewProject = projects.find((p) => p.id === reviewProjectId);
+  const initials = creator.name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || 'C';
+  const firstName = creator.name.trim().split(/\s+/)[0] || 'Creator';
+
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-
-  // Top daily hook from creator profile DNA
-  const topHook = creator.hookPatterns?.[0] || {
-    id: 'h1',
-    title: 'The "Why Everyone Is Wrong" Teardown',
-    example: 'Stop believing AI agents only run in giant cloud datacenters...',
-    virality: 94,
-  };
 
   const handleQuickSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,13 +81,9 @@ export const HomeView: React.FC = () => {
     }
   };
 
-  const handlePromptChipClick = (prompt: string) => {
-    openCopilot(prompt);
-  };
-
   const handleOpenProject = (id: string) => {
     setActiveProjectId(id);
-    if (projects.find((project) => project.id === id)?.mediaId) {
+    if (projects.find((p) => p.id === id)?.mediaId) {
       openModal('editor');
     } else {
       setReviewProjectId(id);
@@ -143,40 +106,98 @@ export const HomeView: React.FC = () => {
     }
   };
 
+  /* Feature tiles — each opens a full-screen modal or tab */
+  const features: FeatureTile[] = [
+    {
+      label: 'Creator Intelligence',
+      desc: 'Hooks, comparisons & roadmap',
+      icon: <Sparkles size={20} />,
+      color: 'var(--ai-accent)',
+      bgColor: 'var(--ai-soft)',
+      hoverBorder: 'var(--ai-border)',
+      action: () => openModal('creator-intelligence'),
+    },
+    {
+      label: 'Media AI',
+      desc: 'Scenes, quotes & key moments',
+      icon: <Brain size={20} />,
+      color: '#60A5FA',
+      bgColor: 'rgba(37, 99, 235, 0.12)',
+      hoverBorder: 'rgba(37, 99, 235, 0.4)',
+      action: () => openModal('media-intelligence'),
+    },
+    {
+      label: 'Video Studio',
+      desc: 'Timeline, trim & export',
+      icon: <Film size={20} />,
+      color: '#C084FC',
+      bgColor: 'rgba(168, 85, 247, 0.12)',
+      hoverBorder: 'rgba(168, 85, 247, 0.4)',
+      action: () => openModal('editor'),
+    },
+    {
+      label: 'AI Prompter',
+      desc: 'Smart-scroll teleprompter',
+      icon: <Mic size={20} />,
+      color: '#F59E0B',
+      bgColor: 'rgba(245, 158, 11, 0.12)',
+      hoverBorder: 'rgba(245, 158, 11, 0.4)',
+      action: () => openModal('teleprompter'),
+    },
+    {
+      label: 'Brainrot Feed',
+      desc: 'Topic → vertical short',
+      icon: <Flame size={20} />,
+      color: '#F87171',
+      bgColor: 'rgba(239, 68, 68, 0.12)',
+      hoverBorder: 'rgba(239, 68, 68, 0.4)',
+      action: () => openModal('brainrot'),
+    },
+    {
+      label: 'AI Clipping',
+      desc: 'Find moments worth clipping',
+      icon: <Scissors size={20} />,
+      color: '#34D399',
+      bgColor: 'rgba(52, 211, 153, 0.12)',
+      hoverBorder: 'rgba(52, 211, 153, 0.4)',
+      action: () => openModal('clipping'),
+    },
+  ];
+
   return (
-    <main className="screen-container" style={{ paddingBottom: '90px' }}>
-      {/* Top Header */}
+    <main className="screen-container" style={{ paddingBottom: '24px' }}>
+
+      {/* ── Creator Header ────────────────────────────── */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: '20px',
+          marginBottom: '24px',
         }}
       >
         <div
-          onClick={() => setActiveTab('profile')}
+          onClick={() => openModal('creator-intelligence')}
           style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
         >
+          {/* Avatar */}
           <div style={{ position: 'relative' }}>
             <div
               style={{
-                width: '44px',
-                height: '44px',
+                width: '48px',
+                height: '48px',
                 borderRadius: '50%',
                 backgroundColor: 'var(--bg-surface-3)',
                 color: 'var(--ai-accent)',
                 display: 'grid',
                 placeItems: 'center',
-                fontSize: '15px',
+                fontSize: '16px',
                 fontWeight: 800,
                 border: '2px solid var(--ai-border)',
-                transition: 'transform 0.15s ease',
               }}
             >
               {initials}
             </div>
-            {/* Active AI Status Indicator */}
             <span
               style={{
                 position: 'absolute',
@@ -191,9 +212,10 @@ export const HomeView: React.FC = () => {
             />
           </div>
 
+          {/* Name & niche */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
+              <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
                 {creator.name}
               </span>
               <span
@@ -218,14 +240,14 @@ export const HomeView: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <ThemeToggle />
           <button
-            onClick={() => openModal('script')}
-            aria-label="Script Studio"
+            onClick={() => setActiveTab('profile')}
+            aria-label="Profile"
             style={{
-              width: '38px',
-              height: '38px',
+              width: '36px',
+              height: '36px',
               borderRadius: '50%',
               backgroundColor: 'var(--bg-surface-2)',
               color: 'var(--text-secondary)',
@@ -233,219 +255,45 @@ export const HomeView: React.FC = () => {
               placeItems: 'center',
               border: '1px solid var(--border-color)',
               cursor: 'pointer',
-              transition: 'background-color 0.15s ease',
             }}
-            title="Script Studio"
+            title="Profile & Settings"
           >
-            <SlidersHorizontal size={17} />
-          </button>
-          <button
-            onClick={() => openModal('teleprompter')}
-            aria-label="Teleprompter"
-            style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '50%',
-              backgroundColor: 'var(--bg-surface-2)',
-              color: 'var(--text-secondary)',
-              display: 'grid',
-              placeItems: 'center',
-              border: '1px solid var(--border-color)',
-              cursor: 'pointer',
-              transition: 'background-color 0.15s ease',
-            }}
-            title="AI Teleprompter"
-          >
-            <Mic size={17} />
+            <User size={16} />
           </button>
         </div>
       </div>
 
-      {/* Greeting Headline */}
-      <div style={{ marginBottom: '16px' }}>
-        <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-          {greeting}, {firstName} 👋
-        </div>
+      {/* ── Greeting ──────────────────────────────────── */}
+      <div style={{ marginBottom: '20px' }}>
         <h1
           style={{
-            fontSize: '26px',
+            fontSize: '24px',
             fontWeight: 800,
-            lineHeight: 1.2,
+            lineHeight: 1.25,
             letterSpacing: '-0.02em',
             margin: 0,
             color: 'var(--text-primary)',
           }}
         >
-          Turn what you know into <span style={{ color: 'var(--ai-accent)' }}>viral content</span>.
+          {greeting}, {firstName}
         </h1>
+        <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
+          What do you want to create today?
+        </p>
       </div>
 
-      {/* Creator Context Metric Row */}
-      {(() => {
-        const formatCompact = (val: number) =>
-          new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(val);
-
-        const displayViews = dashboard
-          ? formatCompact(dashboard.platforms.youtube?.total_views_or_impressions || dashboard.overall_reach)
-          : creator.metrics?.views || '18.4M';
-
-        const displayViewsChange = dashboard
-          ? `+${dashboard.platforms.youtube?.growth_rate_30d_percent || 4.2}%`
-          : creator.metrics?.viewsChange || '+12.4%';
-
-        const displayEngagement = dashboard
-          ? `${dashboard.overall_engagement_rate}%`
-          : creator.metrics?.engagement || '6.8%';
-
-        const displayEngagementChange = dashboard
-          ? 'Live'
-          : creator.metrics?.engagementChange || '+0.8%';
-
-        const displayGrowth = dashboard
-          ? formatCompact(dashboard.overall_reach)
-          : creator.metrics?.growth || '8.1M';
-
-        return (
-          <>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: '8px',
-                marginBottom: dashboard ? '10px' : '20px',
-                padding: '12px 14px',
-                borderRadius: '16px',
-                backgroundColor: 'var(--bg-surface)',
-                border: '1px solid var(--border-color)',
-              }}
-            >
-              <div>
-                <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.4px', display: 'block' }}>
-                  {dashboard ? 'Total Views' : 'Views'}
-                </span>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginTop: '2px' }}>
-                  <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)' }}>
-                    {displayViews}
-                  </span>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#00DC82' }}>
-                    {displayViewsChange}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.4px', display: 'block' }}>
-                  Engagement
-                </span>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginTop: '2px' }}>
-                  <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)' }}>
-                    {displayEngagement}
-                  </span>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#00DC82' }}>
-                    {displayEngagementChange}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.4px', display: 'block' }}>
-                  {dashboard ? 'Total Reach' : 'Growth'}
-                </span>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginTop: '2px' }}>
-                  <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)' }}>
-                    {displayGrowth}
-                  </span>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--ai-accent)' }}>
-                    {dashboard ? 'omni-channel' : 'monthly'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Live Dashboard Platform Pulse */}
-            {dashboard && (
-              <div
-                style={{
-                  marginBottom: '20px',
-                  padding: '12px 14px',
-                  borderRadius: '16px',
-                  backgroundColor: 'var(--bg-surface-2)',
-                  border: '1px solid var(--border-color)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--ai-accent)', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <CheckCircle2 size={12} color="#00DC82" />
-                    LIVE MULTI-PLATFORM PULSE · 30D
-                  </span>
-                  <button
-                    onClick={fetchDashboard}
-                    disabled={dashboardLoading}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--text-muted)',
-                      fontSize: '11px',
-                      cursor: dashboardLoading ? 'wait' : 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                    }}
-                    title="Refresh metrics from backend"
-                  >
-                    <RefreshCw size={11} className={dashboardLoading ? 'spin' : ''} />
-                    <span>{dashboardLoading ? 'Syncing...' : 'Sync'}</span>
-                  </button>
-                </div>
-
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {Object.entries(dashboard.platforms).map(([platformKey, data]) => (
-                    <span
-                      key={platformKey}
-                      style={{
-                        fontSize: '11px',
-                        padding: '4px 9px',
-                        borderRadius: '8px',
-                        backgroundColor: 'var(--bg-surface)',
-                        border: '1px solid rgba(255, 255, 255, 0.06)',
-                        color: 'var(--text-primary)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '5px',
-                      }}
-                    >
-                      <strong style={{ textTransform: 'capitalize' }}>{data.platform}:</strong>
-                      <span style={{ color: 'var(--ai-accent)' }}>{formatCompact(data.followers_or_subscribers)}</span>
-                      <span style={{ color: 'var(--text-muted)', fontSize: '10px' }}>({data.avg_engagement_rate_percent}%)</span>
-                    </span>
-                  ))}
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)', borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: '6px' }}>
-                  <span>Studio Pipeline: {dashboard.app_platform_metrics.total_scripts_generated} scripts drafted · {dashboard.app_platform_metrics.published_via_composio} published</span>
-                  <span style={{ color: 'var(--success)', fontWeight: 600 }}>{dashboard.app_platform_metrics.publishing_success_rate}% success</span>
-                </div>
-              </div>
-            )}
-          </>
-        );
-      })()}
-
-      {/* AI Prompt Command Bar */}
-      <div style={{ marginBottom: '22px' }}>
+      {/* ── AI Prompt Bar ─────────────────────────────── */}
+      <div style={{ marginBottom: '24px' }}>
         <form
           onSubmit={handleQuickSubmit}
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
-            backgroundColor: 'var(--bg-surface-2)',
+            backgroundColor: 'var(--bg-surface)',
             border: '1px solid var(--ai-border)',
-            borderRadius: '18px',
+            borderRadius: '16px',
             padding: '8px 8px 8px 14px',
-            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
-            transition: 'border-color 0.15s ease',
           }}
         >
           <Sparkles size={18} color="var(--ai-accent)" style={{ flexShrink: 0 }} />
@@ -453,7 +301,7 @@ export const HomeView: React.FC = () => {
             type="text"
             value={quickInput}
             onChange={(e) => setQuickInput(e.target.value)}
-            placeholder="Ask Copilot: create script, hooks, or analyze media..."
+            placeholder="Ask AI: scripts, hooks, ideas..."
             style={{
               flex: 1,
               backgroundColor: 'transparent',
@@ -466,41 +314,38 @@ export const HomeView: React.FC = () => {
           />
           <button
             type="submit"
-            aria-label="Send prompt to Copilot"
+            aria-label="Send"
             style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '12px',
+              width: '34px',
+              height: '34px',
+              borderRadius: '10px',
               backgroundColor: 'var(--ai-accent)',
               color: '#080808',
               border: 'none',
               display: 'grid',
               placeItems: 'center',
-              fontWeight: 800,
               cursor: 'pointer',
               flexShrink: 0,
-              transition: 'transform 0.15s ease',
             }}
           >
-            <ArrowUpRight size={18} />
+            <ArrowUpRight size={16} />
           </button>
         </form>
 
-        {/* One-Tap Prompt Suggestions */}
+        {/* Prompt chips */}
         <div
           style={{
             display: 'flex',
             gap: '6px',
             overflowX: 'auto',
             paddingTop: '8px',
-            paddingBottom: '2px',
             scrollbarWidth: 'none',
           }}
         >
-          {PROMPT_SUGGESTIONS.map((suggestion) => (
+          {PROMPT_SUGGESTIONS.map((s) => (
             <button
-              key={suggestion}
-              onClick={() => handlePromptChipClick(suggestion)}
+              key={s}
+              onClick={() => openCopilot(s)}
               style={{
                 padding: '5px 11px',
                 borderRadius: '999px',
@@ -512,394 +357,91 @@ export const HomeView: React.FC = () => {
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
                 flexShrink: 0,
-                transition: 'all 0.15s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'var(--ai-border)';
-                e.currentTarget.style.color = 'var(--text-primary)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border-color)';
-                e.currentTarget.style.color = 'var(--text-secondary)';
               }}
             >
-              {suggestion}
+              {s}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Daily AI Viral Hook Inspiration Card */}
-      <section style={{ marginBottom: '24px' }}>
-        <div
+      {/* ── Feature Tiles Grid ────────────────────────── */}
+      <section style={{ marginBottom: '28px' }}>
+        <h2
           style={{
-            borderRadius: '20px',
-            padding: '20px',
-            backgroundColor: 'var(--bg-surface)',
-            border: '1px solid var(--border-color)',
-            borderLeft: '4px solid var(--ai-accent)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
+            fontSize: '13px',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            color: 'var(--text-muted)',
+            margin: '0 0 12px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                padding: '4px 10px',
-                borderRadius: '999px',
-                backgroundColor: 'var(--ai-soft)',
-                color: 'var(--ai-accent)',
-                fontSize: '11px',
-                fontWeight: 700,
-                border: '1px solid var(--ai-border)',
-              }}
-            >
-              <Zap size={12} />
-              DAILY VIRAL HOOK · {topHook.virality}% VIRALITY
-            </span>
-
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-              Tailored to {creator.niche.split('&')[0].trim()}
-            </span>
-          </div>
-
-          <div>
-            <h3 style={{ margin: '0 0 6px 0', fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.35 }}>
-              "{topHook.example}"
-            </h3>
-            <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
-              Pattern: <strong>{topHook.title}</strong> — Start with an unexpected contrast, then explain the mechanism.
-            </p>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '4px' }}>
-            <button
-              onClick={() => openCopilot(`Draft a high-retention video script using this hook: "${topHook.example}"`)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 14px',
-                borderRadius: '10px',
-                backgroundColor: 'var(--ai-accent)',
-                color: '#080808',
-                border: 'none',
-                fontSize: '12px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'opacity 0.15s ease',
-              }}
-            >
-              <Sparkles size={13} />
-              <span>Draft this Hook</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('insights')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '8px 14px',
-                borderRadius: '10px',
-                backgroundColor: 'var(--bg-surface-2)',
-                color: 'var(--text-secondary)',
-                border: '1px solid var(--border-color)',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              <span>Explore Trends</span>
-              <ArrowRight size={13} />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Studio Hub (Primary Workflow Navigation) */}
-      <section style={{ marginBottom: '26px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <h2 style={{ fontSize: '15px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)', margin: 0 }}>
-            Creator AI Studio Hub
-          </h2>
-          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>5 Core Capabilities</span>
-        </div>
+          Tools
+        </h2>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-          {/* Tile 1: Creator Intelligence */}
-          <div
-            onClick={() => openModal('creator-intelligence')}
-            style={{
-              padding: '16px',
-              borderRadius: '18px',
-              backgroundColor: 'var(--bg-surface)',
-              border: '1px solid var(--border-color)',
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              minHeight: '120px',
-              transition: 'transform 0.15s ease, border-color 0.15s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.borderColor = 'var(--ai-border)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.borderColor = 'var(--border-color)';
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  backgroundColor: 'var(--ai-soft)',
-                  color: 'var(--ai-accent)',
-                  display: 'grid',
-                  placeItems: 'center',
-                }}
-              >
-                <Sparkles size={18} />
+          {features.map((f) => (
+            <div
+              key={f.label}
+              onClick={f.action}
+              style={{
+                padding: '16px',
+                borderRadius: '16px',
+                backgroundColor: 'var(--bg-surface)',
+                border: '1px solid var(--border-color)',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                minHeight: '100px',
+                transition: 'transform 0.15s ease, border-color 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.borderColor = f.hoverBorder;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.borderColor = 'var(--border-color)';
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    backgroundColor: f.bgColor,
+                    color: f.color,
+                    display: 'grid',
+                    placeItems: 'center',
+                  }}
+                >
+                  {f.icon}
+                </div>
+                <ArrowUpRight size={14} color="var(--text-muted)" />
               </div>
-              <ArrowUpRight size={16} color="var(--text-muted)" />
-            </div>
-
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>
-                Creator Intelligence
-              </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
-                Hooks, Comparison, Roadmap & Publishing Hub
-              </div>
-            </div>
-          </div>
-
-          {/* Tile 2: Media Intelligence */}
-          <div
-            onClick={() => openModal('media-intelligence')}
-            style={{
-              padding: '16px',
-              borderRadius: '18px',
-              backgroundColor: 'var(--bg-surface)',
-              border: '1px solid var(--border-color)',
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              minHeight: '120px',
-              transition: 'transform 0.15s ease, border-color 0.15s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.borderColor = 'rgba(37, 99, 235, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.borderColor = 'var(--border-color)';
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  backgroundColor: 'rgba(37, 99, 235, 0.12)',
-                  color: '#60A5FA',
-                  display: 'grid',
-                  placeItems: 'center',
-                }}
-              >
-                <Brain size={18} />
-              </div>
-              <ArrowUpRight size={16} color="var(--text-muted)" />
-            </div>
-
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>
-                Media AI
-              </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
-                Extract scenes, quotes & key moments
+              <div>
+                <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>
+                  {f.label}
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
+                  {f.desc}
+                </div>
               </div>
             </div>
-          </div>
-
-          {/* Tile 3: AI Teleprompter */}
-          <div
-            onClick={() => openModal('teleprompter')}
-            style={{
-              padding: '16px',
-              borderRadius: '18px',
-              backgroundColor: 'var(--bg-surface)',
-              border: '1px solid var(--border-color)',
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              minHeight: '120px',
-              transition: 'transform 0.15s ease, border-color 0.15s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.borderColor = 'var(--border-color)';
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  backgroundColor: 'rgba(245, 158, 11, 0.12)',
-                  color: '#F59E0B',
-                  display: 'grid',
-                  placeItems: 'center',
-                }}
-              >
-                <Mic size={18} />
-              </div>
-              <ArrowUpRight size={16} color="var(--text-muted)" />
-            </div>
-
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>
-                AI Prompter
-              </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
-                Smart-scrolling speech recording
-              </div>
-            </div>
-          </div>
-
-          {/* Tile 4: Video Editor */}
-          <div
-            onClick={() => openModal('editor')}
-            style={{
-              padding: '16px',
-              borderRadius: '18px',
-              backgroundColor: 'var(--bg-surface)',
-              border: '1px solid var(--border-color)',
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              minHeight: '120px',
-              transition: 'transform 0.15s ease, border-color 0.15s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.borderColor = 'rgba(168, 85, 247, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.borderColor = 'var(--border-color)';
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  backgroundColor: 'rgba(168, 85, 247, 0.12)',
-                  color: '#C084FC',
-                  display: 'grid',
-                  placeItems: 'center',
-                }}
-              >
-                <Film size={18} />
-              </div>
-              <ArrowUpRight size={16} color="var(--text-muted)" />
-            </div>
-
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>
-                Video Studio
-              </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
-                Timeline trim & multitrack export
-              </div>
-            </div>
-          </div>
-
-          {/* Tile 5: Brainrot Feed */}
-          <div
-            onClick={() => openModal('brainrot')}
-            style={{
-              padding: '16px',
-              borderRadius: '18px',
-              backgroundColor: 'var(--bg-surface)',
-              border: '1px solid var(--border-color)',
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              minHeight: '120px',
-              transition: 'transform 0.15s ease, border-color 0.15s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.borderColor = 'var(--border-color)';
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  backgroundColor: 'rgba(239, 68, 68, 0.12)',
-                  color: '#F87171',
-                  display: 'grid',
-                  placeItems: 'center',
-                }}
-              >
-                <Flame size={18} />
-              </div>
-              <ArrowUpRight size={16} color="var(--text-muted)" />
-            </div>
-
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>
-                Brainrot Feed
-              </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
-                Topic to vertical short with voice & captions
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
-      {/* AI Shorts Gallery (rendered by the local engine) */}
+      {/* ── AI Shorts Gallery ─────────────────────────── */}
       {aiShorts.length > 0 && (
-        <section style={{ marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <div>
-              <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-                AI Shorts
-              </h2>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                {aiShorts.length} generated {aiShorts.length === 1 ? 'video' : 'videos'}
-              </span>
-            </div>
+        <section style={{ marginBottom: '28px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <h2 style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)', margin: 0 }}>
+              AI Shorts · {aiShorts.length}
+            </h2>
             <button
               onClick={() => openModal('brainrot')}
               style={{
@@ -915,8 +457,7 @@ export const HomeView: React.FC = () => {
                 padding: 0,
               }}
             >
-              <span>Open Feed</span>
-              <ChevronRight size={15} />
+              Open Feed <ChevronRight size={14} />
             </button>
           </div>
 
@@ -925,9 +466,7 @@ export const HomeView: React.FC = () => {
               display: 'flex',
               gap: '10px',
               overflowX: 'auto',
-              paddingBottom: '8px',
-              marginRight: '-18px',
-              paddingRight: '18px',
+              paddingBottom: '4px',
               scrollbarWidth: 'none',
             }}
           >
@@ -939,25 +478,16 @@ export const HomeView: React.FC = () => {
                   key={`${item.task_id}-${item.file}`}
                   onClick={() => openModal('brainrot')}
                   style={{
-                    minWidth: '150px',
-                    width: '150px',
-                    height: '200px',
-                    borderRadius: '18px',
+                    minWidth: '130px',
+                    width: '130px',
+                    height: '180px',
+                    borderRadius: '14px',
                     overflow: 'hidden',
                     flexShrink: 0,
                     position: 'relative',
                     cursor: 'pointer',
                     backgroundColor: '#000',
                     border: '1px solid var(--border-color)',
-                    transition: 'transform 0.15s ease, border-color 0.15s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.borderColor = 'var(--ai-border)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.borderColor = 'var(--border-color)';
                   }}
                 >
                   <video
@@ -971,34 +501,16 @@ export const HomeView: React.FC = () => {
                     style={{
                       position: 'absolute',
                       inset: 0,
-                      background: 'linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.88) 100%)',
+                      background: 'linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.85) 100%)',
                       pointerEvents: 'none',
                     }}
                   />
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '10px',
-                      left: '10px',
-                      padding: '3px 8px',
-                      borderRadius: '999px',
-                      backgroundColor: 'rgba(0,0,0,0.7)',
-                      backdropFilter: 'blur(6px)',
-                      fontSize: '9px',
-                      color: '#fff',
-                      fontWeight: 700,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.4px',
-                    }}
-                  >
-                    AI Short
-                  </div>
-                  <div style={{ position: 'absolute', bottom: '10px', left: '10px', right: '10px' }}>
+                  <div style={{ position: 'absolute', bottom: '8px', left: '8px', right: '8px' }}>
                     <div
                       style={{
-                        fontSize: '12px',
+                        fontSize: '11px',
                         fontWeight: 700,
-                        color: '#FFFFFF',
+                        color: '#FFF',
                         lineHeight: 1.25,
                         display: '-webkit-box',
                         WebkitLineClamp: 2,
@@ -1008,9 +520,6 @@ export const HomeView: React.FC = () => {
                     >
                       {label}
                     </div>
-                    <div style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.65)', marginTop: '3px' }}>
-                      {new Date(item.created_at).toLocaleDateString()}
-                    </div>
                   </div>
                 </article>
               );
@@ -1019,25 +528,12 @@ export const HomeView: React.FC = () => {
         </section>
       )}
 
-      {/* Projects Section */}
-      <section style={{ marginBottom: '24px' }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '14px',
-          }}
-        >
-          <div>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-              Recent Projects
-            </h2>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              {projects.length} {projects.length === 1 ? 'project' : 'projects'} in workspace
-            </span>
-          </div>
-
+      {/* ── Recent Projects ───────────────────────────── */}
+      <section style={{ marginBottom: '28px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <h2 style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)', margin: 0 }}>
+            Projects · {projects.length}
+          </h2>
           <button
             onClick={() => openModal('editor')}
             style={{
@@ -1053,41 +549,35 @@ export const HomeView: React.FC = () => {
               padding: 0,
             }}
           >
-            <span>Open Studio</span>
-            <ChevronRight size={15} />
+            Open Studio <ChevronRight size={14} />
           </button>
         </div>
 
         {projects.length === 0 ? (
           <div
             style={{
-              padding: '30px 20px',
-              borderRadius: '20px',
+              padding: '24px 16px',
+              borderRadius: '16px',
               backgroundColor: 'var(--bg-surface)',
               border: '1px dashed var(--border-color)',
               textAlign: 'center',
             }}
           >
-            <Video size={32} color="var(--text-muted)" style={{ marginBottom: '10px', opacity: 0.5 }} />
-            <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', color: 'var(--text-primary)' }}>
-              No projects started yet
-            </h4>
-            <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
-              Generate a blueprint in Creator Intelligence or start a clean project.
+            <Video size={28} color="var(--text-muted)" style={{ marginBottom: '8px', opacity: 0.5 }} />
+            <p style={{ margin: '0 0 12px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+              No projects yet. Start one from Creator Intelligence or the editor.
             </p>
             <Button variant="ai" size="sm" onClick={() => setActiveTab('create')}>
-              <Plus size={14} /> Start New Project
+              <Plus size={14} /> New Project
             </Button>
           </div>
         ) : (
           <div
             style={{
               display: 'flex',
-              gap: '12px',
+              gap: '10px',
               overflowX: 'auto',
-              paddingBottom: '8px',
-              marginRight: '-18px',
-              paddingRight: '18px',
+              paddingBottom: '4px',
               scrollbarWidth: 'none',
             }}
           >
@@ -1096,10 +586,10 @@ export const HomeView: React.FC = () => {
                 key={proj.id}
                 onClick={() => handleOpenProject(proj.id)}
                 style={{
-                  minWidth: '190px',
-                  width: '190px',
-                  height: '220px',
-                  borderRadius: '20px',
+                  minWidth: '170px',
+                  width: '170px',
+                  height: '200px',
+                  borderRadius: '16px',
                   overflow: 'hidden',
                   flexShrink: 0,
                   position: 'relative',
@@ -1123,7 +613,6 @@ export const HomeView: React.FC = () => {
                   label={proj.mediaId ? proj.mediaName || proj.title : proj.blueprint ? 'Blueprint' : 'Draft'}
                   style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
                 />
-
                 <div
                   style={{
                     position: 'absolute',
@@ -1132,31 +621,11 @@ export const HomeView: React.FC = () => {
                     pointerEvents: 'none',
                   }}
                 />
-
-                {/* Aspect Ratio Badge */}
                 <div
                   style={{
                     position: 'absolute',
-                    top: '10px',
-                    right: '10px',
-                    padding: '3px 7px',
-                    borderRadius: '999px',
-                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                    backdropFilter: 'blur(6px)',
-                    fontSize: '10px',
-                    color: '#fff',
-                    fontWeight: 700,
-                  }}
-                >
-                  {proj.aspectRatio || '9:16'}
-                </div>
-
-                {/* Status Indicator Pill */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '10px',
-                    left: '10px',
+                    top: '8px',
+                    left: '8px',
                     padding: '3px 8px',
                     borderRadius: '999px',
                     backgroundColor: proj.mediaId ? 'rgba(0, 220, 130, 0.2)' : 'rgba(0, 0, 0, 0.7)',
@@ -1168,17 +637,15 @@ export const HomeView: React.FC = () => {
                     letterSpacing: '0.4px',
                   }}
                 >
-                  {proj.mediaId ? 'Ready to Cut' : proj.blueprint ? 'Blueprint' : 'Plan'}
+                  {proj.mediaId ? 'Ready' : proj.blueprint ? 'Blueprint' : 'Plan'}
                 </div>
-
-                {/* Bottom Card Details */}
-                <div style={{ position: 'absolute', bottom: '12px', left: '12px', right: '12px', zIndex: 2 }}>
+                <div style={{ position: 'absolute', bottom: '10px', left: '10px', right: '10px', zIndex: 2 }}>
                   <div
                     style={{
-                      fontSize: '13px',
+                      fontSize: '12px',
                       fontWeight: 700,
-                      color: '#FFFFFF',
-                      marginBottom: '4px',
+                      color: '#FFF',
+                      marginBottom: '3px',
                       lineHeight: 1.25,
                       display: '-webkit-box',
                       WebkitLineClamp: 2,
@@ -1188,12 +655,12 @@ export const HomeView: React.FC = () => {
                   >
                     {proj.title}
                   </div>
-                  <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.7)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Clock size={11} />
+                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.65)', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                    <Clock size={10} />
                     <span>
                       {proj.mediaId
                         ? formatDuration((proj.trimEndSeconds ?? proj.durationSeconds) - (proj.trimStartSeconds ?? 0))
-                        : proj.durationSeconds ? `${proj.durationSeconds}s target` : 'Blueprint outline'}
+                        : proj.durationSeconds ? `${proj.durationSeconds}s target` : 'Blueprint'}
                     </span>
                   </div>
                 </div>
@@ -1226,7 +693,7 @@ export const HomeView: React.FC = () => {
                 maxHeight: '85vh',
                 overflowY: 'auto',
                 padding: '24px',
-                borderRadius: '24px',
+                borderRadius: '20px',
                 backgroundColor: 'var(--bg-surface)',
                 border: '1px solid var(--border-color)',
                 color: 'var(--text-primary)',
@@ -1250,7 +717,7 @@ export const HomeView: React.FC = () => {
                         textTransform: 'uppercase',
                       }}
                     >
-                      {reviewProject.blueprint ? 'Saved AI Blueprint' : 'Draft Project Plan'}
+                      {reviewProject.blueprint ? 'AI Blueprint' : 'Draft'}
                     </span>
                     <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                       {reviewProject.aspectRatio}
@@ -1260,7 +727,6 @@ export const HomeView: React.FC = () => {
                     {reviewProject.title}
                   </h2>
                 </div>
-
                 <button
                   onClick={() => setReviewProjectId(null)}
                   aria-label="Close dialog"
@@ -1298,7 +764,7 @@ export const HomeView: React.FC = () => {
               )}
 
               <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '12px' }}>
-                This project has no video file attached yet. You can attach a recording to edit it or open its AI blueprint.
+                No video attached yet. Attach a recording or open the AI blueprint.
               </p>
 
               {reviewProject.blueprint && (
@@ -1312,7 +778,7 @@ export const HomeView: React.FC = () => {
                   style={{ gap: '6px' }}
                 >
                   <Sparkles size={16} />
-                  <span>Refine Blueprint in Creator AI</span>
+                  <span>Refine Blueprint</span>
                 </Button>
               )}
 
@@ -1340,18 +806,39 @@ export const HomeView: React.FC = () => {
         )}
       </section>
 
-      {/* Primary New Project CTA */}
-      <Button
-        variant="ai"
-        fullWidth
-        size="lg"
-        onClick={() => setActiveTab('create')}
-        style={{ gap: '8px' }}
-      >
-        <Plus size={18} aria-hidden="true" />
-        <span>New Project</span>
-      </Button>
+      {/* ── Quick Nav (replaces bottom bar) ────────────── */}
+      <section style={{ marginBottom: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+          {[
+            { label: 'Insights', icon: <BarChart3 size={18} />, action: () => setActiveTab('insights') },
+            { label: 'Create', icon: <Plus size={18} />, action: () => setActiveTab('create') },
+            { label: 'Profile', icon: <User size={18} />, action: () => setActiveTab('profile') },
+          ].map((nav) => (
+            <button
+              key={nav.label}
+              onClick={nav.action}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '14px 8px',
+                borderRadius: '14px',
+                backgroundColor: 'var(--bg-surface)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-secondary)',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'border-color 0.15s ease',
+              }}
+            >
+              {nav.icon}
+              {nav.label}
+            </button>
+          ))}
+        </div>
+      </section>
     </main>
   );
 };
-
