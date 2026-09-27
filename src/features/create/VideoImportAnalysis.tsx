@@ -170,14 +170,16 @@ export const VideoImportAnalysis: React.FC = () => {
 
   return (
     <main
+      className="screen-container"
       style={{
-        minHeight: '100vh',
+        minHeight: '100%',
         backgroundColor: 'var(--bg-primary)',
         color: 'var(--text-primary)',
-        padding: '18px 18px 28px',
+        padding: '18px 18px 48px',
         display: 'flex',
         flexDirection: 'column',
         gap: '18px',
+        overflowY: 'auto',
       }}
     >
       <header style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

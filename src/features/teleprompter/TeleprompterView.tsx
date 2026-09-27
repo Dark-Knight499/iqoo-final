@@ -37,12 +37,14 @@ Tap create to try it yourself right now.`;
 
   return (
     <div
+      className="screen-container"
       style={{
-        minHeight: '100vh',
+        minHeight: '100%',
         backgroundColor: '#050505',
         display: 'flex',
         flexDirection: 'column',
-        padding: '16px 18px 24px',
+        padding: '16px 18px 48px',
+        overflowY: 'auto',
       }}
     >
       {/* Top Navbar */}

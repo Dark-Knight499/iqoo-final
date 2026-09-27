@@ -179,17 +179,18 @@ export const SignInView: React.FC = () => {
 
   return (
     <div
+      className="screen-container"
       style={{
-        minHeight: '100vh',
+        minHeight: '100%',
         backgroundColor: 'var(--bg-primary)',
         color: 'var(--text-primary)',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
         alignItems: 'center',
-        padding: '24px 18px',
+        padding: '24px 18px 48px',
         position: 'relative',
-        overflow: 'hidden',
+        overflowY: 'auto',
       }}
     >
       {/* Background ambient lighting */}

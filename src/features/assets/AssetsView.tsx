@@ -30,12 +30,14 @@ export const AssetsView: React.FC = () => {
 
   return (
     <div
+      className="screen-container"
       style={{
-        minHeight: '100vh',
+        minHeight: '100%',
         backgroundColor: 'var(--bg-primary)',
-        padding: '16px 18px 24px',
+        padding: '16px 18px 48px',
         display: 'flex',
         flexDirection: 'column',
+        overflowY: 'auto',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>

@@ -104,10 +104,7 @@ a {
   flex-direction: column;
   overflow: hidden;
   transition: background-color 0.25s ease;
-  touch-action: manipulation;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
+  touch-action: pan-y;
 }
 
 input, textarea, [contenteditable="true"] {
@@ -125,6 +122,7 @@ input, textarea, [contenteditable="true"] {
     align-items: center;
     justify-content: center;
     padding: 16px 0;
+    overflow-y: auto;
   }
 
   [data-theme="light"] body {
@@ -155,23 +153,29 @@ input, textarea, [contenteditable="true"] {
 
 /* Scrollbar styles */
 ::-webkit-scrollbar {
-  width: 3px;
-  height: 3px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--bg-surface-3);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: var(--radius-pill);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ai-accent);
 }
 
 .screen-container {
-  flex: 1;
-  overflow-y: auto;
+  flex: 1 1 0%;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow-y: auto !important;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
+  touch-action: pan-y;
   padding: 14px 16px calc(24px + env(safe-area-inset-bottom, 16px));
 }
 

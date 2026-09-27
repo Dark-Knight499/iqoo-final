@@ -78,12 +78,14 @@ export const EffectsStudioView: React.FC = () => {
 
   return (
     <div
+      className="screen-container"
       style={{
-        minHeight: '100vh',
+        minHeight: '100%',
         backgroundColor: 'var(--bg-primary)',
-        padding: '16px 18px calc(32px + env(safe-area-inset-bottom))',
+        padding: '16px 18px calc(48px + env(safe-area-inset-bottom))',
         display: 'flex',
         flexDirection: 'column',
+        overflowY: 'auto',
       }}
     >
       {/* Top Navbar */}
