@@ -180,7 +180,7 @@ input, textarea, [contenteditable="true"] {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 18px 4px;
+  padding: 5px 16px 2px;
   background-color: var(--bg-primary);
   color: var(--text-primary);
   flex-shrink: 0;
@@ -188,8 +188,8 @@ input, textarea, [contenteditable="true"] {
 }
 
 .mobile-dynamic-island {
-  width: 94px;
-  height: 20px;
+  width: 82px;
+  height: 18px;
   background-color: #000;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.08);

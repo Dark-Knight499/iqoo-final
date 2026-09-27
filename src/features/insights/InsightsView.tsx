@@ -147,7 +147,7 @@ export const InsightsView: React.FC = () => {
 
   return (
     <main className="screen-container" style={{ paddingBottom: '90px' }}>
-      {/* Sticky Native Mobile Navigation Bar */}
+      {/* Sticky Native Mobile Navigation Bar (Short & Compact) */}
       <div
         style={{
           position: 'sticky',
@@ -156,12 +156,12 @@ export const InsightsView: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '10px 0',
+          padding: '6px 0',
           backgroundColor: 'rgba(8, 8, 8, 0.92)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
           borderBottom: '1px solid var(--border-color)',
-          marginBottom: '16px',
+          marginBottom: '10px',
         }}
       >
         <button
@@ -169,18 +169,18 @@ export const InsightsView: React.FC = () => {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 6,
-            padding: '6px 12px',
-            borderRadius: '10px',
+            gap: 5,
+            padding: '5px 10px',
+            borderRadius: '8px',
             backgroundColor: 'var(--bg-surface-2)',
             color: 'var(--text-primary)',
-            fontSize: '13px',
+            fontSize: '12px',
             fontWeight: 700,
             border: '1px solid var(--border-color)',
             cursor: 'pointer',
           }}
         >
-          <ArrowLeft size={15} />
+          <ArrowLeft size={14} />
           <span>Home</span>
         </button>
 

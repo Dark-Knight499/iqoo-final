@@ -167,7 +167,7 @@ export const HomeView: React.FC = () => {
   return (
     <main className="screen-container" style={{ paddingBottom: '24px' }}>
 
-      {/* ── Creator Header (Sticky Mobile Top Bar) ───────── */}
+      {/* ── Creator Header (Sticky Mobile Top Bar - Short & Compact) ───────── */}
       <div
         style={{
           position: 'sticky',
@@ -176,32 +176,32 @@ export const HomeView: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '10px 0',
+          padding: '6px 0',
           backgroundColor: 'rgba(8, 8, 8, 0.92)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
           borderBottom: '1px solid var(--border-color)',
-          marginBottom: '20px',
+          marginBottom: '12px',
         }}
       >
         <div
           onClick={() => openModal('creator-intelligence')}
-          style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
         >
           {/* Avatar */}
           <div style={{ position: 'relative' }}>
             <div
               style={{
-                width: '48px',
-                height: '48px',
+                width: '36px',
+                height: '36px',
                 borderRadius: '50%',
                 backgroundColor: 'var(--bg-surface-3)',
                 color: 'var(--ai-accent)',
                 display: 'grid',
                 placeItems: 'center',
-                fontSize: '16px',
+                fontSize: '13px',
                 fontWeight: 800,
-                border: '2px solid var(--ai-border)',
+                border: '1.5px solid var(--ai-border)',
               }}
             >
               {initials}
@@ -209,40 +209,40 @@ export const HomeView: React.FC = () => {
             <span
               style={{
                 position: 'absolute',
-                bottom: '1px',
-                right: '1px',
-                width: '10px',
-                height: '10px',
+                bottom: '0',
+                right: '0',
+                width: '8px',
+                height: '8px',
                 borderRadius: '50%',
                 backgroundColor: '#00DC82',
-                border: '2px solid var(--bg-primary)',
+                border: '1.5px solid var(--bg-primary)',
               }}
             />
           </div>
 
           {/* Name & niche */}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>
                 {creator.name}
               </span>
               <span
                 style={{
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  padding: '2px 7px',
+                  fontSize: '9px',
+                  fontWeight: 800,
+                  padding: '1px 5px',
                   borderRadius: '999px',
                   backgroundColor: 'var(--ai-soft)',
                   color: 'var(--ai-accent)',
                   border: '1px solid var(--ai-border)',
                   textTransform: 'uppercase',
-                  letterSpacing: '0.4px',
+                  letterSpacing: '0.3px',
                 }}
               >
                 PRO
               </span>
             </div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '1px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
               {creator.niche}
             </div>
           </div>
@@ -834,31 +834,32 @@ export const HomeView: React.FC = () => {
         )}
       </section>
 
-      {/* ── Native Mobile Floating Navigation Dock ────────────── */}
+      {/* ── Native Mobile Floating Navigation Dock (Short & Compact) ────────────── */}
       <nav
         aria-label="Mobile Navigation Dock"
         style={{
           position: 'sticky',
-          bottom: '8px',
+          bottom: '10px',
           zIndex: 40,
-          margin: '16px auto 0',
-          width: '100%',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '8px',
-          padding: '6px',
-          borderRadius: '20px',
+          margin: '12px auto 0',
+          width: 'fit-content',
+          maxWidth: '260px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          padding: '4px',
+          borderRadius: '999px',
           backgroundColor: 'rgba(17, 17, 20, 0.94)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
           border: '1px solid rgba(255, 255, 255, 0.12)',
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.75)',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.7)',
         }}
       >
         {[
-          { label: 'Insights', icon: <BarChart3 size={17} />, action: () => setActiveTab('insights'), isPrimary: false },
-          { label: 'Create', icon: <Plus size={17} />, action: () => setActiveTab('create'), isPrimary: true },
-          { label: 'Profile', icon: <User size={17} />, action: () => setActiveTab('profile'), isPrimary: false },
+          { label: 'Insights', icon: <BarChart3 size={14} />, action: () => setActiveTab('insights'), isPrimary: false },
+          { label: 'Create', icon: <Plus size={15} />, action: () => setActiveTab('create'), isPrimary: true },
+          { label: 'Profile', icon: <User size={14} />, action: () => setActiveTab('profile'), isPrimary: false },
         ].map((nav) => (
           <button
             key={nav.label}
@@ -867,16 +868,17 @@ export const HomeView: React.FC = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '6px',
-              padding: '10px 8px',
-              borderRadius: '14px',
+              gap: '5px',
+              padding: '6px 14px',
+              borderRadius: '999px',
               backgroundColor: nav.isPrimary ? 'var(--ai-accent)' : 'transparent',
               color: nav.isPrimary ? '#080808' : 'var(--text-secondary)',
               border: 'none',
-              fontSize: '12px',
+              fontSize: '11px',
               fontWeight: 700,
               cursor: 'pointer',
               transition: 'all 0.15s ease',
+              whiteSpace: 'nowrap',
             }}
           >
             {nav.icon}
