@@ -16,8 +16,9 @@ function getOpenAIKey(): string {
   if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_OPENAI_API_KEY) {
     return import.meta.env.VITE_OPENAI_API_KEY;
   }
-  if (typeof process !== 'undefined' && process.env?.OPENAI_API_KEY) {
-    return process.env.OPENAI_API_KEY;
+  const globalProc = typeof globalThis !== 'undefined' ? (globalThis as Record<string, any>).process : undefined;
+  if (globalProc?.env?.OPENAI_API_KEY) {
+    return globalProc.env.OPENAI_API_KEY;
   }
   return '';
 }

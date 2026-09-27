@@ -6,6 +6,9 @@ dist
 .DS_Store
 .opencode/
 .pytest_cache/
+
+# Vendored local short-video render engine (cloned third-party repo with its own .git).
+MoneyPrinterTurbo/
 .venv/
 __pycache__/
 *.pyc

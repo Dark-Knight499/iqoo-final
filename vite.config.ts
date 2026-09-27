@@ -11,6 +11,11 @@ export default defineConfig({
   },
   server: {
     host: true,
+    // The vendored render engine keeps a large Python venv; watching it
+    // exhausts the OS inotify limit and crashes the dev server (ENOSPC).
+    watch: {
+      ignored: ['**/MoneyPrinterTurbo/**'],
+    },
     proxy: {
       '/api/analyze': {
         target: 'http://127.0.0.1:4174',

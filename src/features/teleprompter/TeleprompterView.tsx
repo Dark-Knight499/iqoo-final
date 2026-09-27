@@ -177,15 +177,23 @@ Tap create to try it yourself right now.`;
         </div>
       </div>
 
-      {/* Floating Play/Pause Controls */}
-      <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'center' }}>
+      {/* Floating Play/Pause Controls & Direct Record */}
+      <div style={{ marginTop: '16px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+        <Button
+          variant="secondary"
+          size="lg"
+          onClick={() => openModal('recording')}
+          style={{ flex: 1, gap: '8px' }}
+        >
+          <Video size={18} /> Record Video
+        </Button>
         <Button
           variant="ai"
           size="lg"
           onClick={() => setIsScrolling(!isScrolling)}
-          style={{ width: '220px', gap: '8px' }}
+          style={{ flex: 1, gap: '8px' }}
         >
-          {isScrolling ? <Pause size={20} /> : <Play size={20} />}
+          {isScrolling ? <Pause size={18} /> : <Play size={18} />}
           {isScrolling ? 'Pause Scroll' : 'Start Scroll'}
         </Button>
       </div>
