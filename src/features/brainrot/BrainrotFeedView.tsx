@@ -35,6 +35,33 @@ const VOICES = [
   { id: 'en-GB-SoniaNeural-Female', label: 'Sonia (UK, warm)' },
 ];
 
+export const VIRAL_PRESETS = [
+  {
+    topic: 'The Sigma Aura Paradox',
+    emoji: '🗿',
+    badge: 'Trending',
+    script: 'Did you know that top physicists just calculated the aura level of ancient gladiators? Looking at your phone at 3 AM does not decrease your sleep, it actually unlocks your sixth sense for spotting bad WiFi. If you ever dropped a pen and it rolled into another dimension, that was not gravity, that was a glitch in the simulation. Send this to someone who lost their mewing streak today.',
+  },
+  {
+    topic: 'The Mariana Trench Mystery',
+    emoji: '🌊',
+    badge: 'High Retention',
+    script: 'Over 80 percent of our ocean remains completely unexplored. At the bottom of the Mariana Trench, the water pressure is equivalent to fifty jumbo jets resting on your chest. Deep sea hydrophones recently picked up rhythmic low-frequency hums that marine biologists cannot explain. What if the abyss is keeping something contained?',
+  },
+  {
+    topic: 'The 3 AM Phone Paradox',
+    emoji: '📱',
+    badge: 'Viral Hook',
+    script: 'Why does time move twice as fast when you are scrolling in bed after midnight? Chronobiologists found that blue light tricks your brain into temporal dilation. You thought you were watching three quick clips, but two hours just vanished into the void. Share this before your render distance collapses.',
+  },
+  {
+    topic: 'Ancient Rome vs Subway Surfers',
+    emoji: '⚔️',
+    badge: 'Humor',
+    script: 'Historians argue whether Roman emperors had longer attention spans than modern creators. But imagine Julius Caesar delivering a speech to the Senate while split-screen Subway Surfers gameplay was running underneath his podium. The Roman Empire would have lasted ten thousand years if they had kinetic burned-in subtitles.',
+  },
+];
+
 // Engine pipeline order. Progress is mapped across these as an approximation.
 const STAGES = ['Script', 'Voice', 'Captions', 'Clips', 'Render'];
 
@@ -445,6 +472,66 @@ export const BrainrotFeedView: React.FC = () => {
           )}
         </section>
       )}
+
+      {/* Viral Brainrot 1-Tap Presets */}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <span style={{ ...labelStyle, marginBottom: 0 }}>🔥 Viral Brainrot Presets</span>
+          <span style={{ fontSize: '10px', color: 'var(--ai-accent)', fontWeight: 700 }}>1-TAP AUTOFILL</span>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            gap: '8px',
+            overflowX: 'auto',
+            paddingBottom: '4px',
+            marginRight: '-18px',
+            paddingRight: '18px',
+            scrollbarWidth: 'none',
+          }}
+        >
+          {VIRAL_PRESETS.map((p) => (
+            <button
+              key={p.topic}
+              type="button"
+              onClick={() => {
+                setTopic(p.topic);
+                setScript(p.script);
+              }}
+              disabled={isRendering}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '7px 12px',
+                borderRadius: '12px',
+                backgroundColor: topic === p.topic ? 'var(--ai-soft)' : 'var(--bg-surface-2)',
+                border: topic === p.topic ? '1px solid var(--ai-border)' : '1px solid rgba(255,255,255,0.08)',
+                color: topic === p.topic ? 'var(--ai-accent)' : 'var(--text-primary)',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
+              <span>{p.emoji}</span>
+              <span>{p.topic}</span>
+              <span
+                style={{
+                  fontSize: '9px',
+                  padding: '2px 5px',
+                  borderRadius: '4px',
+                  backgroundColor: 'rgba(0,0,0,0.4)',
+                  color: 'var(--text-muted)',
+                }}
+              >
+                {p.badge}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Topic + script */}
       <div>

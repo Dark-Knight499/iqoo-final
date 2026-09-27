@@ -15,10 +15,14 @@ import {
   Flame,
   Share2,
   RotateCcw,
+  Upload,
+  Repeat,
 } from 'lucide-react';
 import { useAppStore } from '@/shared/state/app.store';
 import { useProjectStore } from '@/shared/state/project.store';
+import { useCreatorStore } from '@/shared/state/creator.store';
 import { useEditorStore } from './editor.store';
+import { RemotionShortPlayer } from '@/features/remotion/RemotionShortPlayer';
 import { Timeline } from './components/Timeline';
 import { CaptionPanel } from './components/CaptionPanel';
 import { AudioPanel } from './components/AudioPanel';
@@ -61,6 +65,10 @@ export const EditorPage: React.FC = () => {
   const [mediaError, setMediaError] = useState<string | null>(null);
   const [previewingProposal, setPreviewingProposal] = useState(false);
   const [trimError, setTrimError] = useState<string | null>(null);
+  const [showRemotionModal, setShowRemotionModal] = useState(false);
+  const [isLooping, setIsLooping] = useState(true);
+  const [isImporting, setIsImporting] = useState(false);
+  const { creator } = useCreatorStore();
 
   const {
     currentTime,
@@ -71,6 +79,7 @@ export const EditorPage: React.FC = () => {
     activePanel,
     setActivePanel,
     aspectRatio,
+    setAspectRatio,
     filterCss,
     selectedEffect,
     videoScale,
@@ -85,6 +94,7 @@ export const EditorPage: React.FC = () => {
     audioVolume,
     isMuted,
     playbackRate,
+    setPlaybackRate,
   } = useEditorStore();
 
   const isVerticalPreview = aspectRatio === '9:16';
@@ -148,6 +158,29 @@ export const EditorPage: React.FC = () => {
     }
   };
 
+  const handleImportVideo = async () => {
+    setIsImporting(true);
+    try {
+      const picked = await files.pickVideo();
+      if (picked) {
+        setMediaUrl(picked.url);
+        updateActiveProject({
+          mediaId: picked.mediaId,
+          mediaUrl: picked.url,
+          mediaName: picked.name,
+          durationSeconds: Math.round(picked.duration),
+          aspectRatio: picked.width < picked.height ? '9:16' : (picked.width === picked.height ? '1:1' : '16:9'),
+        });
+        setCurrentTime(0);
+        showToast('Video clip imported into Video Studio');
+      }
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Could not import video');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   // Load project video or fallback demo video
   useEffect(() => {
     let url: string | null = null;
@@ -166,7 +199,7 @@ export const EditorPage: React.FC = () => {
         .then((source) => {
           if (cancelled) return;
           if (!source) {
-            setMediaUrl('/legacy/static-analysis/demo_video/video_20260926_233851.mp4');
+            setMediaUrl('/demo.mp4');
             return;
           }
           url = URL.createObjectURL(source);
@@ -174,11 +207,11 @@ export const EditorPage: React.FC = () => {
           setCurrentTime(0);
         })
         .catch(() => {
-          if (!cancelled) setMediaUrl('/legacy/static-analysis/demo_video/video_20260926_233851.mp4');
+          if (!cancelled) setMediaUrl('/demo.mp4');
         });
     } else {
       // Default sample video so the editor always has a real interactive video loaded
-      setMediaUrl('/legacy/static-analysis/demo_video/video_20260926_233851.mp4');
+      setMediaUrl('/demo.mp4');
     }
 
     return () => {
@@ -238,6 +271,7 @@ export const EditorPage: React.FC = () => {
           justifyContent: 'space-between',
           alignItems: 'center',
           marginBottom: '14px',
+          gap: '8px',
         }}
       >
         <button
@@ -253,38 +287,91 @@ export const EditorPage: React.FC = () => {
             placeItems: 'center',
             border: 'none',
             cursor: 'pointer',
+            flexShrink: 0,
           }}
         >
           <ArrowLeft size={18} aria-hidden="true" />
         </button>
 
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '15px', fontWeight: 800, color: '#fff' }}>
+        <div style={{ textAlign: 'center', minWidth: 0, flex: 1 }}>
+          <div
+            style={{
+              fontSize: '14px',
+              fontWeight: 800,
+              color: '#fff',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
             {activeProject?.title || 'Project Editor'}
           </div>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+          <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
             {activeProject?.mediaName || 'Real-time Video Canvas'}
           </div>
         </div>
 
-        <button
-          onClick={() => openModal('export')}
-          style={{
-            backgroundColor: 'var(--ai-accent)',
-            color: '#080808',
-            border: 'none',
-            borderRadius: 'var(--radius-pill)',
-            padding: '7px 14px',
-            fontSize: '12px',
-            fontWeight: 800,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '5px',
-          }}
-        >
-          Export <Share2 size={13} />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={handleImportVideo}
+            disabled={isImporting}
+            style={{
+              backgroundColor: 'var(--bg-surface-2)',
+              color: 'var(--text-primary)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: 'var(--radius-pill)',
+              padding: '6px 10px',
+              fontSize: '11px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+          >
+            <Upload size={12} /> {isImporting ? '...' : 'Clip'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowRemotionModal(true)}
+            style={{
+              backgroundColor: 'rgba(216, 255, 0, 0.14)',
+              color: 'var(--ai-accent)',
+              border: '1px solid var(--ai-border)',
+              borderRadius: 'var(--radius-pill)',
+              padding: '6px 10px',
+              fontSize: '11px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+          >
+            <Sparkles size={12} /> Remotion
+          </button>
+
+          <button
+            onClick={() => openModal('export')}
+            style={{
+              backgroundColor: 'var(--ai-accent)',
+              color: '#080808',
+              border: 'none',
+              borderRadius: 'var(--radius-pill)',
+              padding: '6px 12px',
+              fontSize: '11px',
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+          >
+            Export <Share2 size={12} />
+          </button>
+        </div>
       </div>
 
       {/* Video Preview Canvas */}
@@ -323,9 +410,15 @@ export const EditorPage: React.FC = () => {
               const video = videoRef.current;
               if (!video) return;
               if (video.currentTime >= playbackEnd - 0.04) {
-                video.pause();
-                setPlaying(false);
-                setCurrentTime(duration);
+                if (isLooping) {
+                  video.currentTime = playbackStart;
+                  video.play().catch(() => {});
+                  setCurrentTime(0);
+                } else {
+                  video.pause();
+                  setPlaying(false);
+                  setCurrentTime(duration);
+                }
               } else {
                 setCurrentTime(Math.max(0, video.currentTime - playbackStart));
               }
@@ -606,6 +699,124 @@ export const EditorPage: React.FC = () => {
             <span>FX: {selectedEffect.replace('_', ' ')}</span>
           </div>
         )}
+      </div>
+
+      {/* Video Transport & Playback Controls Bar */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 8,
+          marginTop: 10,
+          padding: '8px 10px',
+          borderRadius: 14,
+          backgroundColor: 'var(--bg-surface-2)',
+          border: '1px solid rgba(255, 255, 255, 0.06)',
+        }}
+      >
+        {/* Skip -5s, +5s, & Loop */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button
+            type="button"
+            onClick={() => {
+              const video = videoRef.current;
+              if (video) {
+                const target = Math.max(playbackStart, video.currentTime - 5);
+                video.currentTime = target;
+                setCurrentTime(Math.max(0, target - playbackStart));
+              }
+            }}
+            title="Jump back 5s"
+            style={{
+              padding: '5px 8px',
+              borderRadius: 8,
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: 'var(--text-secondary)',
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 3,
+            }}
+          >
+            <RotateCcw size={12} /> -5s
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              const video = videoRef.current;
+              if (video) {
+                const target = Math.min(playbackEnd, video.currentTime + 5);
+                video.currentTime = target;
+                setCurrentTime(Math.max(0, target - playbackStart));
+              }
+            }}
+            title="Jump forward 5s"
+            style={{
+              padding: '5px 8px',
+              borderRadius: 8,
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: 'var(--text-secondary)',
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            +5s
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsLooping(!isLooping)}
+            title="Toggle video loop"
+            style={{
+              padding: '5px 8px',
+              borderRadius: 8,
+              backgroundColor: isLooping ? 'rgba(216, 255, 0, 0.12)' : 'rgba(255, 255, 255, 0.05)',
+              border: isLooping ? '1px solid var(--ai-border)' : '1px solid rgba(255, 255, 255, 0.08)',
+              color: isLooping ? 'var(--ai-accent)' : 'var(--text-muted)',
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <Repeat size={12} /> Loop
+          </button>
+        </div>
+
+        {/* Playback Speed Chips */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          {[0.75, 1, 1.25, 1.5, 2].map((rate) => {
+            const isSelected = playbackRate === rate;
+            return (
+              <button
+                key={rate}
+                type="button"
+                onClick={() => setPlaybackRate(rate)}
+                style={{
+                  padding: '4px 6px',
+                  borderRadius: 6,
+                  backgroundColor: isSelected ? 'var(--ai-accent)' : 'rgba(255, 255, 255, 0.04)',
+                  color: isSelected ? '#080808' : 'var(--text-secondary)',
+                  border: isSelected ? 'none' : '1px solid rgba(255, 255, 255, 0.06)',
+                  fontSize: 10,
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                }}
+              >
+                {rate}x
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Safe-Zone Controls Bar (Reels & Shorts / TikTok Presets) */}
@@ -1048,6 +1259,20 @@ export const EditorPage: React.FC = () => {
           Open Copilot Assistant <Sparkles size={14} aria-hidden="true" />
         </Button>
       </div>
+
+      {/* Remotion Short Dynamic Modal */}
+      {showRemotionModal && (
+        <RemotionShortPlayer
+          isModal
+          onClose={() => setShowRemotionModal(false)}
+          videoUrl={mediaUrl || '/demo.mp4'}
+          hookText={customCaptionText || activeProject?.title || 'STOP SCROLLING: WATCH THIS'}
+          creatorName={creator?.name || 'Creator'}
+          creatorHandle={creator?.name ? `@${creator.name.toLowerCase().replace(/\s+/g, '')}` : '@creator'}
+          durationInSeconds={Math.min(30, Math.max(5, duration))}
+          themeColor="#D8FF00"
+        />
+      )}
     </div>
   );
 };

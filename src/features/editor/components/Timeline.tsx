@@ -56,9 +56,108 @@ export const Timeline: React.FC<TimelineProps> = ({
       // ignore
     }
   };
+  const [hoverInfo, setHoverInfo] = useState<{ time: number; x: number; zone: string } | null>(null);
+
+  const hookEndSec = Math.min(3, totalDuration * 0.25);
+  const hookPercent = Math.min(25, Math.max(8, (hookEndSec / totalDuration) * 100));
+  const ctaStartPercent = 85;
+
+  const getZoneName = (time: number) => {
+    if (time <= hookEndSec) return '⚡ 0-3s Hook Zone';
+    if (time >= totalDuration * 0.85) return '🎯 Viral Climax & CTA';
+    return '📈 Core Retention Body';
+  };
+
+  const handlePointerHover = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!trackRef.current) return;
+    const rect = trackRef.current.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const targetTime = Number((ratio * totalDuration).toFixed(1));
+    setHoverInfo({
+      time: targetTime,
+      x: e.clientX - rect.left,
+      zone: getZoneName(targetTime),
+    });
+  };
+
+  const jumpTo = (time: number) => {
+    const clamped = Math.max(0, Math.min(totalDuration, time));
+    setCurrentTime(clamped);
+    onSeek?.(clamped);
+  };
 
   return (
     <div style={{ margin: '14px 0', userSelect: 'none' }}>
+      {/* Quick Jump Marker Pills */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          marginBottom: '8px',
+          overflowX: 'auto',
+          scrollbarWidth: 'none',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => jumpTo(0)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            padding: '3px 8px',
+            borderRadius: 'var(--radius-pill)',
+            backgroundColor: 'rgba(216, 255, 0, 0.12)',
+            border: '1px solid var(--ai-border)',
+            color: 'var(--ai-accent)',
+            fontSize: '10px',
+            fontWeight: 700,
+            cursor: 'pointer',
+          }}
+        >
+          ⚡ Hook (0:00)
+        </button>
+        <button
+          type="button"
+          onClick={() => jumpTo(totalDuration * 0.5)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            padding: '3px 8px',
+            borderRadius: 'var(--radius-pill)',
+            backgroundColor: 'rgba(59, 130, 246, 0.12)',
+            border: '1px solid rgba(59, 130, 246, 0.3)',
+            color: '#60a5fa',
+            fontSize: '10px',
+            fontWeight: 700,
+            cursor: 'pointer',
+          }}
+        >
+          📈 Midpoint ({formatDuration(totalDuration * 0.5)})
+        </button>
+        <button
+          type="button"
+          onClick={() => jumpTo(totalDuration * 0.85)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            padding: '3px 8px',
+            borderRadius: 'var(--radius-pill)',
+            backgroundColor: 'rgba(244, 63, 94, 0.12)',
+            border: '1px solid rgba(244, 63, 94, 0.3)',
+            color: '#fb7185',
+            fontSize: '10px',
+            fontWeight: 700,
+            cursor: 'pointer',
+          }}
+        >
+          🎯 CTA ({formatDuration(totalDuration * 0.85)})
+        </button>
+      </div>
+
       {/* Timecode row */}
       <div
         style={{
@@ -70,9 +169,14 @@ export const Timeline: React.FC<TimelineProps> = ({
           marginBottom: '6px',
         }}
       >
-        <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--ai-accent)' }}>
-          {formatDuration(currentTime)}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--ai-accent)', fontSize: '12px' }}>
+            {formatDuration(currentTime)}
+          </span>
+          <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
+            ({getZoneName(currentTime)})
+          </span>
+        </div>
         <span style={{ fontSize: '10px' }}>
           {trimStart > 0 || (trimEnd !== undefined && trimEnd < totalDuration)
             ? `Trim: [${formatDuration(trimStart)} – ${formatDuration(effectiveEnd)}]`
@@ -85,7 +189,11 @@ export const Timeline: React.FC<TimelineProps> = ({
       <div
         ref={trackRef}
         onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
+        onPointerMove={(e) => {
+          handlePointerMove(e);
+          handlePointerHover(e);
+        }}
+        onPointerLeave={() => setHoverInfo(null)}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
         style={{
@@ -95,6 +203,38 @@ export const Timeline: React.FC<TimelineProps> = ({
           touchAction: 'none',
         }}
       >
+        {/* Hover / Drag Tooltip */}
+        {hoverInfo && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '-28px',
+              left: `${hoverInfo.x}px`,
+              transform: 'translateX(-50%)',
+              backgroundColor: '#0c0e12',
+              border: '1px solid var(--border-color)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.6)',
+              borderRadius: '6px',
+              padding: '2px 8px',
+              color: '#fff',
+              fontSize: '10px',
+              fontWeight: 700,
+              whiteSpace: 'nowrap',
+              pointerEvents: 'none',
+              zIndex: 30,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+          >
+            <span style={{ color: 'var(--ai-accent)', fontFamily: 'monospace' }}>
+              {formatDuration(hoverInfo.time)}
+            </span>
+            <span style={{ color: 'var(--text-muted)' }}>·</span>
+            <span>{hoverInfo.zone}</span>
+          </div>
+        )}
+
         {/* Playhead Indicator Line */}
         <div
           style={{
@@ -126,7 +266,7 @@ export const Timeline: React.FC<TimelineProps> = ({
           />
         </div>
 
-        {/* Video Track Strip with Active Trim Region */}
+        {/* Video Track Strip with Retention Zones & Active Trim */}
         <div
           style={{
             height: '48px',
@@ -150,6 +290,67 @@ export const Timeline: React.FC<TimelineProps> = ({
             }}
           />
 
+          {/* AI Retention Zone 1: Hook Window (0 - 3s) */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              bottom: 0,
+              left: 0,
+              width: `${hookPercent}%`,
+              background: 'linear-gradient(90deg, rgba(216, 255, 0, 0.22) 0%, rgba(216, 255, 0, 0.06) 100%)',
+              borderRight: '1.5px dashed var(--ai-accent)',
+              display: 'flex',
+              alignItems: 'flex-start',
+              padding: '3px 6px',
+              pointerEvents: 'none',
+              zIndex: 1,
+            }}
+          >
+            <span
+              style={{
+                fontSize: '8px',
+                fontWeight: 800,
+                color: 'var(--ai-accent)',
+                letterSpacing: '0.4px',
+                textShadow: '0 1px 3px rgba(0,0,0,0.9)',
+              }}
+            >
+              ⚡ HOOK
+            </span>
+          </div>
+
+          {/* AI Retention Zone 2: CTA / Climax (Last 15%) */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              bottom: 0,
+              right: 0,
+              width: `${100 - ctaStartPercent}%`,
+              background: 'linear-gradient(90deg, rgba(244, 63, 94, 0.06) 0%, rgba(244, 63, 94, 0.22) 100%)',
+              borderLeft: '1.5px dashed #F43F5E',
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'flex-end',
+              padding: '3px 6px',
+              pointerEvents: 'none',
+              zIndex: 1,
+            }}
+          >
+            <span
+              style={{
+                fontSize: '8px',
+                fontWeight: 800,
+                color: '#FB7185',
+                letterSpacing: '0.4px',
+                textShadow: '0 1px 3px rgba(0,0,0,0.9)',
+              }}
+            >
+              🎯 CTA
+            </span>
+          </div>
+
           {/* Active In/Out Trim Highlight Box */}
           <div
             style={{
@@ -163,6 +364,7 @@ export const Timeline: React.FC<TimelineProps> = ({
               borderRight: '2px solid var(--ai-accent)',
               boxSizing: 'border-box',
               pointerEvents: 'none',
+              zIndex: 2,
             }}
           />
 
@@ -170,13 +372,14 @@ export const Timeline: React.FC<TimelineProps> = ({
           <div
             style={{
               position: 'relative',
-              zIndex: 2,
+              zIndex: 3,
               display: 'flex',
               alignItems: 'center',
               paddingLeft: '12px',
               fontSize: '11px',
               fontWeight: 700,
               color: 'rgba(255, 255, 255, 0.9)',
+              marginTop: '14px',
             }}
           >
             {sourceName || 'Video Track 1'}
