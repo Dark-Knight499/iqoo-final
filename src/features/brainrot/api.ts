@@ -35,6 +35,18 @@ export interface MptTask {
   [key: string]: unknown;
 }
 
+export interface GalleryItem {
+  task_id: string;
+  file: string;
+  /** Engine-relative path, e.g. /tasks/<id>/final-1.mp4 */
+  url: string;
+  subject: string;
+  script: string;
+  voice_name: string;
+  size: number;
+  created_at: number;
+}
+
 export const TASK_STATE_FAILED = -1;
 export const TASK_STATE_COMPLETE = 1;
 
@@ -113,6 +125,16 @@ export const brainrotEngine = {
     });
     if (!payload.data?.task_id) throw new Error('The engine did not return a task id.');
     return payload.data.task_id;
+  },
+
+  // Lists renders that are still on disk, so previous videos survive an engine restart.
+  listGallery: async (): Promise<GalleryItem[]> => {
+    const payload = await request<Envelope<{ items: GalleryItem[] }>>(
+      '/api/v1/gallery',
+      undefined,
+      20_000,
+    );
+    return payload.data?.items ?? [];
   },
 
   getTask: async (taskId: string): Promise<MptTask> => {

@@ -32,6 +32,25 @@ import { ciStore } from '@/features/creator-intelligence/state/creatorIntelligen
 import { applyProposedTrim, proposeOpeningTrim, validTrim } from '@/shared/services/projectOperations';
 import { MediaArt } from '@/shared/components/MediaArt';
 
+export type SafeZonePlatform = 'reels' | 'tiktok';
+
+export const SAFE_ZONE_PRESETS: Record<SafeZonePlatform, {
+  label: string;
+  ui: { top: string; right: string; bottom: string; left: string };
+  text: { top: string; right: string; bottom: string; left: string };
+}> = {
+  reels: {
+    label: 'Instagram Reels / Shorts',
+    ui: { top: '7%', right: '18%', bottom: '23%', left: '6%' },
+    text: { top: '16%', right: '23%', bottom: '32%', left: '10%' },
+  },
+  tiktok: {
+    label: 'TikTok',
+    ui: { top: '8%', right: '20%', bottom: '22%', left: '6%' },
+    text: { top: '16%', right: '24%', bottom: '31%', left: '10%' },
+  },
+};
+
 export const EditorPage: React.FC = () => {
   const { closeModal, openCopilot, openModal, showToast } = useAppStore();
   const { activeProject, updateActiveProject } = useProjectStore();
@@ -56,6 +75,9 @@ export const EditorPage: React.FC = () => {
     selectedEffect,
     videoScale,
     showSafeZones,
+    safeZonePlatform,
+    setSafeZonePlatform,
+    toggleSafeZones,
     showCompare,
     hasCaptions,
     captionStyle,
@@ -64,6 +86,15 @@ export const EditorPage: React.FC = () => {
     isMuted,
     playbackRate,
   } = useEditorStore();
+
+  const isVerticalPreview = aspectRatio === '9:16';
+  const platformSafeZones = SAFE_ZONE_PRESETS[safeZonePlatform] || SAFE_ZONE_PRESETS.reels;
+  const uiSafeInsets = isVerticalPreview
+    ? platformSafeZones.ui
+    : { top: '6%', right: '6%', bottom: '6%', left: '6%' };
+  const textSafeInsets = isVerticalPreview
+    ? platformSafeZones.text
+    : { top: '12%', right: '12%', bottom: '12%', left: '12%' };
 
   const hasMedia = Boolean(activeProject?.mediaId || activeProject?.mediaUrl || mediaUrl);
   const trimStart = activeProject?.trimStartSeconds ?? 0;
@@ -386,12 +417,13 @@ export const EditorPage: React.FC = () => {
           <div
             style={{
               position: 'absolute',
-              bottom: '44px',
-              left: '20px',
-              right: '20px',
+              bottom: isVerticalPreview && showSafeZones ? textSafeInsets.bottom : '44px',
+              left: isVerticalPreview && showSafeZones ? textSafeInsets.left : '20px',
+              right: isVerticalPreview && showSafeZones ? textSafeInsets.right : '20px',
               textAlign: 'center',
-              zIndex: 5,
+              zIndex: 7,
               pointerEvents: 'none',
+              transition: 'all 0.2s ease',
             }}
           >
             {captionStyle === 'tiktok_yellow' && (
@@ -443,29 +475,61 @@ export const EditorPage: React.FC = () => {
           </div>
         )}
 
-        {/* Safe Zones Overlay Guidelines */}
+        {/* Safe Zones Overlay Guidelines (Reels / TikTok / Shorts) */}
         {showSafeZones && (
-          <div
-            style={{
-              position: 'absolute',
-              inset: '24px 16px 56px',
-              border: '1.5px dashed rgba(216, 255, 0, 0.6)',
-              borderRadius: '12px',
-              pointerEvents: 'none',
-              zIndex: 6,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              padding: '6px',
-            }}
-          >
-            <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--ai-accent)', letterSpacing: '.6px' }}>
-              REELS / SHORTS SAFE HEADER
+          <>
+            {/* Outer UI Safe Zone (protects side action buttons, sound title, caption text) */}
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                top: uiSafeInsets.top,
+                right: uiSafeInsets.right,
+                bottom: uiSafeInsets.bottom,
+                left: uiSafeInsets.left,
+                border: '1.5px dashed rgba(216, 255, 0, 0.85)',
+                borderRadius: '10px',
+                pointerEvents: 'none',
+                zIndex: 6,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                padding: '6px',
+                boxShadow: 'inset 0 0 12px rgba(216, 255, 0, 0.05)',
+              }}
+            >
+              <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--ai-accent)', letterSpacing: '.6px', textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
+                {isVerticalPreview ? `${platformSafeZones.label.toUpperCase()} · UI SAFE` : 'TITLE SAFE MARGIN'}
+              </div>
+              <div style={{ fontSize: '8px', fontWeight: 800, color: 'var(--ai-accent)', textAlign: 'right', letterSpacing: '.6px', textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
+                ENGAGEMENT & ACTIONS CLEAR
+              </div>
             </div>
-            <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--ai-accent)', textAlign: 'right', letterSpacing: '.6px' }}>
-              SAFE TITLE MARGIN
+
+            {/* Inner Text & Subtitle Safe Zone */}
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                top: textSafeInsets.top,
+                right: textSafeInsets.right,
+                bottom: textSafeInsets.bottom,
+                left: textSafeInsets.left,
+                border: '1.5px dashed rgba(103, 214, 255, 0.9)',
+                borderRadius: '8px',
+                pointerEvents: 'none',
+                zIndex: 6,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'flex-end',
+                padding: '6px',
+              }}
+            >
+              <div style={{ fontSize: '8px', fontWeight: 800, color: '#67D6FF', textAlign: 'right', letterSpacing: '.5px', textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
+                TEXT & CAPTION SAFE
+              </div>
             </div>
-          </div>
+          </>
         )}
 
         {/* Play/Pause Button */}
@@ -542,6 +606,60 @@ export const EditorPage: React.FC = () => {
             <span>FX: {selectedEffect.replace('_', ' ')}</span>
           </div>
         )}
+      </div>
+
+      {/* Safe-Zone Controls Bar (Reels & Shorts / TikTok Presets) */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 10, padding: '0 4px' }}>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Reel & Text Safe-Zones</div>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Overlays for Reels, Shorts & TikTok UI</div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          {isVerticalPreview && (
+            <select
+              value={safeZonePlatform}
+              onChange={(e) => {
+                const preset = e.target.value as SafeZonePlatform;
+                setSafeZonePlatform(preset);
+                updateActiveProject({ safeZonePreset: preset });
+              }}
+              aria-label="Social platform safe-zone preset"
+              style={{
+                minHeight: 32,
+                borderRadius: 10,
+                padding: '0 8px',
+                background: 'var(--bg-surface-2)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-color)',
+                fontSize: 11,
+                fontWeight: 600,
+                outline: 'none',
+              }}
+            >
+              <option value="reels">Reels / Shorts</option>
+              <option value="tiktok">TikTok</option>
+            </select>
+          )}
+          <button
+            type="button"
+            aria-pressed={showSafeZones}
+            onClick={toggleSafeZones}
+            style={{
+              minHeight: 32,
+              borderRadius: 10,
+              padding: '0 10px',
+              background: showSafeZones ? 'rgba(216, 255, 0, 0.12)' : 'var(--bg-surface-2)',
+              color: showSafeZones ? 'var(--ai-accent)' : 'var(--text-secondary)',
+              border: showSafeZones ? '1px solid var(--ai-border)' : '1px solid var(--border-color)',
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {showSafeZones ? 'Guides On' : 'Guides Off'}
+          </button>
+        </div>
       </div>
 
       {mediaError && (

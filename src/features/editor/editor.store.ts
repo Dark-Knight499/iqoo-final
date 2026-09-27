@@ -102,6 +102,7 @@ export interface EditorState {
   blur: number;         // 0 - 3 (0 normal)
   videoScale: number;   // 1.0, 1.15, 1.25
   showSafeZones: boolean;
+  safeZonePlatform: 'reels' | 'tiktok';
   showCompare: boolean;
 }
 
@@ -126,7 +127,8 @@ const INITIAL_STATE: EditorState = {
   warmth: 0,
   blur: 0,
   videoScale: 1,
-  showSafeZones: false,
+  showSafeZones: true,
+  safeZonePlatform: 'reels',
   showCompare: false,
 };
 
@@ -269,6 +271,16 @@ export const editorStore = {
     notify();
   },
 
+  setSafeZones: (show: boolean) => {
+    state = { ...state, showSafeZones: show };
+    notify();
+  },
+
+  setSafeZonePlatform: (platform: 'reels' | 'tiktok') => {
+    state = { ...state, safeZonePlatform: platform };
+    notify();
+  },
+
   toggleCompare: () => {
     state = { ...state, showCompare: !state.showCompare };
     notify();
@@ -284,7 +296,8 @@ export const editorStore = {
       warmth: 0,
       blur: 0,
       videoScale: 1,
-      showSafeZones: false,
+      showSafeZones: true,
+      safeZonePlatform: 'reels',
       showCompare: false,
     };
     notify();
@@ -324,6 +337,8 @@ export function useEditorStore() {
     setBlur: editorStore.setBlur,
     setVideoScale: editorStore.setVideoScale,
     toggleSafeZones: editorStore.toggleSafeZones,
+    setSafeZones: editorStore.setSafeZones,
+    setSafeZonePlatform: editorStore.setSafeZonePlatform,
     toggleCompare: editorStore.toggleCompare,
     resetEffects: editorStore.resetEffects,
   };

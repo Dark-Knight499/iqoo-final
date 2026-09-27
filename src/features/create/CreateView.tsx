@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Film, Lightbulb, Gamepad2, Wand2, ArrowLeft, Brain, Sparkles, Flame } from 'lucide-react';
+import { ArrowRight, Film, Lightbulb, Gamepad2, Wand2, ArrowLeft, Brain, Sparkles, Flame, Video } from 'lucide-react';
 import { useAppStore } from '@/shared/state/app.store';
 import { useProjectStore } from '@/shared/state/project.store';
 import { files } from '@/utils/files';
@@ -45,6 +45,14 @@ export const CreateView: React.FC = () => {
   };
 
   const creationCards = [
+    {
+      id: 'record',
+      title: 'Record a Video',
+      description: 'Open the camera with real-time audio meter, focus assist, lighting detector, and teleprompter.',
+      badge: 'Live Assist',
+      badgeIcon: Video,
+      action: () => openModal('recording'),
+    },
     {
       id: 'media-intel',
       title: 'Media Intelligence',

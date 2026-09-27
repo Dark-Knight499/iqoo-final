@@ -8,16 +8,15 @@ import {
   Play,
   RefreshCw,
   Sparkles,
-  Trash2,
   UploadCloud,
 } from 'lucide-react';
 import { useAppStore } from '@/shared/state/app.store';
 import { Button } from '@/shared/components/Button';
 import { Card } from '@/shared/components/Card';
 import { Chip } from '@/shared/components/Chip';
-import { useBrainrotStore } from './brainrot.store';
 import {
   brainrotEngine,
+  GalleryItem,
   MptMaterial,
   MptTask,
   TASK_STATE_COMPLETE,
@@ -62,17 +61,20 @@ const labelStyle: React.CSSProperties = {
   marginBottom: '8px',
 };
 
+function galleryLabel(item: GalleryItem): string {
+  return item.subject.trim() || item.script.trim().slice(0, 60) || 'Untitled short';
+}
+
 export const BrainrotFeedView: React.FC = () => {
   const { closeModal } = useAppStore();
-  const { shorts, addShort, removeShort } = useBrainrotStore();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  // Captured when a render starts so a later field edit cannot mislabel the result.
-  const pendingRef = useRef({ topic: '', script: '', voice: '' });
 
   const [status, setStatus] = useState<EngineStatus>('checking');
   const [materials, setMaterials] = useState<MptMaterial[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [gallery, setGallery] = useState<GalleryItem[]>([]);
+  const [galleryLoading, setGalleryLoading] = useState(false);
 
   const [topic, setTopic] = useState('');
   const [script, setScript] = useState('');
@@ -84,11 +86,22 @@ export const BrainrotFeedView: React.FC = () => {
   const [activeVideo, setActiveVideo] = useState<{ url: string; topic: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const loadGallery = useCallback(async () => {
+    setGalleryLoading(true);
+    try {
+      setGallery(await brainrotEngine.listGallery());
+    } catch {
+      // The gallery is a convenience; a failure here should not block rendering.
+      setGallery([]);
+    } finally {
+      setGalleryLoading(false);
+    }
+  }, []);
+
   const loadMaterials = useCallback(async () => {
     try {
       setMaterials(await brainrotEngine.listMaterials());
     } catch {
-      // A missing material list should not hide the engine status.
       setMaterials([]);
     }
   }, []);
@@ -97,8 +110,10 @@ export const BrainrotFeedView: React.FC = () => {
     setStatus('checking');
     const online = await brainrotEngine.isOnline();
     setStatus(online ? 'online' : 'offline');
-    if (online) await loadMaterials();
-  }, [loadMaterials]);
+    if (online) {
+      await Promise.all([loadMaterials(), loadGallery()]);
+    }
+  }, [loadMaterials, loadGallery]);
 
   useEffect(() => {
     checkEngine();
@@ -117,20 +132,12 @@ export const BrainrotFeedView: React.FC = () => {
           const relativePath = next.videos?.[0];
           setPhase('done');
           if (relativePath) {
-            const pending = pendingRef.current;
-            addShort({
-              id: `${taskId}-${Date.now()}`,
-              taskId,
-              topic: pending.topic || 'Untitled short',
-              script: pending.script,
-              voice: pending.voice,
-              relativePath,
-              createdAt: Date.now(),
-            });
             setActiveVideo({
               url: brainrotEngine.mediaUrl(relativePath),
-              topic: pending.topic || 'Untitled short',
+              topic: topic.trim() || 'Untitled short',
             });
+            // Pick up the new render (and anything else finished since load).
+            loadGallery();
           } else {
             setError('The engine finished but returned no video file.');
           }
@@ -158,7 +165,7 @@ export const BrainrotFeedView: React.FC = () => {
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, [taskId, phase, addShort]);
+  }, [taskId, phase, topic, loadGallery]);
 
   const toggleMaterial = (file: string) => {
     setSelected((current) =>
@@ -201,7 +208,6 @@ export const BrainrotFeedView: React.FC = () => {
       return;
     }
 
-    pendingRef.current = { topic: topic.trim(), script: script.trim(), voice };
     setPhase('rendering');
     setActiveVideo(null);
     setTask(null);
@@ -287,7 +293,7 @@ export const BrainrotFeedView: React.FC = () => {
         </span>
         <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
           Type a topic and render a 9:16 short with voiceover and burned-in captions, on the local
-          render engine.
+          render engine. The gallery shows every render still on disk.
         </p>
       </div>
 
@@ -309,106 +315,120 @@ export const BrainrotFeedView: React.FC = () => {
         </Card>
       )}
 
-      {/* Feed */}
-      {shorts.length > 0 && (
+      {/* Gallery of renders on disk (survives engine restarts) */}
+      {status === 'online' && (
         <section>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <span style={{ ...labelStyle, marginBottom: 0 }}>Your feed ({shorts.length})</span>
+            <span style={{ ...labelStyle, marginBottom: 0 }}>
+              Gallery ({gallery.length}){galleryLoading ? ' · loading…' : ''}
+            </span>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={loadGallery}
+              disabled={galleryLoading}
+              style={{ gap: '6px' }}
+            >
+              <RefreshCw size={14} aria-hidden="true" /> Refresh
+            </Button>
           </div>
-          <div
-            style={{
-              display: 'flex',
-              gap: '10px',
-              overflowX: 'auto',
-              paddingBottom: '6px',
-              marginRight: '-18px',
-              paddingRight: '18px',
-              scrollbarWidth: 'none',
-            }}
-          >
-            {shorts.map((short) => {
-              const isActive = activeVideo?.url === brainrotEngine.mediaUrl(short.relativePath);
-              return (
-                <article
-                  key={short.id}
-                  onClick={() =>
-                    setActiveVideo({ url: brainrotEngine.mediaUrl(short.relativePath), topic: short.topic })
-                  }
-                  style={{
-                    position: 'relative',
-                    minWidth: '132px',
-                    width: '132px',
-                    height: '176px',
-                    flexShrink: 0,
-                    borderRadius: '16px',
-                    overflow: 'hidden',
-                    cursor: 'pointer',
-                    backgroundColor: '#000',
-                    border: isActive ? '1px solid var(--ai-accent)' : '1px solid var(--border-color)',
-                  }}
-                >
-                  <video
-                    src={brainrotEngine.mediaUrl(short.relativePath)}
-                    muted
-                    playsInline
-                    preload="metadata"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }}
-                  />
-                  <div
+
+          {gallery.length === 0 ? (
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
+              No finished renders on the engine yet. Generate one below.
+            </p>
+          ) : (
+            <div
+              style={{
+                display: 'flex',
+                gap: '10px',
+                overflowX: 'auto',
+                paddingBottom: '6px',
+                marginRight: '-18px',
+                paddingRight: '18px',
+                scrollbarWidth: 'none',
+              }}
+            >
+              {gallery.map((item) => {
+                const url = brainrotEngine.mediaUrl(item.url);
+                const isActive = activeVideo?.url === url;
+                return (
+                  <article
+                    key={`${item.task_id}-${item.file}`}
+                    onClick={() => setActiveVideo({ url, topic: galleryLabel(item) })}
                     style={{
-                      position: 'absolute',
-                      inset: 0,
-                      background: 'linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.88) 100%)',
-                      pointerEvents: 'none',
-                    }}
-                  />
-                  <button
-                    aria-label={`Remove ${short.topic}`}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      removeShort(short.id);
-                      if (isActive) setActiveVideo(null);
-                    }}
-                    style={{
-                      position: 'absolute',
-                      top: '8px',
-                      right: '8px',
-                      width: '26px',
-                      height: '26px',
-                      borderRadius: '50%',
-                      border: 'none',
-                      backgroundColor: 'rgba(0,0,0,0.65)',
-                      color: '#fff',
-                      display: 'grid',
-                      placeItems: 'center',
+                      position: 'relative',
+                      minWidth: '132px',
+                      width: '132px',
+                      height: '176px',
+                      flexShrink: 0,
+                      borderRadius: '16px',
+                      overflow: 'hidden',
                       cursor: 'pointer',
+                      backgroundColor: '#000',
+                      border: isActive ? '1px solid var(--ai-accent)' : '1px solid var(--border-color)',
                     }}
                   >
-                    <Trash2 size={13} aria-hidden="true" />
-                  </button>
-                  <div style={{ position: 'absolute', bottom: '9px', left: '10px', right: '10px' }}>
+                    <video
+                      src={url}
+                      muted
+                      playsInline
+                      preload="metadata"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.9 }}
+                    />
                     <div
                       style={{
-                        fontSize: '11px',
-                        fontWeight: 700,
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.88) 100%)',
+                        pointerEvents: 'none',
+                      }}
+                    />
+                    <a
+                      href={url}
+                      download
+                      onClick={(event) => event.stopPropagation()}
+                      aria-label={`Download ${galleryLabel(item)}`}
+                      style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        width: '26px',
+                        height: '26px',
+                        borderRadius: '50%',
+                        backgroundColor: 'rgba(0,0,0,0.65)',
                         color: '#fff',
-                        lineHeight: 1.25,
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
+                        display: 'grid',
+                        placeItems: 'center',
                       }}
                     >
-                      {short.topic}
+                      <Download size={13} aria-hidden="true" />
+                    </a>
+                    <div style={{ position: 'absolute', bottom: '9px', left: '10px', right: '10px' }}>
+                      <div
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          color: '#fff',
+                          lineHeight: 1.25,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {galleryLabel(item)}
+                      </div>
+                      <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.65)', marginTop: '3px' }}>
+                        {new Date(item.created_at).toLocaleDateString()} ·{' '}
+                        {(item.size / (1024 * 1024)).toFixed(1)} MB
+                      </div>
                     </div>
-                    <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.65)', marginTop: '3px' }}>
-                      {new Date(short.createdAt).toLocaleDateString()}
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
         </section>
       )}
 
@@ -435,7 +455,7 @@ export const BrainrotFeedView: React.FC = () => {
           id="brainrot-script"
           value={script}
           onChange={(event) => setScript(event.target.value)}
-          placeholder="Paste your own script to render with no LLM key. Leave blank to let the engine write one from the topic (needs an LLM key in the engine config)."
+          placeholder="Paste your own script to render with no LLM key. Leave blank to let the engine write one from the topic."
           rows={5}
           style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }}
           disabled={isRendering}

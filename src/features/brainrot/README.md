@@ -27,6 +27,25 @@ Then **Create → Brainrot Feed**.
   `/api/v1/tasks/{id}`, and plays the finished MP4.
 - The engine accepts server-side local clip filenames, so the flow is: upload a
   clip once, select it, generate.
+- The gallery reads `GET /api/v1/gallery`.
+
+## Local engine patch (re-apply after a re-clone)
+
+The engine's task store is in memory, so `/api/v1/tasks` forgets every render
+when the service restarts. To show **previous** videos safely, this repo adds a
+small read-only route that scans the task directory instead:
+
+- `MoneyPrinterTurbo/app/controllers/v1/gallery.py` (new)
+- `MoneyPrinterTurbo/app/router.py` (registers `gallery.router`)
+
+`GET /api/v1/gallery` returns `{items: [{task_id, file, url, subject, script,
+voice_name, size, created_at}]}`, newest first, where `url` is a relative
+`/tasks/<task_id>/<file>` path. Intermediate `*TEMP*` files and placeholders
+under 10 KB are skipped. It reads `script.json` next to each render for the
+topic and script.
+
+`MoneyPrinterTurbo/` is gitignored, so this patch is **not** in version control.
+If the engine is re-cloned or updated, re-apply these two files.
 
 ## Honest limits
 
