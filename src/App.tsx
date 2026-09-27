@@ -17,6 +17,7 @@ import { AssetsView } from '@/features/assets/AssetsView';
 import { MediaIntelligenceView } from '@/features/media-intelligence/MediaIntelligenceView';
 import { ExportModal } from '@/features/export/ExportModal';
 import { CopilotSheet } from '@/features/copilot/CopilotSheet';
+import { ClippingView } from '@/features/clipping/ClippingView';
 
 export const App: React.FC = () => {
   const { activeTab, activeModal, returnFromExport, closeModal } = useAppStore();
@@ -54,6 +55,9 @@ export const App: React.FC = () => {
   }
   if (activeModal === 'media-intelligence') {
     return <MediaIntelligenceView />;
+  }
+  if (activeModal === 'clipping') {
+    return <ClippingView />;
   }
   if (activeModal === 'creator-intelligence') {
     return <CreatorIntelligenceScreen onBack={closeModal} />;

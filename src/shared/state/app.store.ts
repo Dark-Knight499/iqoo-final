@@ -14,6 +14,7 @@ export type ScreenModal =
   | 'export'
   | 'assets'
   | 'media-intelligence'
+  | 'clipping'
   | 'creator-intelligence';
 
 export type AppTheme = 'dark' | 'light';
