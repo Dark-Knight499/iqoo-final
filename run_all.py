@@ -11,21 +11,26 @@ import subprocess
 import signal
 import time
 
+import os
+
 def main():
+    venv_py = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".venv", "bin", "python")
+    py_exec = venv_py if os.path.exists(venv_py) else sys.executable
+
     print("=" * 65)
     print("  CREATOR AI STUDIO — FULL SYSTEM LAUNCHER")
     print("  1. Studio Backend:       http://localhost:8000 (API & Docs)")
     print("  2. Intelligence Backend: http://localhost:8001 (Profiling & Trends)")
-    print("  3. Web / Mobile UI:      http://localhost:5174 & LAN accessible")
+    print("  3. Web / Mobile UI:      http://localhost:5173 / http://localhost:5174")
     print("=" * 65)
-    print("Starting all 3 services...\n")
+    print("Starting services...\n")
 
     processes = []
     try:
-        p1 = subprocess.Popen([sys.executable, "backend/run_backend.py"])
+        p1 = subprocess.Popen([py_exec, "backend/run_backend.py"])
         processes.append(("Studio Backend (8000)", p1))
 
-        p2 = subprocess.Popen([sys.executable, "backend/intelligence/run.py"])
+        p2 = subprocess.Popen([py_exec, "backend/intelligence/run.py"])
         processes.append(("Intelligence Backend (8001)", p2))
 
         p3 = subprocess.Popen(["npm", "run", "dev"], shell=True)
