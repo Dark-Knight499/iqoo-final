@@ -40,6 +40,7 @@ export interface CreatorProfile {
     userMd: string;
     hookMd: string;
     catalogSummary: Record<string, number>;
+    analysis?: Record<string, any>;
   };
   metrics: {
     views: string;

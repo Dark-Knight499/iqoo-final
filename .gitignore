@@ -15,7 +15,16 @@ __pycache__/
 
 # Local runtime data & temporary media
 server/data/
-MoneyPrinterTurbo/
+
+# Video outputs & clipping
+*.mp4
+*.mov
+*.webm
+*.avi
+clipping/frames/
+clipping/exports/
+clipping/cache/
+clipping/uploads/
 
 # Static analysis runtime dependencies & outputs
 legacy/static-analysis/node_modules/

@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:all": "python run_all.py",
+    "start:all": "python run_all.py",
     "media:server": "node server/index.mjs",
     "mpt:setup": "cd MoneyPrinterTurbo && uv sync --python 3.11",
     "mpt:server": "cd MoneyPrinterTurbo && uv run python main.py",
@@ -12,7 +14,10 @@
     "analysis:server": "npm --prefix legacy/static-analysis run server:dev",
     "test:analysis": "npm --prefix legacy/static-analysis test",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test src/shared/services/projectOperations.test.mjs src/features/creator-intelligence/tests/*.test.mjs server/*.test.mjs",
+    "backend:intel": "python backend/intelligence/run.py",
+    "backend:studio": "python backend/run_backend.py"
   },
   "dependencies": {
     "lucide-react": "^1.16.0",
