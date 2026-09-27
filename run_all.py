@@ -19,9 +19,10 @@ def main():
 
     print("=" * 65)
     print("  CREATOR AI STUDIO — FULL SYSTEM LAUNCHER")
-    print("  1. Studio Backend:       http://localhost:8000 (API & Docs)")
-    print("  2. Intelligence Backend: http://localhost:8001 (Profiling & Trends)")
-    print("  3. Web / Mobile UI:      http://localhost:5173 / http://localhost:5174")
+    print("  1. Studio Backend:        http://localhost:8000 (API & Docs)")
+    print("  2. Intelligence Backend:  http://localhost:8001 (Profiling & Trends)")
+    print("  3. Static Analysis Server: http://localhost:4174 (Media Intelligence)")
+    print("  4. Web / Mobile UI:       http://localhost:5173 / http://localhost:5174")
     print("=" * 65)
     print("Starting services...\n")
 
@@ -33,8 +34,11 @@ def main():
         p2 = subprocess.Popen([py_exec, "backend/intelligence/run.py"])
         processes.append(("Intelligence Backend (8001)", p2))
 
-        p3 = subprocess.Popen(["npm", "run", "dev"], shell=True)
-        processes.append(("Frontend Vite Server", p3))
+        p3 = subprocess.Popen(["npm", "--prefix", "legacy/static-analysis", "run", "server:dev"], shell=False)
+        processes.append(("Static Analysis Server (4174)", p3))
+
+        p4 = subprocess.Popen(["npm", "run", "dev"], shell=True)
+        processes.append(("Frontend Vite Server", p4))
 
         print("\nAll services started! Press Ctrl+C to terminate all services.\n")
 
