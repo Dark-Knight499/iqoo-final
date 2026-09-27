@@ -27,7 +27,10 @@ import {
   Target,
   Zap,
   BarChart3,
-  Video
+  Video,
+  Swords,
+  Send,
+  BookOpen
 } from 'lucide-react';
 import { 
   Region, 
@@ -40,6 +43,10 @@ import { StoryboardButton } from '../components/StoryboardButton';
 import { StoryboardSheet } from '../components/StoryboardSheet';
 import { ContentDetailSheet } from '../components/ContentDetailSheet';
 import { GenerateContentScreen } from './GenerateContentScreen';
+import { SuggestionsRoadmapView } from '../components/SuggestionsRoadmapView';
+import { HooksLanguageView } from '../components/HooksLanguageView';
+import { CreatorComparisonView } from '../components/CreatorComparisonView';
+import { PublishingHubView } from '../components/PublishingHubView';
 import { ThemeToggle } from '@/shared/components/ThemeToggle';
 import { useAppStore } from '@/shared/state/app.store';
 import { useCreatorStore } from '@/shared/state/creator.store';
@@ -63,6 +70,7 @@ const GEO_REGIONS = [
   { id: 'IN', label: 'India' },
 ];
 
+export type MainNavTab = 'feeds' | 'suggestions' | 'hooks' | 'comparison' | 'publishing';
 type PlatformTab = 'all' | 'youtube' | 'instagram' | 'x_twitter' | 'linkedin' | 'formats' | 'dna';
 
 interface CreatorIntelligenceScreenProps {
@@ -91,6 +99,16 @@ export const CreatorIntelligenceScreen: React.FC<CreatorIntelligenceScreenProps>
   const { creator, updateProfile } = useCreatorStore();
   const { projects } = useProjectStore();
   const isDark = theme !== 'light';
+
+  // Primary Suite Navigation Mode
+  const [mainNavTab, setMainNavTab] = useState<MainNavTab>('feeds');
+  const [draftForPublish, setDraftForPublish] = useState<{
+    platform?: string;
+    content_format?: string;
+    title?: string;
+    content?: string;
+    tags?: string[];
+  } | null>(null);
 
   // Domain & Region State
   const [activeDomain, setActiveDomain] = useState<string>(creator.niche || 'Consumer Technology, Hardware & AI Gadgets');
@@ -505,10 +523,10 @@ export const CreatorIntelligenceScreen: React.FC<CreatorIntelligenceScreenProps>
         </div>
       </section>
 
-      {/* PLATFORM FILTER TABS */}
-      <nav
+      {/* PRIMARY SUITE NAVIGATION */}
+      <div
         style={{
-          padding: '12px 20px',
+          padding: '8px 20px 14px',
           display: 'flex',
           gap: '8px',
           overflowX: 'auto',
@@ -516,7 +534,97 @@ export const CreatorIntelligenceScreen: React.FC<CreatorIntelligenceScreenProps>
         }}
       >
         {[
-          { id: 'all', label: 'All Streams' },
+          { 
+            id: 'feeds', 
+            label: 'Multi-Platform Feeds', 
+            icon: Radio, 
+            badge: `${youtubeItems.length + instagramItems.length + xTwitterItems.length + linkedinItems.length}` 
+          },
+          { 
+            id: 'suggestions', 
+            label: 'What To Create Next', 
+            icon: Target, 
+            badge: `${intelligence?.top_recommendations?.length || trendsData?.content_opportunity_matrix?.length || 0} ideas` 
+          },
+          { 
+            id: 'hooks', 
+            label: 'Hooks & Language DNA', 
+            icon: MessageSquare, 
+            badge: domainProfile?.signature_phrases?.length ? `${domainProfile.signature_phrases.length} phrases` : 'Hinglish' 
+          },
+          { 
+            id: 'comparison', 
+            label: 'Creator Comparison', 
+            icon: Swords, 
+            badge: 'Benchmark' 
+          },
+          { 
+            id: 'publishing', 
+            label: 'Publishing & Human Approval', 
+            icon: Send, 
+            badge: 'Composio' 
+          },
+        ].map((tab) => {
+          const isActive = mainNavTab === tab.id;
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setMainNavTab(tab.id as MainNavTab)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '9px 16px',
+                borderRadius: '12px',
+                backgroundColor: isActive ? 'var(--ai-accent)' : 'var(--bg-surface)',
+                color: isActive ? '#000000' : 'var(--text-primary)',
+                border: isActive ? '1px solid var(--ai-accent)' : '1px solid var(--border-color)',
+                fontSize: '12px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                boxShadow: isActive ? '0 4px 14px rgba(216, 255, 0, 0.25)' : 'none',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <Icon size={15} />
+              <span>{tab.label}</span>
+              {tab.badge && (
+                <span
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    padding: '2px 6px',
+                    borderRadius: '999px',
+                    backgroundColor: isActive ? 'rgba(0,0,0,0.15)' : 'var(--bg-surface-2)',
+                    color: isActive ? '#000000' : 'var(--text-muted)',
+                  }}
+                >
+                  {tab.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 1. PRIMARY VIEW: MULTI-PLATFORM FEEDS */}
+      {mainNavTab === 'feeds' && (
+        <>
+          {/* PLATFORM FILTER TABS */}
+          <nav
+            style={{
+              padding: '12px 20px',
+              display: 'flex',
+              gap: '8px',
+              overflowX: 'auto',
+              scrollbarWidth: 'none',
+            }}
+          >
+            {[
+              { id: 'all', label: 'All Streams' },
           { id: 'youtube', label: `YouTube (${youtubeItems.length})` },
           { id: 'instagram', label: `Reels (${instagramItems.length})` },
           { id: 'x_twitter', label: `X / Twitter (${xTwitterItems.length})` },
@@ -1155,6 +1263,76 @@ export const CreatorIntelligenceScreen: React.FC<CreatorIntelligenceScreenProps>
         )}
 
       </div>
+      </>
+      )}
+
+      {/* 2. PRIMARY VIEW: WHAT TO CREATE NEXT (SUGGESTIONS & ROADMAP) */}
+      {mainNavTab === 'suggestions' && (
+        <div style={{ padding: '0 20px' }}>
+          <SuggestionsRoadmapView
+            recommendations={intelligence?.top_recommendations || []}
+            opportunityMatrix={trendsData?.content_opportunity_matrix || []}
+            trendingKeywords={trendsData?.trending_keywords || intelligence?.trending_keywords || []}
+            activeDomain={activeDomain}
+            onDraftInCopilot={(topic, hook, platform) => {
+              openCopilot(`Draft a high-retention viral script for ${platform} on the topic "${topic}". Hook: "${hook}". Include 3 key scenes, visual b-roll directions, and pacing notes.`);
+            }}
+            onAddToStoryboard={(title, reason) => {
+              handleAddTrendToStoryboard(title, reason);
+            }}
+            onSendToPublishQueue={(draft) => {
+              setDraftForPublish(draft);
+              setMainNavTab('publishing');
+              showToast('Draft forwarded to Composio Publishing Queue. Review and approve below.');
+            }}
+            onApplyDomain={(dom) => handleApplyDomain(dom)}
+            isLoading={intelligenceLoading || trendsLoading}
+          />
+        </div>
+      )}
+
+      {/* 3. PRIMARY VIEW: HOOKS & LANGUAGE DNA */}
+      {mainNavTab === 'hooks' && (
+        <div style={{ padding: '0 20px' }}>
+          <HooksLanguageView
+            creatorName={creator.name || 'Dhruv Rathee'}
+            domainProfile={domainProfile}
+            detectedLanguage={intelligence?.detected_language || 'Hindi / Hinglish (हिंदी / English mix)'}
+            onDraftInCopilot={(topic, hook, platform) => {
+              openCopilot(`Draft a high-retention ${platform} script in authentic spoken style using this hook: "${hook}". Topic context: "${topic}". Include micro-pauses and visual staging cues.`);
+            }}
+            onAddToStoryboard={(title, reason) => {
+              handleAddTrendToStoryboard(title, reason);
+            }}
+          />
+        </div>
+      )}
+
+      {/* 4. PRIMARY VIEW: CREATOR COMPARISON */}
+      {mainNavTab === 'comparison' && (
+        <div style={{ padding: '0 20px' }}>
+          <CreatorComparisonView
+            baseCreatorName={creator.name || 'Dhruv Rathee'}
+            activeDomain={activeDomain}
+            onDraftInCopilot={(topic, hook, platform) => {
+              openCopilot(`Generate a video script that incorporates this tactical improvement from our benchmark analysis: "${topic}". Action: "${hook}". Format: ${platform}.`);
+            }}
+            onAddToStoryboard={(title, reason) => {
+              handleAddTrendToStoryboard(title, reason);
+            }}
+          />
+        </div>
+      )}
+
+      {/* 5. PRIMARY VIEW: COMPOSIO PUBLISHING HUB */}
+      {mainNavTab === 'publishing' && (
+        <div style={{ padding: '0 20px' }}>
+          <PublishingHubView
+            creatorId={creator.name || 'dhruv_rathee'}
+            initialDraft={draftForPublish}
+          />
+        </div>
+      )}
 
       {/* STORYBOARD DRAWER & DETAIL SHEETS */}
       <StoryboardSheet

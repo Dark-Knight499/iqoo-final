@@ -654,10 +654,10 @@ export const HomeView: React.FC = () => {
 
             <div>
               <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>
-                Trend Radar
+                Creator Intelligence
               </div>
               <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
-                Discover trends & reference blueprints
+                Hooks, Comparison, Roadmap & Publishing Hub
               </div>
             </div>
           </div>

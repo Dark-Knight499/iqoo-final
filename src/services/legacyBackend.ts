@@ -126,17 +126,121 @@ export interface ClipAnalysisResponse {
   top_viral_clips: ViralClip[];
 }
 
+export interface PublishJob {
+  job_id: string;
+  creator_id: string;
+  platform: 'youtube' | 'linkedin' | 'twitter' | 'substack' | string;
+  content_format: 'video' | 'short' | 'post' | 'thread' | 'article' | string;
+  title?: string | null;
+  content: string;
+  media_urls?: string[];
+  thumbnail_url?: string | null;
+  tags?: string[];
+  status: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'PUBLISHING' | 'PUBLISHED' | 'FAILED' | string;
+  requires_human_approval: boolean;
+  created_at: string;
+  approved_at?: string | null;
+  rejected_at?: string | null;
+  published_at?: string | null;
+  reviewer_notes?: string | null;
+  rejection_reason?: string | null;
+  composio_action?: string | null;
+  composio_execution_status?: string | null;
+  composio_output?: Record<string, unknown> | null;
+  published_url?: string | null;
+}
+
+export interface PublishCreateRequest {
+  creator_id: string;
+  platform: 'youtube' | 'linkedin' | 'twitter' | 'substack' | string;
+  content_format: 'video' | 'short' | 'post' | 'thread' | 'article' | string;
+  title?: string;
+  content: string;
+  media_urls?: string[];
+  thumbnail_url?: string;
+  tags?: string[];
+  scheduled_for?: string;
+  require_human_approval?: boolean;
+}
+
+export interface HumanApprovalRequest {
+  reviewer_name?: string;
+  feedback?: string;
+  override_content?: string;
+}
+
+export interface HumanRejectionRequest {
+  reviewer_name?: string;
+  rejection_reason: string;
+}
+
 export interface PublishResponse {
   status: string;
   message: string;
-  job: {
-    job_id: string;
-    status: string;
-    platform: string;
-    content_format: string;
-    published_url?: string | null;
-    composio_execution_status?: string | null;
+  job: PublishJob;
+}
+
+export interface CreatorComparisonDetail {
+  metric?: string;
+  aspect?: string;
+  base_creator: string;
+  target_creator: string;
+  tactical_takeaway?: string;
+  recommendation?: string;
+}
+
+export interface ImprovementPlaybookItem {
+  action: string;
+  why_it_works: string;
+  implementation_step: string;
+  estimated_impact: string;
+}
+
+export interface CreatorBenchmarkProfile {
+  name: string;
+  handle?: string;
+  subscribers?: string;
+  cross_platform_reach?: string;
+  primary_platforms?: string[];
+  core_style?: string;
+  content_formats?: string;
+  narrative_structure?: string;
+  topic_selection_strategy?: string;
+  visual_storytelling?: string;
+  retention_loop_mechanic?: string;
+  pacing_wpm?: string;
+  runtime_sweet_spot?: string;
+  hook_archetype?: string;
+  signature_phrase?: string;
+  thumbnail_style?: string;
+  competitive_moat?: string;
+}
+
+export interface CreatorComparisonResponse {
+  status: string;
+  target_creator: {
+    name: string;
+    slug: string;
+    domain: string;
+    sub_niche: string;
+    target_audience?: string;
+    files_extracted?: string[];
   };
+  base_creator: {
+    name: string;
+    domain: string;
+    sub_niche: string;
+  };
+  comparison: {
+    content_differences: CreatorComparisonDetail[];
+    content_improvement_playbook: ImprovementPlaybookItem[];
+    speech_differences: CreatorComparisonDetail[];
+    user_advantages: string[];
+    target_profile: CreatorBenchmarkProfile;
+    base_profile: CreatorBenchmarkProfile;
+  };
+  creator_comparison_md?: string;
+  artifacts?: Record<string, string>;
 }
 
 export interface ProfilingRequest {
@@ -516,8 +620,37 @@ export const legacyBackend = {
     ),
 
   compareCreator: (payload: { creator_name: string; base_creator?: string; niche_hint?: string; location?: string }) =>
-    request<Record<string, unknown>>('/intelligence/compare', {
+    request<CreatorComparisonResponse>('/intelligence/compare', {
       method: 'POST',
       body: JSON.stringify(payload),
+    }),
+
+  getPublishJobs: (status?: string, creatorId?: string) => {
+    const query = new URLSearchParams();
+    if (status && status !== 'ALL') query.set('status', status);
+    if (creatorId) query.set('creator_id', creatorId);
+    const qs = query.toString();
+    return request<PublishJob[]>(`/publish/jobs${qs ? `?${qs}` : ''}`);
+  },
+
+  createPublishJob: (payload: PublishCreateRequest) =>
+    request<PublishResponse>('/publish', {
+      method: 'POST',
+      body: JSON.stringify({
+        require_human_approval: true,
+        ...payload,
+      }),
+    }),
+
+  approvePublishJob: (jobId: string, approval?: HumanApprovalRequest) =>
+    request<PublishResponse>(`/publish/jobs/${encodeURIComponent(jobId)}/approve`, {
+      method: 'POST',
+      body: JSON.stringify(approval || { reviewer_name: 'Creator Admin' }),
+    }),
+
+  rejectPublishJob: (jobId: string, rejection?: HumanRejectionRequest) =>
+    request<PublishResponse>(`/publish/jobs/${encodeURIComponent(jobId)}/reject`, {
+      method: 'POST',
+      body: JSON.stringify(rejection || { reviewer_name: 'Creator Admin', rejection_reason: 'Tone mismatch' }),
     }),
 };
