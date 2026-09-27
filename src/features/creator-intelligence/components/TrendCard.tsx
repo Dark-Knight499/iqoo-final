@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingUp, Flame } from 'lucide-react';
+import { TrendingUp, Flame, ArrowRight } from 'lucide-react';
 import { Trend } from '../types/creatorIntelligence';
 
 interface TrendCardProps {
@@ -116,7 +116,7 @@ export const TrendCard: React.FC<TrendCardProps> = ({ trend, onClick }) => {
             fontWeight: 600,
           }}
         >
-          Explore →
+           Explore <ArrowRight size={12} aria-hidden="true" style={{ verticalAlign: 'middle' }} />
         </span>
       </div>
     </div>

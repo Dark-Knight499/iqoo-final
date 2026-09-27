@@ -81,7 +81,7 @@ export const ContentAnalysisScreen: React.FC = () => {
           Content Analysis
         </h1>
         <p style={{ margin: 0, fontSize: '14px', color: '#64748B' }}>
-          Structured information extracted from your media.
+          Prewritten analysis of the sample video, not extracted from an uploaded file.
         </p>
       </div>
 

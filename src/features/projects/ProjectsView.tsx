@@ -5,10 +5,26 @@ import { useProjectStore } from '@/shared/state/project.store';
 import { Button } from '@/shared/components/Button';
 import { Card } from '@/shared/components/Card';
 import { formatDuration } from '@/utils/format';
+import { files } from '@/utils/files';
+import { MediaArt } from '@/shared/components/MediaArt';
 
 export const ProjectsView: React.FC = () => {
-  const { closeModal, openModal } = useAppStore();
-  const { projects, setActiveProjectId } = useProjectStore();
+  const { closeModal, openModal, showToast } = useAppStore();
+  const { projects, setActiveProjectId, addProject } = useProjectStore();
+
+  const handleNew = async () => {
+    try {
+      const picked = await files.pickVideo();
+      if (!picked) return;
+      addProject({ title: picked.name.replace(/\.[^/.]+$/, ''), mediaId: picked.mediaId,
+        mediaName: picked.name, durationSeconds: picked.duration, trimEndSeconds: picked.duration,
+        aspectRatio: picked.width >= picked.height ? '16:9' : '9:16' });
+      URL.revokeObjectURL(picked.url);
+      openModal('editor');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Unable to import video');
+    }
+  };
 
   const handleOpen = (id: string) => {
     setActiveProjectId(id);
@@ -28,6 +44,7 @@ export const ProjectsView: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
         <button
           onClick={closeModal}
+          aria-label="Close projects"
           style={{
             width: '36px',
             height: '36px',
@@ -38,11 +55,12 @@ export const ProjectsView: React.FC = () => {
             placeItems: 'center',
           }}
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={18} aria-hidden="true" />
         </button>
         <span style={{ fontSize: '15px', fontWeight: 700 }}>All Projects</span>
         <button
-          onClick={() => openModal('editor')}
+          onClick={handleNew}
+          aria-label="Create new project"
           style={{
             width: '36px',
             height: '36px',
@@ -53,7 +71,7 @@ export const ProjectsView: React.FC = () => {
             placeItems: 'center',
           }}
         >
-          <Plus size={18} />
+          <Plus size={18} aria-hidden="true" />
         </button>
       </div>
 
@@ -66,16 +84,8 @@ export const ProjectsView: React.FC = () => {
             onClick={() => handleOpen(proj.id)}
             style={{ display: 'flex', gap: '12px', alignItems: 'center', cursor: 'pointer' }}
           >
-            <div
-              className="media-bg"
-              style={{
-                width: '74px',
-                height: '74px',
-                borderRadius: '14px',
-                backgroundImage: `url(${proj.thumbnailUrl})`,
-                flexShrink: 0,
-              }}
-            />
+            <MediaArt mediaId={proj.mediaId} src={proj.thumbnailUrl} kind="project" label={proj.mediaId ? proj.mediaName || proj.title : 'No video attached'}
+              style={{ width: 74, height: 74, borderRadius: 14, flexShrink: 0 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {proj.title}

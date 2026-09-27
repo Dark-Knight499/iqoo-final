@@ -51,7 +51,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
           </span>
           {suggestion.relevanceScore && (
             <span style={{ fontSize: '11px', color: '#16A34A', fontWeight: 700 }}>
-              {suggestion.relevanceScore}% match
+              {suggestion.relevanceScore}% {suggestion.backendClip ? 'virality' : 'match'}
             </span>
           )}
         </div>
@@ -128,8 +128,8 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
             transition: 'background-color 0.15s ease',
           }}
         >
-          <Play size={14} fill="#1E293B" />
-          <span>{suggestion.actionLabel}</span>
+           <Play size={14} />
+           <span>View plan</span>
         </button>
 
         {suggestion.type === 'opportunity' ? (
@@ -152,7 +152,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
             }}
           >
             {isApproved ? <Check size={14} /> : <Layers size={14} />}
-            <span>{isApproved ? 'In Storyboard' : 'Add to Storyboard'}</span>
+             <span>{isApproved ? 'Review draft saved' : 'Save review draft'}</span>
           </button>
         ) : (
           <button
@@ -175,7 +175,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
             }}
           >
             {isApproved ? <Check size={14} /> : <Sparkles size={14} />}
-            <span>{isApproved ? 'Approved' : suggestion.secondaryActionLabel || 'Approve'}</span>
+             <span>{isApproved ? 'Review draft saved' : 'Save review draft'}</span>
           </button>
         )}
       </div>

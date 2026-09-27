@@ -8,7 +8,7 @@ export const primaryDemoVideo: MediaItem = {
   resolution: '1080p',
   fps: 24,
   size: '420 MB',
-  thumbnail: '/assets/trend-on-device-ai.jpg',
+  thumbnail: '',
   analyzedAt: 'Just now',
 };
 
@@ -20,7 +20,7 @@ export const mockRecentFiles: MediaItem[] = [
     type: 'audio',
     duration: '42:18',
     size: '180 MB',
-    thumbnail: '/assets/recording-teleprompter.jpg',
+    thumbnail: '',
     analyzedAt: '2 hours ago',
   },
   {
@@ -30,7 +30,7 @@ export const mockRecentFiles: MediaItem[] = [
     duration: 'Static',
     resolution: '4K',
     size: '8.4 MB',
-    thumbnail: '/assets/effects-showcase.jpg',
+    thumbnail: '',
     analyzedAt: 'Yesterday',
   },
   {
@@ -39,7 +39,7 @@ export const mockRecentFiles: MediaItem[] = [
     type: 'audio',
     duration: '03:14',
     size: '12 MB',
-    thumbnail: '/assets/ai-inspiration.jpg',
+    thumbnail: '',
     analyzedAt: '3 days ago',
   },
   {
@@ -49,7 +49,7 @@ export const mockRecentFiles: MediaItem[] = [
     duration: 'Static',
     resolution: '1080p',
     size: '4.2 MB',
-    thumbnail: '/assets/create-edit-video.jpg',
+    thumbnail: '',
     analyzedAt: '5 days ago',
   },
 ];

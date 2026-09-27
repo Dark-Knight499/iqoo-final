@@ -11,19 +11,16 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useMediaIntelligenceStore } from '../state/mediaIntelligenceStore';
-import { primaryDemoVideo, mockRecentFiles } from '../data/mockMedia';
-import { MediaItem } from '../types/mediaIntelligence';
+import { primaryDemoVideo } from '../data/mockMedia';
+import { useCreatorStore } from '@/shared/state/creator.store';
 
 export const ImportScreen: React.FC = () => {
-  const { importedMedia, importMedia, startAnalysis, goBack } = useMediaIntelligenceStore();
-  const [selectedType, setSelectedType] = useState<'video' | 'audio' | 'image'>('video');
+  const { importedMedia, importMedia, startAnalysis, isAnalyzing, analysisError } = useMediaIntelligenceStore();
+  const { creator } = useCreatorStore();
+  const [videoUrl, setVideoUrl] = useState('');
 
   const handleImportVideo = () => {
     importMedia(primaryDemoVideo);
-  };
-
-  const handleSelectRecent = (file: MediaItem) => {
-    importMedia(file);
   };
 
   return (
@@ -59,19 +56,19 @@ export const ImportScreen: React.FC = () => {
           Add Content
         </h1>
         <p style={{ margin: 0, fontSize: '14px', color: '#64748B' }}>
-          Give Creator AI something to understand.
+          Analyze a reachable video URL, or explore a sample video dataset.
         </p>
       </div>
 
       {/* Three Large Options */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '6px', marginBottom: '24px' }}>
         <button
-          onClick={() => setSelectedType('video')}
+          onClick={handleImportVideo}
           style={{
-            padding: '16px 12px',
+            padding: '16px 4px',
             borderRadius: '16px',
-            backgroundColor: selectedType === 'video' ? '#EFF6FF' : '#FFFFFF',
-            border: selectedType === 'video' ? '2px solid #2563EB' : '1px solid #E2E8F0',
+            backgroundColor: '#EFF6FF',
+            border: '2px solid #2563EB',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -86,8 +83,8 @@ export const ImportScreen: React.FC = () => {
               width: '40px',
               height: '40px',
               borderRadius: '12px',
-              backgroundColor: selectedType === 'video' ? '#2563EB' : '#F1F5F9',
-              color: selectedType === 'video' ? '#FFFFFF' : '#64748B',
+              backgroundColor: '#2563EB',
+              color: '#FFFFFF',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -95,23 +92,23 @@ export const ImportScreen: React.FC = () => {
           >
             <Video size={20} />
           </div>
-          <span style={{ fontSize: '13px', fontWeight: 700, color: selectedType === 'video' ? '#1D4ED8' : '#0F172A' }}>
-            Video
+          <span style={{ fontSize: '13px', fontWeight: 700, color: '#1D4ED8' }}>
+            Sample video
           </span>
         </button>
 
         <button
-          onClick={() => setSelectedType('audio')}
+          disabled
           style={{
-            padding: '16px 12px',
+            padding: '16px 4px',
             borderRadius: '16px',
-            backgroundColor: selectedType === 'audio' ? '#EFF6FF' : '#FFFFFF',
-            border: selectedType === 'audio' ? '2px solid #2563EB' : '1px solid #E2E8F0',
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             gap: '8px',
-            cursor: 'pointer',
+            cursor: 'not-allowed',
             boxShadow: '0 2px 4px rgba(15, 23, 42, 0.02)',
             transition: 'all 0.15s ease',
           }}
@@ -121,8 +118,8 @@ export const ImportScreen: React.FC = () => {
               width: '40px',
               height: '40px',
               borderRadius: '12px',
-              backgroundColor: selectedType === 'audio' ? '#2563EB' : '#F1F5F9',
-              color: selectedType === 'audio' ? '#FFFFFF' : '#64748B',
+              backgroundColor: '#F1F5F9',
+              color: '#64748B',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -130,23 +127,23 @@ export const ImportScreen: React.FC = () => {
           >
             <Mic size={20} />
           </div>
-          <span style={{ fontSize: '13px', fontWeight: 700, color: selectedType === 'audio' ? '#1D4ED8' : '#0F172A' }}>
-            Audio
+          <span style={{ fontSize: '13px', fontWeight: 700, color: '#64748B' }}>
+            Audio (unavailable)
           </span>
         </button>
 
         <button
-          onClick={() => setSelectedType('image')}
+          disabled
           style={{
-            padding: '16px 12px',
+            padding: '16px 4px',
             borderRadius: '16px',
-            backgroundColor: selectedType === 'image' ? '#EFF6FF' : '#FFFFFF',
-            border: selectedType === 'image' ? '2px solid #2563EB' : '1px solid #E2E8F0',
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             gap: '8px',
-            cursor: 'pointer',
+            cursor: 'not-allowed',
             boxShadow: '0 2px 4px rgba(15, 23, 42, 0.02)',
             transition: 'all 0.15s ease',
           }}
@@ -156,8 +153,8 @@ export const ImportScreen: React.FC = () => {
               width: '40px',
               height: '40px',
               borderRadius: '12px',
-              backgroundColor: selectedType === 'image' ? '#2563EB' : '#F1F5F9',
-              color: selectedType === 'image' ? '#FFFFFF' : '#64748B',
+              backgroundColor: '#F1F5F9',
+              color: '#64748B',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -165,10 +162,35 @@ export const ImportScreen: React.FC = () => {
           >
             <ImageIcon size={20} />
           </div>
-          <span style={{ fontSize: '13px', fontWeight: 700, color: selectedType === 'image' ? '#1D4ED8' : '#0F172A' }}>
-            Image
+          <span style={{ fontSize: '13px', fontWeight: 700, color: '#64748B' }}>
+            Image (unavailable)
           </span>
         </button>
+      </div>
+
+      <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '16px', marginBottom: '18px', border: '1px solid #E2E8F0' }}>
+        <label htmlFor="clipping-video-url" style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '7px' }}>
+          Find text clip suggestions from a video URL
+        </label>
+        <input
+          id="clipping-video-url"
+          type="url"
+          value={videoUrl}
+          onChange={(event) => setVideoUrl(event.target.value)}
+          placeholder="https://www.youtube.com/watch?v=…"
+          style={{ width: '100%', boxSizing: 'border-box', padding: '11px 12px', border: '1px solid #CBD5E1', borderRadius: '10px', color: '#0F172A', fontSize: '13px' }}
+        />
+        <p style={{ margin: '7px 0 10px', fontSize: '11px', lineHeight: 1.4, color: '#64748B' }}>
+          The backend analyzes a reachable URL and returns suggested ranges and text. It does not upload, cut, or render a video here.
+        </p>
+        <button
+          onClick={() => startAnalysis(videoUrl, creator.name)}
+          disabled={!videoUrl.trim() || isAnalyzing}
+          style={{ width: '100%', padding: '11px', border: 'none', borderRadius: '10px', background: !videoUrl.trim() || isAnalyzing ? '#CBD5E1' : '#0F172A', color: '#FFFFFF', fontSize: '13px', fontWeight: 700, cursor: !videoUrl.trim() || isAnalyzing ? 'not-allowed' : 'pointer' }}
+        >
+          {isAnalyzing ? 'Requesting suggestions…' : 'Find clip suggestions'}
+        </button>
+        {analysisError && <p role="alert" style={{ margin: '9px 0 0', color: '#B91C1C', fontSize: '12px' }}>{analysisError}</p>}
       </div>
 
       {/* Primary Import Action Box */}
@@ -206,10 +228,10 @@ export const ImportScreen: React.FC = () => {
             <UploadCloud size={28} />
           </div>
           <span style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A', marginBottom: '4px' }}>
-            Import Video File
+             Explore sample video
           </span>
           <span style={{ fontSize: '13px', color: '#64748B', marginBottom: '16px' }}>
-            Tap to load demo video file into memory
+             Loads sample metadata and a prewritten analysis dataset; no file is uploaded.
           </span>
           <button
             onClick={(e) => {
@@ -228,7 +250,7 @@ export const ImportScreen: React.FC = () => {
               boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
             }}
           >
-            Import Video
+             Select sample
           </button>
         </div>
       ) : (
@@ -254,16 +276,15 @@ export const ImportScreen: React.FC = () => {
               </h4>
               <div style={{ display: 'flex', gap: '10px', fontSize: '12px', color: '#64748B' }}>
                 <span>{importedMedia.duration}</span>
-                <span>•</span>
-                <span>{importedMedia.resolution || '1080p'}</span>
-                <span>•</span>
-                <span>{importedMedia.fps || 24} FPS</span>
+                 <span className="meta-separator" aria-hidden="true" />
+                 <span>{importedMedia.sourceUrl ? 'Backend text suggestions (no upload here)' : 'Sample dataset (no upload)'}</span>
               </div>
             </div>
           </div>
 
           <button
-            onClick={startAnalysis}
+             onClick={() => importedMedia.sourceUrl ? startAnalysis(importedMedia.sourceUrl, creator.name) : startAnalysis()}
+             disabled={isAnalyzing}
             style={{
               width: '100%',
               padding: '14px',
@@ -282,7 +303,7 @@ export const ImportScreen: React.FC = () => {
             }}
           >
             <Sparkles size={18} />
-            <span>Start Analysis</span>
+             <span>{importedMedia.sourceUrl ? (isAnalyzing ? 'Requesting suggestions…' : 'Refresh text suggestions') : 'Explore sample analysis'}</span>
             <ArrowRight size={18} />
           </button>
         </div>
@@ -301,14 +322,14 @@ export const ImportScreen: React.FC = () => {
             marginBottom: '12px',
           }}
         >
-          Recent files
+           Available sample
         </span>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {mockRecentFiles.map((file) => (
+           {[primaryDemoVideo].map((file) => (
             <div
               key={file.id}
-              onClick={() => handleSelectRecent(file)}
+               onClick={() => importMedia(file)}
               style={{
                 backgroundColor: '#FFFFFF',
                 borderRadius: '12px',
@@ -341,13 +362,13 @@ export const ImportScreen: React.FC = () => {
                     {file.title}
                   </h5>
                   <span style={{ fontSize: '11px', color: '#64748B' }}>
-                    {file.duration} • {file.analyzedAt || 'Analyzed'}
+                      {file.duration} · Sample dataset
                   </span>
                 </div>
               </div>
 
               <span style={{ fontSize: '12px', fontWeight: 600, color: '#2563EB' }}>
-                Select →
+                 Select <ArrowRight size={12} aria-hidden="true" style={{ verticalAlign: 'middle' }} />
               </span>
             </div>
           ))}

@@ -49,6 +49,7 @@ Tap create to try it yourself right now.`;
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
         <button
           onClick={closeModal}
+          aria-label="Close teleprompter"
           style={{
             width: '36px',
             height: '36px',
@@ -59,7 +60,7 @@ Tap create to try it yourself right now.`;
             placeItems: 'center',
           }}
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={18} aria-hidden="true" />
         </button>
 
         <span style={{ fontSize: '15px', fontWeight: 700 }}>AI Teleprompter</span>

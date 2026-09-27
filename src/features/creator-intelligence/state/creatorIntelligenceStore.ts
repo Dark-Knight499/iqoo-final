@@ -12,6 +12,7 @@ import { searchService, SearchResults } from '../services/searchService';
 import { bookmarkService } from '../services/bookmarkService';
 import { storyboardService } from '../services/storyboardService';
 import { generationService } from '../services/mockGenerationService';
+import { creatorStore } from '@/shared/state/creator.store';
 
 interface CIState {
   selectedRegion: Region;
@@ -25,6 +26,9 @@ interface CIState {
   generationLoading: boolean;
   copilotMessages: CopilotMessage[];
   generatedDraft: GeneratedContent | null;
+  savedProjectId: string | null;
+  proposedDraft: GeneratedContent | null;
+  generationError: string | null;
   activeGenerateTab: GenerateTab;
   storyboardOpen: boolean;
   bookmarkedIds: string[];
@@ -47,15 +51,11 @@ const INITIAL_STATE: CIState = {
   generateModalOpen: false,
   generationInput: INITIAL_GENERATION_INPUT,
   generationLoading: false,
-  copilotMessages: [
-    {
-      id: 'init-1',
-      role: 'ai',
-      text: "I found strong angles from your references. I'd suggest focusing on how on-device AI is changing mobile creation with zero latency.",
-      timestamp: Date.now(),
-    }
-  ],
+  copilotMessages: [],
   generatedDraft: null,
+  savedProjectId: null,
+  proposedDraft: null,
+  generationError: null,
   activeGenerateTab: 'copilot',
   storyboardOpen: false,
   bookmarkedIds: bookmarkService.getAll(),
@@ -64,10 +64,13 @@ const INITIAL_STATE: CIState = {
 let ciState: CIState = {
   ...INITIAL_STATE,
   storyboardItems: storyboardService.getItems(),
+  generationInput: { ...INITIAL_GENERATION_INPUT, referenceIds: storyboardService.getItems().map(item => item.contentId) },
   bookmarkedIds: bookmarkService.getAll(),
 };
 
 const listeners = new Set<() => void>();
+let generationVersion = 0;
+let workspaceId = creatorStore.get().id;
 
 function notify() {
   listeners.forEach((l) => l());
@@ -75,6 +78,21 @@ function notify() {
 
 export const ciStore = {
   getState: () => ciState,
+
+  resetForWorkspace: () => {
+    generationVersion++;
+    workspaceId = creatorStore.get().id;
+    storyboardService.reload();
+    bookmarkService.reload();
+    const items = storyboardService.getItems();
+    ciState = {
+      ...INITIAL_STATE,
+      generationInput: { ...INITIAL_GENERATION_INPUT, referenceIds: items.map(item => item.contentId) },
+      storyboardItems: items,
+      bookmarkedIds: bookmarkService.getAll(),
+    };
+    notify();
+  },
 
   setRegion: (region: Region) => {
     ciState = { ...ciState, selectedRegion: region };
@@ -109,6 +127,8 @@ export const ciStore = {
   },
 
   addToStoryboard: (contentId: string, note?: string) => {
+    if (ciState.storyboardItems.some(item => item.contentId === contentId)) return;
+    generationVersion++;
     storyboardService.add(contentId, note);
     ciState = { 
       ...ciState, 
@@ -116,12 +136,13 @@ export const ciStore = {
       generationInput: {
         ...ciState.generationInput,
         referenceIds: storyboardService.getItems().map(i => i.contentId)
-      }
+      }, generatedDraft: null, proposedDraft: null, generationLoading: false,
     };
     notify();
   },
 
   removeFromStoryboard: (itemId: string) => {
+    generationVersion++;
     storyboardService.remove(itemId);
     ciState = { 
       ...ciState, 
@@ -129,7 +150,7 @@ export const ciStore = {
       generationInput: {
         ...ciState.generationInput,
         referenceIds: storyboardService.getItems().map(i => i.contentId)
-      }
+      }, generatedDraft: null, proposedDraft: null, generationLoading: false,
     };
     notify();
   },
@@ -140,41 +161,74 @@ export const ciStore = {
   },
 
   openGenerateModal: () => {
-    // If not generated yet, auto-trigger generation
+    const referenceIds = ciState.storyboardItems.map(item => item.contentId);
+    const sameReferences = ciState.generatedDraft?.format.referenceIds.join('|') === referenceIds.join('|');
     ciState = { 
       ...ciState, 
       generateModalOpen: true,
       activeGenerateTab: 'copilot',
+      generatedDraft: sameReferences ? ciState.generatedDraft : null,
       generationInput: {
         ...ciState.generationInput,
-        referenceIds: ciState.storyboardItems.map(i => i.contentId)
+        referenceIds
       }
     };
     notify();
-    if (!ciState.generatedDraft) {
+    if (!ciState.generatedDraft && !ciState.generationLoading) {
       ciStore.startGeneration();
     }
   },
 
+  openSavedBlueprint: (draft: GeneratedContent, projectId?: string) => {
+    generationVersion++;
+    ciState = { ...ciState, generateModalOpen: true, activeGenerateTab: 'final',
+       generatedDraft: structuredClone(draft), savedProjectId: projectId || null, generationInput: structuredClone(draft.format),
+      generationLoading: false, generationError: null, proposedDraft: null,
+      copilotMessages: [{ id: `saved-${Date.now()}`, role: 'ai', text: 'Saved template loaded. Local edits require your approval.', timestamp: Date.now() }] };
+    notify();
+  },
+
+  linkProjectForPlanning: (projectId: string) => {
+    generationVersion++;
+    ciState = { ...ciState, savedProjectId: projectId, generatedDraft: null, proposedDraft: null, generationLoading: false };
+    notify();
+  },
+
+  openGenerateForProject: (projectId: string) => {
+    generationVersion++;
+    ciState = { ...ciState, savedProjectId: projectId, generatedDraft: null,
+      generationInput: { ...INITIAL_GENERATION_INPUT, referenceIds: ciState.storyboardItems.map(item => item.contentId) },
+      proposedDraft: null, generateModalOpen: true, activeGenerateTab: 'copilot' };
+    notify();
+    ciStore.startGeneration();
+  },
+
   closeGenerateModal: () => {
-    ciState = { ...ciState, generateModalOpen: false };
+    ciState = { ...ciState, generateModalOpen: false, savedProjectId: null };
     notify();
   },
 
   updateGenerationInput: (partial: Partial<GenerationInput>) => {
+    generationVersion++;
     ciState = { 
       ...ciState, 
-      generationInput: { ...ciState.generationInput, ...partial } 
+      generationInput: { ...ciState.generationInput, ...partial },
+      generatedDraft: null,
+      generationLoading: false,
+      proposedDraft: null,
     };
     notify();
   },
 
   startGeneration: async () => {
-    ciState = { ...ciState, generationLoading: true };
+    const version = ++generationVersion;
+    const input = { ...ciState.generationInput, referenceIds: [...ciState.generationInput.referenceIds] };
+    ciState = { ...ciState, generationLoading: true, generationError: null, proposedDraft: null, generatedDraft: null };
     notify();
     
     try {
-      const draft = await generationService.generate(ciState.generationInput);
+      const draft = await generationService.generate(input);
+      if (version !== generationVersion) return;
       ciState = { 
         ...ciState, 
         generationLoading: false, 
@@ -183,22 +237,22 @@ export const ciStore = {
           {
             id: 'init-1',
             role: 'ai',
-            text: `I've analyzed your ${ciState.storyboardItems.length} storyboard reference(s) and structured a ${ciState.generationInput.duration} ${ciState.generationInput.contentType} plan in a ${ciState.generationInput.tone} tone. Tell me what to refine!`,
+            text: `Local template built from ${draft.references.length} selected sample catalog reference(s). Review and verify the script before publishing. I can preview edits to a hook, CTA, or visuals for your approval.`,
             timestamp: Date.now(),
           }
         ]
       };
       notify();
     } catch (e) {
-      ciState = { ...ciState, generationLoading: false };
+      if (version !== generationVersion) return;
+      ciState = { ...ciState, generationLoading: false, generationError: e instanceof Error ? e.message : 'Could not build template.' };
       notify();
-      console.error(e);
     }
   },
 
   sendCopilotMessage: async (text: string) => {
     const draft = ciState.generatedDraft;
-    if (!draft || !text.trim()) return;
+    if (!draft || !text.trim() || ciState.generationLoading || ciState.proposedDraft) return;
 
     const userMsg: CopilotMessage = {
       id: `user-${Date.now()}`,
@@ -213,21 +267,36 @@ export const ciStore = {
       generationLoading: true
     };
     notify();
+    const version = ++generationVersion;
 
     try {
-      const { response, updatedDraft } = await generationService.chat(text, draft);
+      const { response, proposedDraft } = await generationService.chat(text, draft);
+      if (version !== generationVersion) return;
       ciState = { 
         ...ciState, 
         generationLoading: false,
         copilotMessages: [...ciState.copilotMessages, response],
-        generatedDraft: updatedDraft
+        proposedDraft
       };
       notify();
     } catch (e) {
-      ciState = { ...ciState, generationLoading: false };
+      if (version !== generationVersion) return;
+      ciState = { ...ciState, generationLoading: false, generationError: e instanceof Error ? e.message : 'Could not preview edit.' };
       notify();
-      console.error(e);
     }
+  },
+
+  approveProposedDraft: () => {
+    if (!ciState.proposedDraft) return;
+    ciState = { ...ciState, generatedDraft: ciState.proposedDraft, proposedDraft: null,
+      copilotMessages: [...ciState.copilotMessages, { id: `approved-${Date.now()}`, role: 'ai', text: 'Approved changes applied to the draft.', timestamp: Date.now() }] };
+    notify();
+  },
+
+  rejectProposedDraft: () => {
+    ciState = { ...ciState, proposedDraft: null,
+      copilotMessages: [...ciState.copilotMessages, { id: `discarded-${Date.now()}`, role: 'ai', text: 'Preview discarded. The draft was not changed.', timestamp: Date.now() }] };
+    notify();
   },
 
   setActiveGenerateTab: (tab: GenerateTab) => {
@@ -246,6 +315,7 @@ export const ciStore = {
   },
 
   clearStoryboard: () => {
+    generationVersion++;
     storyboardService.clear();
     ciState = { 
       ...ciState, 
@@ -253,11 +323,15 @@ export const ciStore = {
       generationInput: {
         ...ciState.generationInput,
         referenceIds: []
-      }
+      }, generatedDraft: null, proposedDraft: null, generationLoading: false,
     };
     notify();
   }
 };
+
+creatorStore.subscribe(creator => {
+  if (creator.id !== workspaceId) ciStore.resetForWorkspace();
+});
 
 export function useCIStore() {
   const [, setVersion] = useState(0);
@@ -282,10 +356,15 @@ export function useCIStore() {
     removeFromStoryboard: ciStore.removeFromStoryboard,
     setSelectedContent: ciStore.setSelectedContent,
     openGenerateModal: ciStore.openGenerateModal,
+    openSavedBlueprint: ciStore.openSavedBlueprint,
+    linkProjectForPlanning: ciStore.linkProjectForPlanning,
+    openGenerateForProject: ciStore.openGenerateForProject,
     closeGenerateModal: ciStore.closeGenerateModal,
     updateGenerationInput: ciStore.updateGenerationInput,
     startGeneration: ciStore.startGeneration,
     sendCopilotMessage: ciStore.sendCopilotMessage,
+    approveProposedDraft: ciStore.approveProposedDraft,
+    rejectProposedDraft: ciStore.rejectProposedDraft,
     setActiveGenerateTab: ciStore.setActiveGenerateTab,
     openStoryboard: ciStore.openStoryboard,
     closeStoryboard: ciStore.closeStoryboard,

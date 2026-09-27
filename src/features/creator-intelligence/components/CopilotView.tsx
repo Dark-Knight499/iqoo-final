@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, Send, CheckCircle2, ArrowRight, Bot, User, RefreshCw } from 'lucide-react';
+import { Send, ArrowRight, Bot } from 'lucide-react';
 import { CopilotMessage, GeneratedContent } from '../types/creatorIntelligence';
 import { DraftPreview } from './DraftPreview';
 
@@ -7,6 +7,9 @@ interface CopilotViewProps {
   messages: CopilotMessage[];
   draft: GeneratedContent | null;
   loading: boolean;
+  proposedDraft: GeneratedContent | null;
+  onApprove: () => void;
+  onReject: () => void;
   onSendMessage: (text: string) => void;
   onViewFinal: () => void;
 }
@@ -14,10 +17,8 @@ interface CopilotViewProps {
 const QUICK_COMMANDS = [
   'Make it more controversial',
   'Make the hook shorter',
-  'Use my usual style',
   'Make it more cinematic',
   'Add a stronger CTA',
-  'Turn this into a 30 second Reel',
   'Make the second scene more visual',
 ];
 
@@ -25,6 +26,9 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
   messages,
   draft,
   loading,
+  proposedDraft,
+  onApprove,
+  onReject,
   onSendMessage,
   onViewFinal,
 }) => {
@@ -40,7 +44,7 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
   }, [messages, loading]);
 
   const handleSend = () => {
-    if (!inputText.trim() || loading) return;
+    if (!inputText.trim() || loading || proposedDraft) return;
     onSendMessage(inputText);
     setInputText('');
   };
@@ -52,8 +56,7 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
     }
   };
 
-  // Find recent changes if any
-  const latestAiMessageWithChanges = [...messages].reverse().find((m) => m.role === 'ai' && m.changes && m.changes.length > 0);
+  const latestAiMessageWithChanges = proposedDraft ? [...messages].reverse().find((m) => m.role === 'ai' && m.changes?.length) : null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
@@ -85,10 +88,10 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
           </div>
           <div>
             <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
-              AI Copilot
+              Template editor
             </h4>
             <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-              Let's build this together.
+              Local rules · changes require approval
             </span>
           </div>
         </div>
@@ -119,7 +122,7 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
         {/* Live Draft Preview Box */}
         <DraftPreview draft={draft} loading={loading && !draft} />
 
-        {/* Change Indicator Pill if AI made changes */}
+        {/* Pending preview does not replace the approved draft. */}
         {latestAiMessageWithChanges?.changes && (
           <div
             style={{
@@ -132,14 +135,11 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
               gap: '10px',
             }}
           >
-            <CheckCircle2 size={16} color="#00DC82" />
-            <div style={{ flex: 1, fontSize: '12px' }}>
-              <span style={{ fontWeight: 700, color: '#00DC82', textTransform: 'uppercase', marginRight: '6px' }}>
-                AI UPDATED
-              </span>
-              <span style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
-                {latestAiMessageWithChanges.changes.map((c) => `✓ ${c.field}`).join('  ')}
-              </span>
+            <div style={{ flex: 1, fontSize: '12px', color: 'var(--text-primary)' }}>
+              <strong>Proposed template changes</strong>
+              <div>{latestAiMessageWithChanges.changes.map(c => c.field).join(', ')}</div>
+              <button onClick={onApprove} style={{ margin: '8px 8px 0 0', padding: '8px', cursor: 'pointer' }}>Apply changes</button>
+              <button onClick={onReject} style={{ padding: '8px', cursor: 'pointer' }}>Discard</button>
             </div>
           </div>
         )}
@@ -195,7 +195,7 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
                           marginBottom: '8px',
                         }}
                       >
-                        CHANGE MADE
+                         PROPOSED CHANGE — NOT APPLIED
                       </div>
                       {m.changes.map((ch, idx) => (
                         <div key={idx} style={{ marginBottom: idx < m.changes!.length - 1 ? '8px' : 0 }}>
@@ -229,7 +229,7 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
                   animation: 'spin 1s linear infinite',
                 }}
               />
-              <span>Refining draft state...</span>
+              <span>Preparing template preview...</span>
             </div>
           )}
 
@@ -253,7 +253,7 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
           <button
             key={cmd}
             onClick={() => onSendMessage(cmd)}
-            disabled={loading}
+             disabled={loading || !!proposedDraft || !draft}
             style={{
               padding: '6px 12px',
               borderRadius: '999px',
@@ -288,7 +288,7 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask Copilot (e.g. 'Make it more controversial', 'Make hook shorter')..."
+           placeholder="Request a hook, CTA, or visual template edit..."
           style={{
             flex: 1,
             backgroundColor: 'var(--bg-surface-2)',
@@ -303,7 +303,8 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
         />
         <button
           onClick={handleSend}
-          disabled={!inputText.trim() || loading}
+          aria-label="Send message to Copilot"
+           disabled={!inputText.trim() || loading || !!proposedDraft || !draft}
           style={{
             width: '40px',
             height: '40px',
@@ -319,7 +320,7 @@ export const CopilotView: React.FC<CopilotViewProps> = ({
             flexShrink: 0,
           }}
         >
-          <Send size={16} />
+           <Send size={16} aria-hidden="true" />
         </button>
       </div>
     </div>

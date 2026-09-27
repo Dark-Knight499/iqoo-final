@@ -47,10 +47,10 @@ export const AnalysisScreen: React.FC = () => {
           </span>
         </div>
         <h1 style={{ margin: '0 0 6px 0', fontSize: '24px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.5px' }}>
-          Understanding your content
+          Exploring sample analysis
         </h1>
         <p style={{ margin: 0, fontSize: '13px', color: '#64748B' }}>
-          Extracting multimodal signals & semantic facts from {currentMedia.title}
+          Playing back prewritten demo results for {currentMedia.title}; no media is being processed.
         </p>
       </div>
 
@@ -76,7 +76,7 @@ export const AnalysisScreen: React.FC = () => {
             marginBottom: '4px',
           }}
         >
-          Analysis Modules
+           Sample analysis stages
         </span>
         {analysisStages.map((stage) => (
           <AnalysisStage key={stage.id} stage={stage} />
@@ -113,7 +113,7 @@ export const AnalysisScreen: React.FC = () => {
             transition: 'all 0.2s ease',
           }}
         >
-          <span>{isAnalysisComplete ? 'View Analysis' : 'Analyzing media...'}</span>
+           <span>{isAnalysisComplete ? 'View sample analysis' : 'Loading sample results...'}</span>
           <ArrowRight size={18} />
         </button>
       </div>

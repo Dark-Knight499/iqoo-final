@@ -13,7 +13,8 @@ export type ScreenModal =
   | 'game-studio'
   | 'export'
   | 'assets'
-  | 'media-intelligence';
+  | 'media-intelligence'
+  | 'creator-intelligence';
 
 export type AppTheme = 'dark' | 'light';
 
@@ -21,6 +22,7 @@ interface AppState {
   theme: AppTheme;
   activeTab: MainTab;
   activeModal: ScreenModal;
+  returnFromExport: ScreenModal;
   isCopilotOpen: boolean;
   copilotInitialPrompt: string;
   hasCompletedOnboarding: boolean;
@@ -35,7 +37,9 @@ if (typeof document !== 'undefined') {
 const INITIAL_APP_STATE: AppState = {
   theme: savedTheme,
   activeTab: 'home',
-  activeModal: storage.load('has_onboarded', false) ? null : 'onboarding',
+  // Always choose a local workspace at startup; this is not account authentication.
+  activeModal: 'onboarding',
+  returnFromExport: null,
   isCopilotOpen: false,
   copilotInitialPrompt: '',
   hasCompletedOnboarding: storage.load('has_onboarded', false),
@@ -77,12 +81,12 @@ export const appStore = {
   },
 
   openModal: (modal: ScreenModal) => {
-    appState = { ...appState, activeModal: modal };
+    appState = { ...appState, activeModal: modal, returnFromExport: modal === 'export' ? appState.activeModal : null };
     notify();
   },
 
   closeModal: () => {
-    appState = { ...appState, activeModal: null };
+    appState = { ...appState, activeModal: appState.activeModal === 'export' ? appState.returnFromExport : null, returnFromExport: null };
     notify();
   },
 

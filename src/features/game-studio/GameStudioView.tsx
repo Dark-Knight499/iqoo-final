@@ -46,6 +46,7 @@ export const GameStudioView: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
         <button
           onClick={closeModal}
+          aria-label="Close Game Studio"
           style={{
             width: '36px',
             height: '36px',
@@ -56,7 +57,7 @@ export const GameStudioView: React.FC = () => {
             placeItems: 'center',
           }}
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={18} aria-hidden="true" />
         </button>
         <span style={{ fontSize: '15px', fontWeight: 700 }}>Game Studio</span>
         <Chip label="MediaPipe AI" variant="ai" />
@@ -64,11 +65,10 @@ export const GameStudioView: React.FC = () => {
 
       {/* Game Showcase Banner */}
       <div
-        className="media-bg"
+         className="media-bg decorative-surface"
         style={{
           height: '220px',
           borderRadius: '24px',
-          backgroundImage: `url('/assets/game-studio-showcase.jpg')`,
           padding: '18px',
           display: 'flex',
           flexDirection: 'column',
@@ -138,8 +138,8 @@ export const GameStudioView: React.FC = () => {
           }}
           style={{ gap: '8px' }}
         >
-          <Play size={18} />
-          Launch Live Interactive Session ✦
+           <Play size={18} aria-hidden="true" />
+           Launch Live Interactive Session
         </Button>
       </div>
     </div>

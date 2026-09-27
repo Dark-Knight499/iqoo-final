@@ -94,17 +94,20 @@ export const FinalView: React.FC<FinalViewProps> = ({
               letterSpacing: '0.5px',
             }}
           >
-            AI Production Blueprint
+            Reference-based template blueprint
           </span>
-          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>•</span>
+          <span className="meta-separator" aria-hidden="true" style={{ color: 'var(--text-muted)' }} />
           <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Ready to Shoot</span>
         </div>
         <h1 style={{ margin: '0 0 6px 0', fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.25 }}>
           Your Content Plan
         </h1>
         <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
-          Generated from selected storyboard references & tailored to your tone.
+          Local template from selected sample catalog entries. Check claims and adapt before publishing.
         </p>
+        <div style={{ marginTop: '12px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+          <strong>Source references:</strong> {draft.references.map(ref => `${ref.title} — ${ref.creatorName} (${ref.platform})`).join('; ')}
+        </div>
       </div>
 
       {/* Structured Sections */}
@@ -171,7 +174,7 @@ export const FinalView: React.FC<FinalViewProps> = ({
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
             <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-              4. SCRIPT (TELEPROMPTER READY)
+              4. SCRIPT OUTLINE (ADAPT BEFORE RECORDING)
             </span>
             <button
               onClick={handleCopyScript}

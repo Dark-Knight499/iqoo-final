@@ -30,7 +30,7 @@ export const Card: React.FC<CardProps> = ({
       bg = 'rgba(23, 23, 23, 0.7)';
       border = '1px solid rgba(255, 255, 255, 0.1)';
     } else if (variant === 'ai') {
-      bg = 'linear-gradient(145deg, #161c0c, #111111)';
+      bg = '#141810';
       border = '1px solid var(--ai-border)';
     }
 

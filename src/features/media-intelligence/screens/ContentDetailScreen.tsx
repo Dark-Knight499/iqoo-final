@@ -30,11 +30,23 @@ import { useAppStore } from '@/shared/state/app.store';
 type DetailTab = 'overview' | 'transcript' | 'scenes' | 'entities' | 'moments';
 
 export const ContentDetailScreen: React.FC = () => {
-  const { goBack, resetFlow, navigateTo } = useMediaIntelligenceStore();
+  const { goBack, resetFlow, navigateTo, selectedCatalogMedia, importedMedia, remoteSuggestions, isAnalysisComplete } = useMediaIntelligenceStore();
   const { showToast, closeModal, setActiveTab } = useAppStore();
   const [activeTab, setActiveTabLocal] = useState<DetailTab>('overview');
 
-  const media = primaryDemoVideo;
+  const media = selectedCatalogMedia || importedMedia || primaryDemoVideo;
+  const isDemo = !media.sourceUrl;
+
+  if (!isDemo) return <div style={{ minHeight: '100%', padding: '24px 20px', background: '#F7F8FA', color: '#0F172A' }}>
+     <button onClick={goBack} style={{ border: 'none', background: 'none', color: '#64748B', cursor: 'pointer' }}><ArrowLeft size={16} aria-hidden="true" /> Catalog</button>
+    <h1 style={{ fontSize: '22px' }}>{media.title}</h1>
+    <p>Backend text analysis · {media.duration}. No video was uploaded or rendered in this app.</p>
+    <p>Source URL: <a href={media.sourceUrl} target="_blank" rel="noreferrer">{media.sourceUrl}</a></p>
+    <h2 style={{ fontSize: '16px' }}>Suggested clip ranges</h2>
+    {remoteSuggestions?.length ? remoteSuggestions.map((suggestion) => <div key={suggestion.id} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 12, padding: 14, marginBottom: 10 }}>
+      <strong>{suggestion.title}</strong> · {suggestion.timestampRange}<p>{suggestion.reason}</p>
+    </div>) : <p>No clip suggestions returned for this URL.</p>}
+  </div>;
 
   const handleRestartDemo = () => {
     resetFlow();
@@ -106,10 +118,10 @@ export const ContentDetailScreen: React.FC = () => {
         </h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#64748B' }}>
           <span>{media.duration}</span>
-          <span>•</span>
+          <span className="meta-separator" aria-hidden="true" />
           <span style={{ textTransform: 'capitalize' }}>{media.type}</span>
-          <span>•</span>
-          <span style={{ color: '#16A34A', fontWeight: 600 }}>Analyzed just now</span>
+          <span className="meta-separator" aria-hidden="true" />
+          <span style={{ color: '#16A34A', fontWeight: 600 }}>{isAnalysisComplete ? 'Sample analysis' : 'Sample metadata'}</span>
         </div>
       </div>
 
@@ -155,6 +167,7 @@ export const ContentDetailScreen: React.FC = () => {
       {/* 1. OVERVIEW */}
       {activeTab === 'overview' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <p style={{ fontSize: '12px', color: '#64748B' }}>Prewritten example for the sample video; not extracted from an uploaded file.</p>
           {/* Summary Card */}
           <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '16px', border: '1px solid #E2E8F0' }}>
             <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#64748B', display: 'block', marginBottom: '8px' }}>
@@ -182,7 +195,7 @@ export const ContentDetailScreen: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
               <Sparkles size={16} color="#2563EB" />
               <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#1D4ED8' }}>
-                AI Creative Insights
+                Sample Creative Insights
               </span>
             </div>
             <p style={{ margin: 0, fontSize: '13px', color: '#1E293B', lineHeight: 1.5 }}>

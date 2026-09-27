@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Bookmark, Plus, Check, Eye, Heart, TrendingUp, Calendar, Tag, ShieldCheck } from 'lucide-react';
 import { ContentItem } from '../types/creatorIntelligence';
+import { MediaArt } from '@/shared/components/MediaArt';
 
 interface ContentDetailSheetProps {
   item: ContentItem | null;
@@ -55,21 +56,11 @@ export const ContentDetailSheet: React.FC<ContentDetailSheetProps> = ({
       >
         {/* Large Thumbnail & Close Button */}
         <div style={{ position: 'relative', width: '100%', height: '220px', backgroundColor: 'var(--bg-surface-3)', flexShrink: 0 }}>
-          <img
-            src={item.thumbnail}
-            alt={item.title}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 60%, rgba(0, 0, 0, 0.5) 100%)',
-            }}
-          />
+          <MediaArt src={item.thumbnail} label={item.title} kind="video" style={{ width: '100%', height: '100%' }} />
 
           <button
             onClick={onClose}
+            aria-label="Close content details"
             style={{
               position: 'absolute',
               top: '16px',
@@ -87,7 +78,7 @@ export const ContentDetailSheet: React.FC<ContentDetailSheetProps> = ({
               cursor: 'pointer',
             }}
           >
-            <X size={18} />
+            <X size={18} aria-hidden="true" />
           </button>
 
           {/* Platform & Trend badge */}
@@ -215,7 +206,7 @@ export const ContentDetailSheet: React.FC<ContentDetailSheetProps> = ({
               Why this matters
             </span>
             <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-primary)', lineHeight: 1.5 }}>
-              {item.whyTrending || 'High engagement around on-device AI + strong creator discussion velocity.'}
+              {item.whyTrending || 'No reason supplied in this sample catalog entry.'}
             </p>
           </div>
 

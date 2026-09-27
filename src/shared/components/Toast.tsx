@@ -1,4 +1,5 @@
 import React from 'react';
+import { Sparkles } from 'lucide-react';
 import { useAppStore } from '@/shared/state/app.store';
 
 export const Toast: React.FC = () => {
@@ -27,7 +28,7 @@ export const Toast: React.FC = () => {
         animation: 'fadeIn 0.2s ease',
       }}
     >
-      <span>✦</span>
+       <Sparkles size={16} aria-hidden="true" />
       <span>{toastMessage}</span>
     </div>
   );

@@ -49,6 +49,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       {value.length > 0 && (
         <button
           onClick={onClear}
+          aria-label="Clear search"
           style={{
             background: 'var(--bg-surface-3)',
             border: 'none',
@@ -64,7 +65,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           }}
           title="Clear search"
         >
-          <X size={14} />
+           <X size={14} aria-hidden="true" />
         </button>
       )}
     </div>

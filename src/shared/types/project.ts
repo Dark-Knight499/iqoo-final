@@ -1,4 +1,5 @@
 import { VideoKnowledge } from './video-knowledge';
+import type { GeneratedContent } from '@/features/creator-intelligence/types/creatorIntelligence';
 
 export type AspectRatio = '9:16' | '16:9' | '1:1';
 
@@ -32,13 +33,23 @@ export interface CopilotEditPlan {
 
 export interface Project {
   id: string;
+  creatorId?: string;
   title: string;
   description?: string;
   thumbnailUrl: string;
+  mediaId?: string;
+  mediaName?: string;
+  trimStartSeconds?: number;
+  trimEndSeconds?: number;
+  /** Suggested source range; does not affect playback or export until applied. */
+  proposedTrim?: { start: number; end: number; origin: 'blueprint' | 'manual' };
+  appliedOperations?: { type: 'trim'; start: number; end: number; appliedAt: string }[];
+  lastExport?: { name: string; exportedAt: string };
   durationSeconds: number;
   aspectRatio: AspectRatio;
   updatedAt: string;
   status: 'draft' | 'ready' | 'rendering' | 'exported';
   clips: TimelineClip[];
   knowledge?: VideoKnowledge;
+  blueprint?: GeneratedContent;
 }

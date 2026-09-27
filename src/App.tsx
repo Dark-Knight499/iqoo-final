@@ -19,16 +19,17 @@ import { ExportModal } from '@/features/export/ExportModal';
 import { CopilotSheet } from '@/features/copilot/CopilotSheet';
 
 export const App: React.FC = () => {
-  const { activeTab, activeModal } = useAppStore();
+  const { activeTab, activeModal, returnFromExport, closeModal } = useAppStore();
 
   // Render modal views if open
   if (activeModal === 'onboarding') {
     return <OnboardingFlow />;
   }
-  if (activeModal === 'editor') {
+  if (activeModal === 'editor' || (activeModal === 'export' && returnFromExport === 'editor')) {
     return (
       <>
         <EditorPage />
+        {activeModal === 'export' && <ExportModal />}
         <CopilotSheet />
       </>
     );
@@ -54,11 +55,14 @@ export const App: React.FC = () => {
   if (activeModal === 'media-intelligence') {
     return <MediaIntelligenceView />;
   }
+  if (activeModal === 'creator-intelligence') {
+    return <CreatorIntelligenceScreen onBack={closeModal} />;
+  }
 
   return (
     <AppShell>
       {activeTab === 'home' && <HomeView />}
-      {activeTab === 'insights' && <CreatorIntelligenceScreen />}
+      {activeTab === 'insights' && <InsightsView />}
       {activeTab === 'create' && <CreateView />}
       {activeTab === 'profile' && <ProfileView />}
 

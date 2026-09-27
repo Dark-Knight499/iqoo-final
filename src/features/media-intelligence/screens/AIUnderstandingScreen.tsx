@@ -84,7 +84,7 @@ export const AIUnderstandingScreen: React.FC = () => {
           AI Understanding
         </h1>
         <p style={{ margin: 0, fontSize: '14px', color: '#64748B' }}>
-          Turning extracted signals into creative context.
+          Sample creative context from the prewritten demo dataset.
         </p>
       </div>
 
@@ -237,7 +237,7 @@ export const AIUnderstandingScreen: React.FC = () => {
                   {st}
                 </span>
                 {i < mockLLMUnderstanding.contentStructure.length - 1 && (
-                  <span style={{ color: '#94A3B8', fontSize: '12px', fontWeight: 700 }}>→</span>
+                   <ArrowRight size={12} color="#94A3B8" aria-hidden="true" />
                 )}
               </React.Fragment>
             ))}
@@ -300,7 +300,7 @@ export const AIUnderstandingScreen: React.FC = () => {
           }}
         >
           <Sparkles size={18} />
-          <span>Generate Suggestions</span>
+           <span>View sample suggestions</span>
           <ArrowRight size={18} />
         </button>
       </div>

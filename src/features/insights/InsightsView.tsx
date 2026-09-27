@@ -1,37 +1,94 @@
-import React from 'react';
-import { TrendingUp, Sparkles, ArrowUpRight, Globe, Flame, Eye, Clock, Users, BarChart3 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Sparkles, Globe, Eye, Users, BarChart3, Compass } from 'lucide-react';
 import { useCreatorStore } from '@/shared/state/creator.store';
 import { useAppStore } from '@/shared/state/app.store';
 import { Card } from '@/shared/components/Card';
 import { Chip } from '@/shared/components/Chip';
 import { Button } from '@/shared/components/Button';
+import { DashboardResponse, legacyBackend, TrendItem, TrendsResponse } from '@/services/legacyBackend';
+
+interface InsightTrend {
+  id: string;
+  title: string;
+  meta: string;
+  relevance: string;
+  category: string;
+  description: string;
+}
+
+const FALLBACK_TRENDS: InsightTrend[] = [
+  {
+    id: 'demo-ai-agents',
+    title: 'AI coding agents',
+    meta: '+142% (demo)',
+    relevance: 'Very High (demo)',
+    category: 'Technology & AI',
+    description: 'A demo trend card shown while the backend is unavailable.',
+  },
+  {
+    id: 'demo-on-device-ai',
+    title: 'On-device AI & private models',
+    meta: '+98% (demo)',
+    relevance: 'High (demo)',
+    category: 'Technology & AI',
+    description: 'A demo trend card shown while the backend is unavailable.',
+  },
+];
+
+const FALLBACK_WORLD_TRENDS = ['VLMs & Vision', 'Local Whisper', 'Snapdragon NPU', 'Robotics', 'Creator Economy', 'AI Phones'];
+
+function formatCount(value: number): string {
+  return new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+}
+
+function mapTrend(item: TrendItem): InsightTrend {
+  return {
+    id: `${item.source}-${item.rank}-${item.title}`,
+    title: item.title,
+    meta: item.traffic_volume,
+    relevance: item.relevance_to_creator,
+    category: item.category,
+    description: item.hook_angles[0] || item.relevance_to_creator,
+  };
+}
 
 export const InsightsView: React.FC = () => {
   const { creator } = useCreatorStore();
   const { openCopilot, openModal } = useAppStore();
+  const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
+  const [trends, setTrends] = useState<TrendsResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [apiError, setApiError] = useState<string | null>(null);
 
-  const nicheTrends = [
-    {
-      id: 't1',
-      title: 'AI coding agents',
-      momentum: '+142%',
-      platforms: ['YouTube', 'X / Twitter'],
-      relevance: 'Very High (9.6/10)',
-      bg: '/assets/trend-ai-agents.jpg',
-      description: 'Massive surge across developer and founder communities. Direct alignment with your code teardown format.',
-    },
-    {
-      id: 't2',
-      title: 'On-device AI & private models',
-      momentum: '+98%',
-      platforms: ['YouTube Shorts', 'LinkedIn'],
-      relevance: 'High (8.9/10)',
-      bg: '/assets/trend-on-device-ai.jpg',
-      description: 'Audience interest shifting from cloud API costs to hardware benchmarks and local mobile inference.',
-    },
-  ];
+  useEffect(() => {
+    let active = true;
+    setIsLoading(true);
+    Promise.allSettled([
+      legacyBackend.getDashboard(creator.name, '30d'),
+      legacyBackend.getTrends(creator.niche, 'US', 8, creator.name),
+    ]).then(([dashboardResult, trendsResult]) => {
+      if (!active) return;
+      const errors: string[] = [];
+      if (dashboardResult.status === 'fulfilled') setDashboard(dashboardResult.value);
+      else errors.push(dashboardResult.reason instanceof Error ? dashboardResult.reason.message : 'Dashboard unavailable');
+      if (trendsResult.status === 'fulfilled') setTrends(trendsResult.value);
+      else errors.push(trendsResult.reason instanceof Error ? trendsResult.reason.message : 'Trends unavailable');
+      setApiError(errors.length ? errors.join(' ') : null);
+      setIsLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [creator.name, creator.niche]);
 
-  const worldTrends = ['VLMs & Vision', 'Local Whisper', 'Snapdragon NPU', 'Robotics', 'Creator Economy', 'AI Phones'];
+  const nicheTrends = trends?.niche_trends.length
+    ? trends.niche_trends.map(mapTrend)
+    : FALLBACK_TRENDS;
+  const worldTrends = trends?.world_trends.length
+    ? trends.world_trends.map((trend) => trend.title)
+    : FALLBACK_WORLD_TRENDS;
+  const youtube = dashboard?.platforms.youtube;
+  const opportunity = trends?.content_opportunity_matrix[0];
 
   return (
     <main className="screen-container">
@@ -43,6 +100,19 @@ export const InsightsView: React.FC = () => {
         <h1 style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.03em', margin: '4px 0 0' }}>
           Know what to <br />create next.
         </h1>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginTop: '12px' }}>
+          <span style={{ fontSize: '11px', color: apiError ? 'var(--warning)' : 'var(--text-muted)' }}>
+            {isLoading ? 'Loading creator insights…' : apiError ? 'Partial/demo data · backend unavailable' : 'Data from Creator AI backend'}
+          </span>
+          <Button variant="secondary" size="sm" onClick={() => openModal('creator-intelligence')} style={{ gap: '6px' }}>
+            <Compass size={14} /> Discover
+          </Button>
+        </div>
+        {apiError && (
+          <p role="status" style={{ margin: '8px 0 0', color: 'var(--text-muted)', fontSize: '11px', lineHeight: 1.4 }}>
+            {apiError} Showing demo trends where data is unavailable.
+          </p>
+        )}
       </div>
 
       {/* 2x2 Metric Grid */}
@@ -59,9 +129,11 @@ export const InsightsView: React.FC = () => {
             <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Total Views</span>
             <Eye size={14} color="var(--text-muted)" />
           </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: '#fff' }}>{creator.metrics.views}</div>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: '#fff' }}>
+            {youtube ? formatCount(youtube.total_views_or_impressions) : creator.metrics.views}
+          </div>
           <div style={{ marginTop: '4px' }}>
-            <Chip label={creator.metrics.viewsChange} variant="ai" />
+            <Chip label={youtube ? 'YouTube views' : creator.metrics.viewsChange} variant="ai" />
           </div>
         </Card>
 
@@ -70,31 +142,37 @@ export const InsightsView: React.FC = () => {
             <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Engagement</span>
             <BarChart3 size={14} color="var(--text-muted)" />
           </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: '#fff' }}>{creator.metrics.engagement}</div>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: '#fff' }}>
+            {dashboard ? `${dashboard.overall_engagement_rate}%` : creator.metrics.engagement}
+          </div>
           <div style={{ marginTop: '4px' }}>
-            <Chip label={creator.metrics.engagementChange} variant="ai" />
+            <Chip label={dashboard ? 'Overall rate' : creator.metrics.engagementChange} variant="ai" />
           </div>
         </Card>
 
         <Card variant="surface" padding="16px">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Watch Time</span>
-            <Clock size={14} color="var(--text-muted)" />
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Overall Reach</span>
+            <Eye size={14} color="var(--text-muted)" />
           </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: '#fff' }}>{creator.metrics.watchTime}</div>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: '#fff' }}>
+            {dashboard ? formatCount(dashboard.overall_reach) : '—'}
+          </div>
           <div style={{ marginTop: '4px' }}>
-            <Chip label="Top 5% Niche" />
+            <Chip label={dashboard ? 'Across platforms' : 'Not available'} />
           </div>
         </Card>
 
         <Card variant="surface" padding="16px">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Growth Rate</span>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>YouTube Growth</span>
             <Users size={14} color="var(--text-muted)" />
           </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: '#fff' }}>{creator.metrics.growth}</div>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: '#fff' }}>
+            {youtube ? `${youtube.growth_rate_30d_percent}%` : creator.metrics.growth}
+          </div>
           <div style={{ marginTop: '4px' }}>
-            <Chip label="Healthy" variant="success" />
+            <Chip label={youtube ? 'Last 30 days' : 'Demo value'} variant="success" />
           </div>
         </Card>
       </div>
@@ -108,24 +186,24 @@ export const InsightsView: React.FC = () => {
 
         <Card variant="ai" padding="20px">
           <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ai-accent)', fontWeight: 700 }}>
-            DNA Match: 96%
+            {opportunity?.opportunity_score || 'Creator recommendation'}
           </div>
           <h4 style={{ fontSize: '18px', fontWeight: 700, margin: '8px 0', color: '#fff' }}>
-            “Can a phone run a useful AI agent?”
+            {opportunity ? `“${opportunity.topic}”` : 'Your next content opportunity'}
           </h4>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.45, marginBottom: '16px' }}>
-            Your technology and on-device AI topics are strongly aligned. Previous developer tool videos outperformed channel baseline by +28%.
+            {opportunity?.recommended_angle || dashboard?.executive_summary || 'Connect the backend to load creator-specific recommendations.'}
           </p>
           <Button
             variant="primary"
             fullWidth
             onClick={() => {
-              openCopilot('Generate full script and edit plan for: Can a phone run a useful AI agent?');
+              openCopilot(`Generate a video concept for: ${opportunity?.topic || creator.niche}`);
             }}
             style={{ gap: '6px' }}
           >
-            <Sparkles size={15} />
-            Create Video From Opportunity ✦
+             <Sparkles size={15} aria-hidden="true" />
+             Create Video From Opportunity
           </Button>
         </Card>
       </section>
@@ -134,19 +212,20 @@ export const InsightsView: React.FC = () => {
       <section style={{ marginBottom: '28px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <h3 style={{ fontSize: '17px', fontWeight: 700, margin: 0 }}>Trending In Your Niche</h3>
-          <span style={{ fontSize: '11px', color: 'var(--ai-accent)', fontWeight: 600 }}>● Live Feed</span>
+          <span style={{ fontSize: '11px', color: trends ? 'var(--ai-accent)' : 'var(--text-muted)', fontWeight: 600 }}>
+            {trends ? 'Backend trends' : 'Demo fallback'}
+          </span>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {nicheTrends.map((trend) => (
             <article
               key={trend.id}
-              className="media-bg"
               style={{
                 borderRadius: '20px',
                 overflow: 'hidden',
-                backgroundImage: `url(${trend.bg})`,
-                minHeight: '160px',
+                background: 'var(--bg-surface-2)',
+                minHeight: '140px',
                 padding: '18px',
                 display: 'flex',
                 flexDirection: 'column',
@@ -154,18 +233,11 @@ export const InsightsView: React.FC = () => {
                 border: '1px solid rgba(255, 255, 255, 0.08)',
               }}
             >
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'linear-gradient(90deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.45) 100%)',
-                }}
-              />
-              <div style={{ position: 'relative', zIndex: 2 }}>
+              <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
                     <h4 style={{ fontSize: '17px', fontWeight: 700, color: '#fff', margin: 0 }}>{trend.title}</h4>
-                    <span style={{ fontSize: '12px', color: 'var(--ai-accent)', fontWeight: 600 }}>{trend.momentum} momentum</span>
+                    <span style={{ fontSize: '12px', color: 'var(--ai-accent)', fontWeight: 600 }}>{trend.meta}</span>
                   </div>
                   <Chip label={trend.relevance} variant="ai" />
                 </div>
@@ -173,9 +245,7 @@ export const InsightsView: React.FC = () => {
                   {trend.description}
                 </p>
                 <div style={{ display: 'flex', gap: '6px' }}>
-                  {trend.platforms.map((p) => (
-                    <Chip key={p} label={p} />
-                  ))}
+                  <Chip label={trend.category} />
                 </div>
               </div>
             </article>
@@ -199,6 +269,19 @@ export const InsightsView: React.FC = () => {
           ))}
         </div>
       </section>
+
+      {dashboard?.key_recommendations?.length ? (
+        <section style={{ marginBottom: '22px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 10px' }}>Backend Recommendations</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {dashboard.key_recommendations.map((recommendation, index) => (
+              <Card key={`${index}-${recommendation}`} variant="surface" padding="14px">
+                <p style={{ fontSize: '12px', lineHeight: 1.5, color: 'var(--text-secondary)', margin: 0 }}>{recommendation}</p>
+              </Card>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </main>
   );
 };

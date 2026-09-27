@@ -142,6 +142,50 @@ a {
   position: relative;
 }
 
+/* Clean flat placeholder — no decorative gradients. */
+.content-placeholder {
+  position: relative;
+  overflow: hidden;
+  background: #1a1d20;
+  color: #6b7280;
+}
+
+.content-placeholder-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  line-height: 1.35;
+}
+
+.decorative-surface {
+  background: #151a18;
+}
+
+[data-theme="light"] .content-placeholder {
+  background: #e8ecef;
+  color: #64748B;
+}
+[data-theme="light"] .decorative-surface {
+  background: #e0e7e3;
+}
+
+.meta-separator {
+  width: 3px;
+  height: 3px;
+  flex: 0 0 3px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
 /* Glass effect */
 .glass-panel {
   background: rgba(23, 23, 23, 0.82);

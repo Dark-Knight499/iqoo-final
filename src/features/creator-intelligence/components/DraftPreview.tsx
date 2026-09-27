@@ -35,10 +35,10 @@ export const DraftPreview: React.FC<DraftPreviewProps> = ({ draft, loading }) =>
           }}
         />
         <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>
-          Generating Content Plan...
+           Building reference template...
         </span>
         <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-          Synthesizing references into scenes, hooks & storyboard
+           Filling a local outline from the selected catalog summaries
         </span>
       </div>
     );
@@ -62,7 +62,7 @@ export const DraftPreview: React.FC<DraftPreviewProps> = ({ draft, loading }) =>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Sparkles size={14} color="var(--ai-accent, #D8FF00)" />
           <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--ai-accent, #D8FF00)' }}>
-            Live Draft Preview
+             Approved Draft Preview
           </span>
         </div>
         <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>

@@ -1,69 +1,25 @@
 import { useState, useEffect } from 'react';
 import { Project } from '@/shared/types/project';
 import { storage } from '@/utils/storage';
+import { creatorStore } from '@/shared/state/creator.store';
 
-const INITIAL_PROJECTS: Project[] = [
-  {
-    id: 'p1',
-    title: 'Building with AI Agents',
-    description: 'On-device automated coding agents demonstration on mobile silicon.',
-    thumbnailUrl: '/assets/create-edit-video.jpg',
-    durationSeconds: 42,
-    aspectRatio: '9:16',
-    updatedAt: 'Edited today',
-    status: 'draft',
-    clips: [
-      {
-        id: 'c1',
-        mediaUrl: '/assets/create-edit-video.jpg',
-        title: 'Main Speaker Intro',
-        start: 0,
-        duration: 22,
-        cutIn: 0,
-        cutOut: 22,
-        speed: 1,
-        volume: 1,
-      },
-      {
-        id: 'c2',
-        mediaUrl: '/assets/trend-on-device-ai.jpg',
-        title: 'B-Roll Benchmark Demo',
-        start: 22,
-        duration: 20,
-        cutIn: 0,
-        cutOut: 20,
-        speed: 1,
-        volume: 0.8,
-      },
-    ],
-  },
-  {
-    id: 'p2',
-    title: 'On-device AI explained',
-    description: 'Why localized models outperform remote servers for creators.',
-    thumbnailUrl: '/assets/trend-on-device-ai.jpg',
-    durationSeconds: 78,
-    aspectRatio: '9:16',
-    updatedAt: 'Yesterday',
-    status: 'ready',
-    clips: [],
-  },
-  {
-    id: 'p3',
-    title: 'Mumbai Tech Walk',
-    description: 'Vlog testing camera stabilization and mobile teleprompter.',
-    thumbnailUrl: '/assets/create-from-idea.jpg',
-    durationSeconds: 31,
-    aspectRatio: '9:16',
-    updatedAt: '3 days ago',
-    status: 'ready',
-    clips: [],
-  },
-];
-
-let projects: Project[] = storage.load('projects_list', INITIAL_PROJECTS);
-let activeProjectId: string = projects[0]?.id || 'p1';
+const isSyntheticJpg = (url: string) => /^\/assets\/[^/?#]+\.jpg(?:[?#]|$)/i.test(url);
+const legacyOwner = creatorStore.getLegacyOwnerId();
+const savedProjects = storage.load<Project[] | null>('projects_list', null);
+let projects: Project[] = (Array.isArray(savedProjects) ? savedProjects : []).map((project) => ({
+  ...project,
+  creatorId: project.creatorId || legacyOwner,
+  thumbnailUrl: isSyntheticJpg(project.thumbnailUrl ?? '') ? '' : project.thumbnailUrl,
+  // Remove only invalid JPG-as-video clips; retain imported and edited clips.
+  clips: project.clips?.filter((clip) => !isSyntheticJpg(clip.mediaUrl)) ?? [],
+}));
+// Projects without a provable old owner remain inaccessible, rather than being
+// adopted by whichever workspace happens to open first.
+storage.save('projects_list', projects);
+const activeIds = new Map<string, string>();
 const listeners = new Set<() => void>();
+const mine = () => projects.filter(project => !!creatorStore.get().id && project.creatorId === creatorStore.get().id);
+creatorStore.subscribe(() => listeners.forEach(listener => listener()));
 
 function notify() {
   storage.save('projects_list', projects);
@@ -71,32 +27,50 @@ function notify() {
 }
 
 export const projectStore = {
-  getProjects: () => projects,
-  getActiveProject: () => projects.find((p) => p.id === activeProjectId) || projects[0],
+  getProjects: () => mine(),
+  getActiveProject: () => mine().find((p) => p.id === activeIds.get(creatorStore.get().id)) || mine()[0],
   setActiveProjectId: (id: string) => {
-    activeProjectId = id;
+    if (!mine().some(project => project.id === id)) return;
+    activeIds.set(creatorStore.get().id, id);
     notify();
   },
   addProject: (newProj: Partial<Project>) => {
+    const owner = creatorStore.get().id;
+    if (!owner) throw new Error('Save a creator workspace before adding a project.');
     const p: Project = {
-      id: `proj_${Date.now()}`,
+      id: `proj_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      creatorId: owner,
       title: newProj.title || 'Untitled Project',
       description: newProj.description || '',
-      thumbnailUrl: newProj.thumbnailUrl || '/assets/create-edit-video.jpg',
-      durationSeconds: newProj.durationSeconds || 30,
+      thumbnailUrl: newProj.thumbnailUrl ?? '',
+      durationSeconds: newProj.durationSeconds ?? 30,
+      mediaId: newProj.mediaId,
+      mediaName: newProj.mediaName,
+      trimStartSeconds: newProj.trimStartSeconds,
+      trimEndSeconds: newProj.trimEndSeconds,
+      proposedTrim: newProj.proposedTrim,
+      appliedOperations: newProj.appliedOperations,
+      lastExport: newProj.lastExport,
       aspectRatio: newProj.aspectRatio || '9:16',
       updatedAt: 'Just now',
       status: 'draft',
       clips: newProj.clips || [],
       knowledge: newProj.knowledge,
+      blueprint: newProj.blueprint,
     };
     projects = [p, ...projects];
-    activeProjectId = p.id;
+    activeIds.set(owner, p.id);
     notify();
     return p;
   },
   updateActiveProject: (partial: Partial<Project>) => {
-    projects = projects.map((p) => (p.id === activeProjectId ? { ...p, ...partial } : p));
+    const active = projectStore.getActiveProject();
+    if (active) projectStore.updateProject(active.id, partial);
+  },
+  updateProject: (id: string, partial: Partial<Project>) => {
+    if (!mine().some(project => project.id === id)) return;
+    const { id: _id, creatorId: _creatorId, ...edits } = partial;
+    projects = projects.map((p) => (p.id === id && p.creatorId === creatorStore.get().id ? { ...p, ...edits, updatedAt: 'Just now' } : p));
     notify();
   },
 };
@@ -112,7 +86,7 @@ export function useProjectStore() {
   }, []);
 
   return {
-    projects,
+    projects: projectStore.getProjects(),
     activeProject: projectStore.getActiveProject(),
     setActiveProjectId: projectStore.setActiveProjectId,
     addProject: projectStore.addProject,

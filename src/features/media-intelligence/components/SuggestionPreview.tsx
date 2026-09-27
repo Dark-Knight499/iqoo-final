@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { AISuggestion, MediaItem } from '../types/mediaIntelligence';
-import { Check, X, Sparkles, Film, Music, Type, Sliders, CheckCircle2 } from 'lucide-react';
+import { Check, Sparkles } from 'lucide-react';
+import { MediaArt } from '@/shared/components/MediaArt';
 
 interface SuggestionPreviewProps {
   suggestion: AISuggestion;
@@ -15,20 +16,6 @@ export const SuggestionPreview: React.FC<SuggestionPreviewProps> = ({
   onReject,
   onApproveAndCreate,
 }) => {
-  const [isApproving, setIsApproving] = useState(false);
-  const [approvedSuccess, setApprovedSuccess] = useState(false);
-
-  const handleApprove = () => {
-    setIsApproving(true);
-    setTimeout(() => {
-      setIsApproving(false);
-      setApprovedSuccess(true);
-      setTimeout(() => {
-        onApproveAndCreate();
-      }, 1000);
-    }, 800);
-  };
-
   return (
     <div
       style={{
@@ -58,19 +45,19 @@ export const SuggestionPreview: React.FC<SuggestionPreviewProps> = ({
           >
             {suggestion.tag}
           </span>
-          <span style={{ fontSize: '12px', color: '#64748B' }}>Ready to Generate</span>
+           <span style={{ fontSize: '12px', color: '#64748B' }}>Text plan · no rendered preview</span>
         </div>
         <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0F172A' }}>
           {suggestion.title}
         </h3>
       </div>
 
-      {/* Video Preview with 9:16 reframe overlay mockup */}
+       {/* Source reference for a text-only crop plan, not a rendered clip. */}
       <div
         style={{
           position: 'relative',
           width: '100%',
-          height: '240px',
+           height: '200px',
           backgroundColor: '#0F172A',
           borderRadius: '14px',
           overflow: 'hidden',
@@ -79,62 +66,18 @@ export const SuggestionPreview: React.FC<SuggestionPreviewProps> = ({
           justifyContent: 'center',
         }}
       >
-        <img
-          src={media.thumbnail}
-          alt="Preview"
-          style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }}
-        />
+         <MediaArt src={media.thumbnail} label={media.title} kind={media.type} style={{ width: '100%', height: '100%' }} />
 
-        {/* 9:16 vertical crop guide box */}
-        <div
-          style={{
-            position: 'absolute',
-            width: '135px',
-            height: '220px',
-            borderRadius: '10px',
-            border: '2px solid #2563EB',
-            boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.65)',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            padding: '8px',
-            boxSizing: 'border-box',
-          }}
-        >
-          <span
-            style={{
-              fontSize: '9px',
-              fontWeight: 700,
-              color: '#FFFFFF',
-              backgroundColor: '#2563EB',
-              padding: '2px 5px',
-              borderRadius: '4px',
-              alignSelf: 'flex-start',
-            }}
-          >
-            9:16 Reframe
-          </span>
-          <div
-            style={{
-              padding: '4px 6px',
-              backgroundColor: 'rgba(0,0,0,0.8)',
-              borderRadius: '4px',
-              color: '#FFFFFF',
-              fontSize: '10px',
-              textAlign: 'center',
-              fontWeight: 600,
-            }}
-          >
-            "Local AI is going to change mobile computing..."
-          </div>
-        </div>
-      </div>
+       </div>
+       <p style={{ margin: '-10px 0 0', fontSize: '12px', color: '#64748B' }}>
+         Proposed 9:16 crop · {suggestion.quote || 'Suggested text only — no rendered captions'}
+       </p>
 
       {/* Timeline Bar */}
       <div style={{ backgroundColor: '#F8FAFC', padding: '12px 14px', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '8px', fontWeight: 600 }}>
           <span style={{ color: '#2563EB' }}>Selected Region</span>
-          <span style={{ color: '#0F172A' }}>{suggestion.timestampRange || '01:42 ───────── 02:18'}</span>
+           <span style={{ color: '#0F172A' }}>{suggestion.timestampRange || 'Range not provided'}</span>
         </div>
         <div style={{ position: 'relative', width: '100%', height: '6px', backgroundColor: '#E2E8F0', borderRadius: '999px' }}>
           <div
@@ -163,16 +106,10 @@ export const SuggestionPreview: React.FC<SuggestionPreviewProps> = ({
             marginBottom: '10px',
           }}
         >
-          AI PLAN
+           Suggested plan (not applied)
         </span>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {(suggestion.plan || [
-            'Extract strongest section',
-            'Reframe to 9:16 with subject tracking',
-            'Add synchronized dynamic captions',
-            'Apply Creator Style color profile',
-            'Add curated background music',
-          ]).map((step, i) => (
+           {(suggestion.plan || [suggestion.reason]).map((step, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#334155' }}>
               <div
                 style={{
@@ -195,32 +132,10 @@ export const SuggestionPreview: React.FC<SuggestionPreviewProps> = ({
         </div>
       </div>
 
-      {/* Success alert message if approved */}
-      {approvedSuccess && (
-        <div
-          style={{
-            padding: '12px',
-            borderRadius: '12px',
-            backgroundColor: '#DCFCE7',
-            border: '1px solid #86EFAC',
-            color: '#166534',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontSize: '13px',
-            fontWeight: 600,
-          }}
-        >
-          <CheckCircle2 size={18} color="#16A34A" />
-          <span>Added to Project! Redirecting to Catalog...</span>
-        </div>
-      )}
-
       {/* Action Buttons: [ Reject ] [ Approve & Create ] */}
       <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
         <button
           onClick={onReject}
-          disabled={isApproving || approvedSuccess}
           style={{
             flex: 1,
             padding: '12px',
@@ -237,8 +152,7 @@ export const SuggestionPreview: React.FC<SuggestionPreviewProps> = ({
         </button>
 
         <button
-          onClick={handleApprove}
-          disabled={isApproving || approvedSuccess}
+           onClick={onApproveAndCreate}
           style={{
             flex: 1.6,
             padding: '12px',
@@ -256,23 +170,8 @@ export const SuggestionPreview: React.FC<SuggestionPreviewProps> = ({
             boxShadow: '0 4px 14px rgba(37, 99, 235, 0.3)',
           }}
         >
-          {isApproving ? (
-            <div
-              style={{
-                width: '16px',
-                height: '16px',
-                borderRadius: '50%',
-                border: '2px solid #FFFFFF',
-                borderTopColor: 'transparent',
-                animation: 'spin 1s linear infinite',
-              }}
-            />
-          ) : (
-            <>
-              <Sparkles size={16} />
-              <span>Approve & Create</span>
-            </>
-          )}
+           <Sparkles size={16} />
+           <span>Save review draft</span>
         </button>
       </div>
     </div>

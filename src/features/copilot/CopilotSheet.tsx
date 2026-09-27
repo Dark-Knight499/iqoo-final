@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, Check, ArrowRight, Play, CheckCircle } from 'lucide-react';
+import { X, Sparkles, Check, CheckCircle } from 'lucide-react';
 import { useAppStore } from '@/shared/state/app.store';
 import { useProjectStore } from '@/shared/state/project.store';
 import { useCreatorStore } from '@/shared/state/creator.store';
@@ -8,14 +8,13 @@ import { CopilotEditPlan } from '@/shared/types/project';
 import { Button } from '@/shared/components/Button';
 
 export const CopilotSheet: React.FC = () => {
-  const { isCopilotOpen, closeCopilot, copilotInitialPrompt, showToast, openModal } = useAppStore();
+  const { isCopilotOpen, closeCopilot, copilotInitialPrompt, showToast } = useAppStore();
   const { activeProject, updateActiveProject } = useProjectStore();
   const { creator } = useCreatorStore();
 
   const [prompt, setPrompt] = useState(copilotInitialPrompt || '');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [plan, setPlan] = useState<CopilotEditPlan | null>(null);
-  const [previewActive, setPreviewActive] = useState(false);
 
   useEffect(() => {
     if (copilotInitialPrompt) {
@@ -29,7 +28,6 @@ export const CopilotSheet: React.FC = () => {
     if (!prompt.trim()) return;
     setIsAnalyzing(true);
     setPlan(null);
-    setPreviewActive(false);
 
     try {
       const generatedPlan = await llm.generateEditPlan(prompt, {
@@ -47,13 +45,10 @@ export const CopilotSheet: React.FC = () => {
   const handleApply = () => {
     if (!plan) return;
     updateActiveProject({
-      aspectRatio: plan.targetAspectRatio,
-      durationSeconds: plan.estimatedDuration,
-      status: 'ready',
+      description: `${activeProject?.description || ''}\n\nSuggested checklist (not executed): ${plan.steps.map(step => step.description).join(' | ')}`.trim(),
     });
-    showToast('AI Edit Plan applied to timeline');
+    showToast('Checklist saved to project; no edits applied');
     closeCopilot();
-    openModal('editor');
   };
 
   return (
@@ -109,12 +104,13 @@ export const CopilotSheet: React.FC = () => {
                 Creator AI Copilot
               </h3>
               <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>
-                Context: {activeProject?.title || 'Active Project'} · DNA Tuned
+                 Local planning template · {activeProject?.title || 'Active Project'}
               </p>
             </div>
           </div>
           <button
             onClick={closeCopilot}
+            aria-label="Close Copilot"
             style={{
               width: '32px',
               height: '32px',
@@ -125,7 +121,7 @@ export const CopilotSheet: React.FC = () => {
               placeItems: 'center',
             }}
           >
-            <X size={18} />
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
 
@@ -152,7 +148,7 @@ export const CopilotSheet: React.FC = () => {
                 border: '1px solid rgba(255, 255, 255, 0.06)',
               }}
             >
-              ✦ {suggestion}
+               <Sparkles size={12} aria-hidden="true" style={{ marginRight: 4 }} /> {suggestion}
             </button>
           ))}
         </div>
@@ -185,8 +181,8 @@ export const CopilotSheet: React.FC = () => {
               disabled={isAnalyzing || !prompt.trim()}
               style={{ gap: '6px' }}
             >
-              <Sparkles size={14} />
-              {isAnalyzing ? 'Analyzing Footage...' : 'Generate Plan ✦'}
+               <Sparkles size={14} aria-hidden="true" />
+                {isAnalyzing ? 'Building checklist...' : 'Generate Checklist'}
             </Button>
           </div>
         </div>
@@ -204,7 +200,7 @@ export const CopilotSheet: React.FC = () => {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
               <span style={{ color: 'var(--ai-accent)', fontSize: '13px', fontWeight: 600 }}>
-                Running local Whisper + YOLO inference...
+                 Building a local checklist (no footage analysis)...
               </span>
             </div>
             <div
@@ -243,7 +239,7 @@ export const CopilotSheet: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
               <CheckCircle size={18} color="var(--ai-accent)" />
               <strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>
-                Proposed Social Reel Edit Plan
+                 Suggested editing checklist
               </strong>
             </div>
 
@@ -278,7 +274,7 @@ export const CopilotSheet: React.FC = () => {
                       flexShrink: 0,
                     }}
                   >
-                    ✓
+                      <Check size={10} aria-hidden="true" />
                   </span>
                   <div>
                     <strong style={{ color: '#fff' }}>{step.action}: </strong>
@@ -302,29 +298,21 @@ export const CopilotSheet: React.FC = () => {
               }}
             >
               <span>Target: <strong>{plan.targetAspectRatio}</strong></span>
-              <span>•</span>
+               <span className="meta-separator" aria-hidden="true" />
               <span>Estimated: <strong>{plan.estimatedDuration}s</strong></span>
-              <span>•</span>
-              <span>DNA Match: <strong>98%</strong></span>
+               <span className="meta-separator" aria-hidden="true" />
+               <span>Not applied</span>
             </div>
 
-            {/* Actions: Preview & Apply */}
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <Button
-                variant={previewActive ? 'secondary' : 'glass'}
-                style={{ flex: 1, gap: '6px' }}
-                onClick={() => setPreviewActive(!previewActive)}
-              >
-                <Play size={15} />
-                {previewActive ? 'Playing Preview' : 'Preview Edit'}
-              </Button>
+             {/* Save a plan, not simulated edits. */}
+             <div style={{ display: 'flex', gap: '10px' }}>
               <Button
                 variant="ai"
                 style={{ flex: 1, gap: '6px' }}
                 onClick={handleApply}
               >
                 <Check size={16} />
-                Apply to Timeline
+                 Save checklist to project
               </Button>
             </div>
           </div>

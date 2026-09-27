@@ -88,6 +88,8 @@ export interface GeneratedContent {
   broll: string[];
   music: { genre: string; bpm: number };
   cta: string;
+  references: { id: string; title: string; creatorName: string; platform: string; description: string; topics: string[] }[];
+  format: GenerationInput;
 }
 
 export interface CopilotMessage {

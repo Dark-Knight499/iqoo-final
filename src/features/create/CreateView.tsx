@@ -1,64 +1,73 @@
 import React from 'react';
-import { ArrowRight, Film, Lightbulb, Gamepad2, Wand2, ArrowLeft } from 'lucide-react';
+import { ArrowRight, Film, Lightbulb, Gamepad2, Wand2, ArrowLeft, Brain, Sparkles } from 'lucide-react';
 import { useAppStore } from '@/shared/state/app.store';
 import { useProjectStore } from '@/shared/state/project.store';
 import { files } from '@/utils/files';
 
 export const CreateView: React.FC = () => {
-  const { setActiveTab, openModal } = useAppStore();
+  const { setActiveTab, openModal, showToast } = useAppStore();
   const { addProject } = useProjectStore();
 
   const handleEditVideo = async () => {
-    // Allows picking a file or launching editor with default footage
-    const picked = await files.pick('video/*,image/*');
-    if (picked) {
+    try {
+      const picked = await files.pickVideo();
+      if (!picked) return;
       addProject({
         title: picked.name.replace(/\.[^/.]+$/, ''),
-        thumbnailUrl: '/assets/create-edit-video.jpg',
+        thumbnailUrl: '',
+        mediaId: picked.mediaId,
+        mediaName: picked.name,
+        durationSeconds: picked.duration,
+        trimStartSeconds: 0,
+        trimEndSeconds: picked.duration,
+        aspectRatio: picked.width >= picked.height ? '16:9' : '9:16',
       });
+      URL.revokeObjectURL(picked.url);
+      openModal('editor');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Unable to import video');
     }
-    openModal('editor');
   };
 
   const creationCards = [
     {
       id: 'media-intel',
       title: 'Media Intelligence',
-      description: 'Import & analyze video/audio to extract transcript, scenes, topics & AI ideas.',
-      badge: '🧠 Multimodal AI',
-      bg: '/assets/trend-on-device-ai.jpg',
+      description: 'Explore labeled sample analysis or request backend text clip suggestions from a URL.',
+      badge: 'Sample + optional API',
+      badgeIcon: Brain,
       action: () => openModal('media-intelligence'),
     },
     {
       id: 'edit',
       title: 'Edit a Video',
-      description: 'Import footage and let on-device AI understand, cut, and reframe it.',
-      badge: '🎬 Quick Edit',
-      bg: '/assets/create-edit-video.jpg',
+      description: 'Import real footage, review a trim and export a playable video.',
+      badge: 'Quick Edit',
+      badgeIcon: Film,
       action: handleEditVideo,
     },
     {
       id: 'idea',
       title: 'Create from an Idea',
-      description: 'Idea → Copilot discussion → outline → teleprompter → record → edit.',
-      badge: '✦ End-to-End',
-      bg: '/assets/create-from-idea.jpg',
+      description: 'Take an idea through Copilot, outline, teleprompter, recording and editing.',
+      badge: 'End-to-End',
+      badgeIcon: Lightbulb,
       action: () => openModal('script'),
     },
     {
       id: 'game',
       title: 'Game Studio',
       description: 'Create camera and MediaPipe-powered interactive reaction experiences.',
-      badge: '🎮 Interactive AI',
-      bg: '/assets/create-game-studio.jpg',
+      badge: 'Interactive AI',
+      badgeIcon: Gamepad2,
       action: () => openModal('game-studio'),
     },
     {
       id: 'effects',
       title: 'Effects Studio',
       description: 'Discover cinematic camera color grades, visual effects, and overlays.',
-      badge: '✨ Visual FX',
-      bg: '/assets/create-effects-studio.jpg',
+      badge: 'Visual FX',
+      badgeIcon: Wand2,
       action: () => openModal('effects'),
     },
   ];
@@ -69,6 +78,7 @@ export const CreateView: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
         <button
           onClick={() => setActiveTab('home')}
+          aria-label="Go to home"
           style={{
             width: '36px',
             height: '36px',
@@ -79,7 +89,7 @@ export const CreateView: React.FC = () => {
             placeItems: 'center',
           }}
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={18} aria-hidden="true" />
         </button>
         <div>
           <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-muted)' }}>
@@ -101,61 +111,54 @@ export const CreateView: React.FC = () => {
           <article
             key={card.id}
             onClick={card.action}
-            className="media-bg"
             style={{
-              minHeight: '135px',
-              borderRadius: '24px',
+              minHeight: '120px',
+              borderRadius: '20px',
               overflow: 'hidden',
-              backgroundImage: `url(${card.bg})`,
               padding: '18px 20px',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
               position: 'relative',
               cursor: 'pointer',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              backgroundColor: 'var(--bg-surface-2)',
+              border: '1px solid var(--border-color)',
               transition: 'transform 0.18s ease, border-color 0.18s ease',
             }}
           >
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.88) 100%)',
-              }}
-            />
-            <div style={{ position: 'relative', zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span
                 style={{
                   padding: '4px 10px',
                   borderRadius: 'var(--radius-pill)',
-                  backgroundColor: 'rgba(0, 0, 0, 0.65)',
+                  backgroundColor: 'var(--bg-surface-3)',
                   fontSize: '11px',
                   fontWeight: 600,
-                  color: 'var(--text-primary)',
-                  backdropFilter: 'blur(8px)',
+                  color: 'var(--text-secondary)',
+                   display: 'inline-flex',
+                   alignItems: 'center',
+                   gap: '5px',
                 }}
               >
-                {card.badge}
+                <card.badgeIcon size={12} aria-hidden="true" /> {card.badge}
               </span>
               <div
                 style={{
                   width: '32px',
                   height: '32px',
                   borderRadius: '50%',
-                  backgroundColor: 'rgba(255, 255, 255, 0.12)',
-                  backdropFilter: 'blur(8px)',
+                  backgroundColor: 'var(--bg-surface-3)',
                   display: 'grid',
                   placeItems: 'center',
-                  color: '#fff',
+                  color: 'var(--text-secondary)',
                 }}
               >
-                <ArrowRight size={16} />
+                <ArrowRight size={16} aria-hidden="true" />
               </div>
             </div>
 
-            <div style={{ position: 'relative', zIndex: 2, marginTop: '16px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>
+            <div style={{ marginTop: '16px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 4px' }}>
                 {card.title}
               </h3>
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0, maxWidth: '280px' }}>

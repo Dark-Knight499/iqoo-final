@@ -6,19 +6,20 @@ export interface MediaAsset {
   name: string;
   type: 'video' | 'audio' | 'image';
   url: string;
+  mediaId?: string;
   duration?: number;
   size?: number;
   createdAt: string;
 }
 
-const INITIAL_ASSETS: MediaAsset[] = [
-  { id: 'm1', name: 'Main A-Roll Talk', type: 'video', url: '/assets/create-edit-video.jpg', duration: 42, createdAt: 'Today' },
-  { id: 'm2', name: 'Agent Interface Demo', type: 'video', url: '/assets/trend-on-device-ai.jpg', duration: 18, createdAt: 'Yesterday' },
-  { id: 'm3', name: 'Lo-Fi Chill Beat', type: 'audio', url: '/assets/effects-showcase.jpg', duration: 120, createdAt: '2 days ago' },
-  { id: 'm4', name: 'AI Inspiration Hero', type: 'image', url: '/assets/ai-inspiration.jpg', createdAt: '3 days ago' },
-];
+const INITIAL_ASSETS: MediaAsset[] = [];
 
-let assets: MediaAsset[] = storage.load('media_assets', INITIAL_ASSETS);
+// Only the old sample fixtures used these ids; keep every user-imported asset.
+const sampleAssetIds = new Set(['m1', 'm2', 'm3', 'm4']);
+const isSyntheticAsset = (asset: MediaAsset) =>
+  sampleAssetIds.has(asset.id) && /^\/assets\/[^/?#]+\.jpg(?:[?#]|$)/i.test(asset.url);
+let assets: MediaAsset[] = storage.load<MediaAsset[]>('media_assets', INITIAL_ASSETS)
+  .filter((asset) => !isSyntheticAsset(asset));
 const listeners = new Set<() => void>();
 
 function notify() {

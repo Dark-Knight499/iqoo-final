@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { 
   Sparkles, 
+  ArrowLeft,
   Layers, 
   TrendingUp, 
   Search, 
@@ -35,6 +36,9 @@ import { ContentDetailSheet } from '../components/ContentDetailSheet';
 import { GenerateContentScreen } from './GenerateContentScreen';
 import { ThemeToggle } from '@/shared/components/ThemeToggle';
 import { useAppStore } from '@/shared/state/app.store';
+import { useCreatorStore } from '@/shared/state/creator.store';
+import { useProjectStore } from '@/shared/state/project.store';
+import { IntelligencePlatform, IntelligenceResponse, legacyBackend } from '@/services/legacyBackend';
 
 const REGIONS: { id: Region; label: string }[] = [
   { id: 'foryou', label: 'For You' },
@@ -44,7 +48,21 @@ const REGIONS: { id: Region; label: string }[] = [
   { id: 'myniche', label: 'My Niche' },
 ];
 
-export const CreatorIntelligenceScreen: React.FC = () => {
+function getIntelligencePlatforms(platforms: string[], handles?: Record<string, string>): IntelligencePlatform[] {
+  const selected = new Set(platforms.map((platform) => platform.toLowerCase()));
+  const supported: IntelligencePlatform[] = [];
+  if (selected.has('youtube') || selected.has('youtube shorts') || handles?.youtube) supported.push('youtube');
+  if (selected.has('instagram reels') || selected.has('instagram') || handles?.instagram) supported.push('instagram');
+  if (selected.has('linkedin') || handles?.linkedin) supported.push('linkedin');
+  if (selected.has('x / twitter') || selected.has('twitter') || handles?.x_twitter) supported.push('x_twitter');
+  return supported.length ? supported : ['youtube'];
+}
+
+interface CreatorIntelligenceScreenProps {
+  onBack?: () => void;
+}
+
+export const CreatorIntelligenceScreen: React.FC<CreatorIntelligenceScreenProps> = ({ onBack }) => {
   const {
     selectedRegion,
     setRegion,
@@ -62,14 +80,74 @@ export const CreatorIntelligenceScreen: React.FC = () => {
     selectedContentId,
     setSelectedContent,
     openGenerateModal,
+    openSavedBlueprint,
     toggleBookmark,
     isBookmarked,
     bookmarkedIds,
   } = useCIStore();
 
   const { showToast, openModal, theme } = useAppStore();
+  const { creator } = useCreatorStore();
+  const { projects } = useProjectStore();
   const isDark = theme !== 'light';
   const [activeTopTab, setActiveTopTab] = React.useState<Region | 'saved'>(selectedRegion);
+  const [intelligence, setIntelligence] = useState<IntelligenceResponse | null>(null);
+  const [intelligenceLoading, setIntelligenceLoading] = useState(false);
+  const [intelligenceError, setIntelligenceError] = useState<string | null>(null);
+  const [scanVersion, setScanVersion] = useState(0);
+  const platformKey = creator.platforms.join('|');
+  const sourceKey = JSON.stringify(creator.profileSources || {});
+
+  useEffect(() => {
+    let active = true;
+    if (!creator.connectedSources?.length && scanVersion === 0) {
+      setIntelligence(null);
+      setIntelligenceError(null);
+      return;
+    }
+    const platformHandles = {
+      ...(creator.profileSources?.youtube ? { youtube: creator.profileSources.youtube } : {}),
+      ...(creator.profileSources?.instagram ? { instagram: creator.profileSources.instagram } : {}),
+      ...(creator.profileSources?.linkedin ? { linkedin: creator.profileSources.linkedin } : {}),
+      ...(creator.profileSources?.twitter ? { x_twitter: creator.profileSources.twitter } : {}),
+    };
+    const platforms = getIntelligencePlatforms(creator.platforms, platformHandles);
+
+    setIntelligenceLoading(true);
+    setIntelligenceError(null);
+    legacyBackend.runIntelligence({
+      creator_name: creator.name,
+      niche: creator.niche,
+      location: 'US',
+      platforms,
+      platform_handles: platformHandles,
+      goals: {
+        youtube: 'increase_subscribers',
+        instagram: 'more_views_and_followers',
+        linkedin: 'increase_connections',
+        x_twitter: 'spread_domain_posts',
+      },
+      generate_platform_md: false,
+      generate_user_hook_md: false,
+    }).then((result) => {
+      if (!Array.isArray(result.platforms_analyzed) || !Array.isArray(result.top_recommendations) || !Array.isArray(result.platform_trends)
+        || !result.platform_trends.every((block) => block && typeof block.platform === 'string'
+          && Array.isArray(block.domain_trends) && Array.isArray(block.location_trends) && Array.isArray(block.global_trends)
+          && [...block.domain_trends, ...block.location_trends, ...block.global_trends].every((item) => item && typeof item.title === 'string'))
+        || !result.top_recommendations.every((item) => item && typeof item.platform === 'string' && typeof item.topic === 'string')) {
+        throw new Error('Intelligence service returned an incomplete scan.');
+      }
+      if (active) setIntelligence(result);
+    }).catch((error) => {
+      if (active) setIntelligenceError(error instanceof Error ? error.message : 'Creator intelligence scan failed.');
+    }).finally(() => {
+      if (active) setIntelligenceLoading(false);
+    });
+
+    return () => {
+      active = false;
+    };
+   }, [creator.name, creator.niche, platformKey, sourceKey, scanVersion, creator.connectedSources?.length]);
 
   const handleSelectRegion = (r: Region | 'saved') => {
     setActiveTopTab(r);
@@ -81,13 +159,13 @@ export const CreatorIntelligenceScreen: React.FC = () => {
   // Filter trends by selected region
   const filteredTrends = useMemo(() => {
     return mockTrends.filter((t) => 
-      activeTopTab === 'saved' || activeTopTab === 'foryou' ? true : t.region.includes(activeTopTab as Region)
+      activeTopTab === 'saved' ? false : activeTopTab === 'foryou' ? true : t.region.includes(activeTopTab as Region)
     );
   }, [activeTopTab]);
 
   // Filter creators by selected region
   const filteredCreators = useMemo(() => {
-    if (activeTopTab === 'saved') return mockCreators.slice(0, 5);
+    if (activeTopTab === 'saved') return [];
     if (activeTopTab === 'foryou') return mockCreators;
     return mockCreators.filter((c) => c.region.includes(activeTopTab as Region));
   }, [activeTopTab]);
@@ -165,12 +243,31 @@ export const CreatorIntelligenceScreen: React.FC = () => {
           gap: '16px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-          <div>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+            {onBack && (
+              <button
+                onClick={onBack}
+                aria-label="Back to insights"
+                style={{
+                  width: '34px',
+                  height: '34px',
+                  borderRadius: '50%',
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--bg-surface-2)',
+                  color: 'var(--text-primary)',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+              >
+                <ArrowLeft size={16} />
+              </button>
+            )}
+            <div style={{ minWidth: 0 }}>
             <h1
               style={{
                 margin: 0,
-                fontSize: '26px',
+                 fontSize: 'clamp(18px, 6vw, 26px)',
                 fontWeight: 800,
                 letterSpacing: '-0.5px',
                 color: isDark ? '#FFFFFF' : '#0F172A',
@@ -187,9 +284,10 @@ export const CreatorIntelligenceScreen: React.FC = () => {
             >
               What's happening. What's worth creating.
             </p>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <ThemeToggle />
             <button
               onClick={() => openModal('media-intelligence')}
@@ -224,6 +322,99 @@ export const CreatorIntelligenceScreen: React.FC = () => {
         />
       </div>
 
+      {/* Backend intelligence scan */}
+      <section style={{ padding: '0 20px 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>Creator intelligence scan</h2>
+            <span style={{ fontSize: '11px', color: isDark ? 'rgba(255,255,255,.55)' : '#64748B' }}>
+               {intelligenceLoading ? 'Scanning selected platforms…' : intelligence ? `Scanned ${intelligence.platforms_analyzed.join(', ')}` : 'Optional live scan · requires intelligence service'}
+            </span>
+          </div>
+          <button
+            onClick={() => setScanVersion((version) => version + 1)}
+            disabled={intelligenceLoading}
+            style={{
+              padding: '7px 11px',
+              borderRadius: '10px',
+              border: '1px solid var(--border-color)',
+              background: 'var(--bg-surface-2)',
+              color: 'var(--text-primary)',
+              fontSize: '11px',
+              fontWeight: 700,
+              cursor: intelligenceLoading ? 'wait' : 'pointer',
+            }}
+          >
+            {intelligenceLoading ? 'Scanning…' : 'Refresh scan'}
+          </button>
+        </div>
+
+        {intelligenceError && (
+          <div role="alert" style={{ padding: '12px', borderRadius: '12px', color: '#FCA5A5', background: 'rgba(127,29,29,.25)', fontSize: '12px' }}>
+             {intelligenceError} Sample discovery remains available below.
+          </div>
+        )}
+
+        {intelligence && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {intelligence.summary && (
+              <p style={{ margin: 0, fontSize: '12px', lineHeight: 1.5, color: isDark ? 'rgba(255,255,255,.72)' : '#475569' }}>
+                {intelligence.summary}
+              </p>
+            )}
+            {intelligence.top_recommendations.slice(0, 3).map((recommendation, index) => (
+              <article
+                key={`${recommendation.platform}-${recommendation.topic}-${index}`}
+                style={{ padding: '13px', borderRadius: '14px', background: isDark ? '#171717' : '#FFFFFF', border: '1px solid var(--border-color)' }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', marginBottom: '5px' }}>
+                  <strong style={{ fontSize: '13px' }}>{recommendation.topic}</strong>
+                  <span style={{ fontSize: '10px', color: 'var(--ai-accent)', textTransform: 'uppercase' }}>{recommendation.platform}</span>
+                </div>
+                <p style={{ margin: '0 0 5px', fontSize: '12px', color: isDark ? 'rgba(255,255,255,.8)' : '#334155' }}>{recommendation.hook}</p>
+                <p style={{ margin: 0, fontSize: '11px', color: isDark ? 'rgba(255,255,255,.55)' : '#64748B' }}>{recommendation.why_now}</p>
+              </article>
+            ))}
+            {intelligence.platform_trends.map((platformBlock) => {
+              const items = [...platformBlock.domain_trends, ...platformBlock.location_trends, ...platformBlock.global_trends].slice(0, 2);
+              return (
+                <article
+                  key={platformBlock.platform}
+                  style={{ padding: '13px', borderRadius: '14px', background: isDark ? '#111111' : '#F8FAFC', border: '1px solid var(--border-color)' }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', marginBottom: '8px' }}>
+                    <strong style={{ fontSize: '12px', textTransform: 'capitalize' }}>{platformBlock.platform}</strong>
+                    {platformBlock.creator_profile?.follower_or_sub_count && (
+                      <span style={{ fontSize: '10px', color: isDark ? 'rgba(255,255,255,.55)' : '#64748B' }}>
+                        {platformBlock.creator_profile.follower_or_sub_count} followers/subscribers
+                      </span>
+                    )}
+                  </div>
+                  {items.length ? items.map((item) => (
+                    <div key={`${platformBlock.platform}-${item.rank}-${item.title}`} style={{ paddingTop: '8px', marginTop: '8px', borderTop: '1px solid var(--border-color)' }}>
+                      {item.url ? (
+                        <a href={item.url} target="_blank" rel="noreferrer" style={{ color: 'var(--ai-accent)', fontSize: '12px', fontWeight: 700 }}>
+                          {item.title}
+                        </a>
+                      ) : (
+                        <strong style={{ color: 'var(--text-primary)', fontSize: '12px' }}>{item.title}</strong>
+                      )}
+                      {(item.why_trending || item.relevance_to_niche || item.suggested_angle) && (
+                        <p style={{ margin: '4px 0 0', color: isDark ? 'rgba(255,255,255,.6)' : '#64748B', fontSize: '11px', lineHeight: 1.4 }}>
+                          {item.why_trending || item.relevance_to_niche || item.suggested_angle}
+                        </p>
+                      )}
+                    </div>
+                  )) : (
+                    <p style={{ margin: 0, fontSize: '11px', color: isDark ? 'rgba(255,255,255,.5)' : '#64748B' }}>No trend items returned for this platform.</p>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
       {/* What's Happening Region Tabs */}
       <div style={{ padding: '0 20px 4px 20px' }}>
         <span
@@ -241,7 +432,8 @@ export const CreatorIntelligenceScreen: React.FC = () => {
         </span>
         <div
           style={{
-            overflowX: 'auto',
+             overflowX: 'auto',
+             maxWidth: '100%',
             whiteSpace: 'nowrap',
             display: 'flex',
             gap: '8px',
@@ -297,6 +489,22 @@ export const CreatorIntelligenceScreen: React.FC = () => {
           </button>
         </div>
       </div>
+
+      <div style={{ margin: '0 20px 20px', padding: '9px 12px', borderRadius: '10px', background: isDark ? '#171717' : '#F1F5F9', color: isDark ? 'rgba(255,255,255,.55)' : '#64748B', fontSize: '11px' }}>
+        The creator, video, and reel catalog below is sample content; the backend scan above is creator-specific.
+      </div>
+
+      {projects.some(project => project.blueprint) && (
+        <section style={{ padding: '0 20px 20px' }}>
+          <h2 style={{ fontSize: '15px', margin: '0 0 8px' }}>Saved project blueprints</h2>
+          {projects.filter(project => project.blueprint).map(project => (
+            <button key={project.id} onClick={() => project.blueprint && openSavedBlueprint(project.blueprint, project.id)}
+              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px', marginBottom: '6px', borderRadius: '9px', border: '1px solid var(--border-color)', background: 'var(--bg-surface-2)', color: 'var(--text-primary)', cursor: 'pointer' }}>
+              {project.title} · View saved blueprint
+            </button>
+          ))}
+        </section>
+      )}
 
       {/* SEARCH VIEW (When User Searches) */}
       {isSearching && searchResults && (
@@ -431,8 +639,11 @@ export const CreatorIntelligenceScreen: React.FC = () => {
       {/* NORMAL BROWSE VIEW (ALL 4 CORE SECTIONS AS SPECIFIED) */}
       {!isSearching && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          {activeTopTab === 'saved' && bookmarkedIds.length === 0 && (
+            <p style={{ padding: '0 20px', color: 'var(--text-secondary)' }}>No sample catalog bookmarks yet. Bookmark a video or reel to see it here.</p>
+          )}
           {/* SECTION 1: TRENDING TOPICS (Horizontal Cards) */}
-          <div>
+          {activeTopTab !== 'saved' && <div>
             <div style={{ padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Flame size={17} color="#FF6B00" />
@@ -440,7 +651,7 @@ export const CreatorIntelligenceScreen: React.FC = () => {
                   Trending Topics
                 </h3>
               </div>
-              <span style={{ fontSize: '12px', color: isDark ? 'rgba(255, 255, 255, 0.4)' : '#64748B' }}>Real-time growth</span>
+              <span style={{ fontSize: '12px', color: isDark ? 'rgba(255, 255, 255, 0.4)' : '#64748B' }}>Sample catalog</span>
             </div>
 
             <div
@@ -456,10 +667,10 @@ export const CreatorIntelligenceScreen: React.FC = () => {
                 <TrendCard key={t.id} trend={t} onClick={handleTrendClick} />
               ))}
             </div>
-          </div>
+          </div>}
 
           {/* SECTION 2: TOP CREATORS (Horizontal Cards) */}
-          <div>
+          {activeTopTab !== 'saved' && <div>
             <div style={{ padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Users size={17} color="var(--ai-accent, #D8FF00)" />
@@ -467,7 +678,7 @@ export const CreatorIntelligenceScreen: React.FC = () => {
                   Top Creators
                 </h3>
               </div>
-              <span style={{ fontSize: '12px', color: isDark ? 'rgba(255, 255, 255, 0.4)' : '#64748B' }}>Leading voices</span>
+              <span style={{ fontSize: '12px', color: isDark ? 'rgba(255, 255, 255, 0.4)' : '#64748B' }}>Sample catalog</span>
             </div>
 
             <div
@@ -485,7 +696,7 @@ export const CreatorIntelligenceScreen: React.FC = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </div>}
 
           {/* SECTION 3: TOP VIDEOS (Large Cards) */}
           <div>
@@ -493,7 +704,7 @@ export const CreatorIntelligenceScreen: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Film size={17} color="#2563EB" />
                 <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: isDark ? '#FFFFFF' : '#0F172A' }}>
-                  Top Videos
+                   {activeTopTab === 'saved' ? 'Bookmarked Videos' : 'Sample Videos'}
                 </h3>
               </div>
               <span style={{ fontSize: '12px', color: isDark ? 'rgba(255, 255, 255, 0.4)' : '#64748B' }}>Deep dives</span>
@@ -520,7 +731,7 @@ export const CreatorIntelligenceScreen: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Play size={17} color="#FF4560" />
                 <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: isDark ? '#FFFFFF' : '#0F172A' }}>
-                  Top Reels
+                   {activeTopTab === 'saved' ? 'Bookmarked Reels' : 'Sample Reels'}
                 </h3>
               </div>
               <span style={{ fontSize: '12px', color: isDark ? 'rgba(255, 255, 255, 0.4)' : '#64748B' }}>High velocity</span>
@@ -576,7 +787,7 @@ export const CreatorIntelligenceScreen: React.FC = () => {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Sparkles size={17} />
-            <span>Generate Content</span>
+             <span>Build Reference Template</span>
             {storyboardItems.length > 0 && (
               <span
                 style={{

@@ -1,43 +1,42 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Share2, Download, Check, Sparkles, Film } from 'lucide-react';
 import { useAppStore } from '@/shared/state/app.store';
 import { useProjectStore } from '@/shared/state/project.store';
-import { exportUtil } from '@/utils/export';
+import { renderProject, shareVideo } from '@/utils/export';
 import { Button } from '@/shared/components/Button';
 
 export const ExportModal: React.FC = () => {
   const { closeModal, showToast } = useAppStore();
-  const { activeProject } = useProjectStore();
+  const { activeProject, updateActiveProject } = useProjectStore();
 
-  const [resolution, setResolution] = useState<'1080p' | '4K'>('1080p');
-  const [aspectRatio, setAspectRatio] = useState<'9:16' | '16:9'>('9:16');
   const [isRendering, setIsRendering] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
   const [renderedUrl, setRenderedUrl] = useState<string | null>(null);
+  const [renderedFile, setRenderedFile] = useState<File | null>(null);
+  const [renderError, setRenderError] = useState<string | null>(null);
+
+  useEffect(() => () => { if (renderedUrl) URL.revokeObjectURL(renderedUrl); }, [renderedUrl]);
 
   const handleStartRender = async () => {
     setIsRendering(true);
     setRenderProgress(0);
-    const url = await exportUtil.render(
-      activeProject?.id || 'p1',
-      {
-        resolution,
-        aspectRatio,
-        includeCaptions: true,
-        normalizeAudio: true,
-        fps: 60,
-      },
-      (p) => setRenderProgress(p)
-    );
-    setRenderedUrl(url);
-    setIsRendering(false);
-    showToast('Video rendered successfully');
+    setRenderError(null);
+    try {
+      if (!activeProject) throw new Error('Select a project to export.');
+      const file = await renderProject(activeProject, setRenderProgress);
+      setRenderedFile(file);
+      setRenderedUrl(URL.createObjectURL(file));
+      updateActiveProject({ lastExport: { name: file.name, exportedAt: new Date().toISOString() } });
+      showToast('Video ready to download');
+    } catch (error) {
+      setRenderError(error instanceof Error ? error.message : 'Export failed.');
+    } finally {
+      setIsRendering(false);
+    }
   };
 
   const handleShare = async () => {
-    if (renderedUrl && activeProject) {
-      await exportUtil.share(activeProject.title, renderedUrl);
-    }
+    if (renderedFile && !(await shareVideo(renderedFile))) showToast('File sharing is unavailable on this device. Download instead.');
   };
 
   return (
@@ -76,6 +75,7 @@ export const ExportModal: React.FC = () => {
           {!isRendering && (
             <button
               onClick={closeModal}
+              aria-label="Close export dialog"
               style={{
                 width: '32px',
                 height: '32px',
@@ -86,7 +86,7 @@ export const ExportModal: React.FC = () => {
                 placeItems: 'center',
               }}
             >
-              <X size={16} />
+              <X size={16} aria-hidden="true" />
             </button>
           )}
         </div>
@@ -120,18 +120,28 @@ export const ExportModal: React.FC = () => {
               <h4 style={{ fontSize: '16px', fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>
                 Export Complete
               </h4>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
-                {activeProject?.title} ({resolution} · {aspectRatio})
-              </p>
+               <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
+                  {renderedFile?.name} ({((renderedFile?.size || 0) / 1024 / 1024).toFixed(1)} MB)
+               </p>
+               {renderedFile?.name.endsWith('.webm') && <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 0 }}>
+                 Browser-recorded WebM: some players may show an unknown duration even though playback works. Check the downloaded file before publishing.
+               </p>}
             </div>
 
+            <video src={renderedUrl} controls playsInline style={{ width: '100%', maxHeight: 220, background: '#080808', marginBottom: 16 }} />
             <div style={{ display: 'flex', gap: '10px' }}>
               <Button
                 variant="secondary"
                 style={{ flex: 1, gap: '6px' }}
                 onClick={() => {
-                  showToast('Downloaded to device gallery');
-                  closeModal();
+                  if (!renderedUrl || !renderedFile) return;
+                  const link = document.createElement('a');
+                  link.href = renderedUrl;
+                  link.download = renderedFile.name;
+                  document.body.appendChild(link);
+                  link.click();
+                  link.remove();
+                  showToast('Download started');
                 }}
               >
                 <Download size={16} /> Download
@@ -147,63 +157,15 @@ export const ExportModal: React.FC = () => {
           </div>
         ) : (
           <div>
-            {/* Resolution Selector */}
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>
-                Resolution
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
-                {(['1080p', '4K'] as const).map((res) => (
-                  <button
-                    key={res}
-                    onClick={() => setResolution(res)}
-                    style={{
-                      padding: '12px',
-                      borderRadius: '14px',
-                      backgroundColor: resolution === res ? 'var(--ai-soft)' : 'var(--bg-surface-2)',
-                      color: resolution === res ? 'var(--ai-accent)' : '#fff',
-                      border: resolution === res ? '1px solid var(--ai-border)' : '1px solid rgba(255, 255, 255, 0.06)',
-                      fontWeight: 600,
-                      fontSize: '13px',
-                    }}
-                  >
-                    {res} {res === '4K' ? 'Ultra HD' : 'Full HD'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Aspect Ratio Selector */}
-            <div style={{ marginBottom: '22px' }}>
-              <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>
-                Format
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
-                {(['9:16', '16:9'] as const).map((ar) => (
-                  <button
-                    key={ar}
-                    onClick={() => setAspectRatio(ar)}
-                    style={{
-                      padding: '12px',
-                      borderRadius: '14px',
-                      backgroundColor: aspectRatio === ar ? 'var(--ai-soft)' : 'var(--bg-surface-2)',
-                      color: aspectRatio === ar ? 'var(--ai-accent)' : '#fff',
-                      border: aspectRatio === ar ? '1px solid var(--ai-border)' : '1px solid rgba(255, 255, 255, 0.06)',
-                      fontWeight: 600,
-                      fontSize: '13px',
-                    }}
-                  >
-                    {ar} {ar === '9:16' ? '(Vertical Reel)' : '(Landscape)'}
-                  </button>
-                ))}
-              </div>
+            <div style={{ background: 'var(--bg-surface-2)', borderRadius: 14, padding: 14, marginBottom: 20, fontSize: 12, color: 'var(--text-secondary)' }}>
+              {activeProject?.mediaId ? 'Exports the original video or your trimmed range as a playable file.' : 'Import a video to export real media.'}
             </div>
 
             {/* Render Progress */}
             {isRendering && (
               <div style={{ marginBottom: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--ai-accent)', fontWeight: 600, marginBottom: '6px' }}>
-                  <span>Rendering on-device silicon...</span>
+                   <span>Preparing video...</span>
                   <span>{renderProgress}%</span>
                 </div>
                 <div style={{ height: '6px', backgroundColor: '#202020', borderRadius: 'var(--radius-pill)', overflow: 'hidden' }}>
@@ -212,6 +174,7 @@ export const ExportModal: React.FC = () => {
               </div>
             )}
 
+            {renderError && <p role="alert" style={{ color: '#ff9ca5', fontSize: 12 }}>{renderError}</p>}
             <Button
               variant="ai"
               size="lg"
@@ -220,8 +183,8 @@ export const ExportModal: React.FC = () => {
               onClick={handleStartRender}
               style={{ gap: '8px' }}
             >
-              <Sparkles size={18} />
-              {isRendering ? 'Rendering...' : 'Render & Export ✦'}
+               <Sparkles size={18} aria-hidden="true" />
+               {isRendering ? 'Rendering...' : 'Render & Export'}
             </Button>
           </div>
         )}

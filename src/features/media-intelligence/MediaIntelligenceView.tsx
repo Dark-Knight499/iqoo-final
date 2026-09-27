@@ -1,4 +1,6 @@
 import React from 'react';
+import { ArrowLeft } from 'lucide-react';
+import { useAppStore } from '@/shared/state/app.store';
 import { useMediaIntelligenceStore } from './state/mediaIntelligenceStore';
 import { ImportScreen } from './screens/ImportScreen';
 import { AnalysisScreen } from './screens/AnalysisScreen';
@@ -11,25 +13,33 @@ import { ContentDetailScreen } from './screens/ContentDetailScreen';
 
 export const MediaIntelligenceView: React.FC = () => {
   const { currentScreen } = useMediaIntelligenceStore();
+  const { closeModal } = useAppStore();
 
+  let screen: React.ReactNode;
   switch (currentScreen) {
     case 'import':
-      return <ImportScreen />;
+      screen = <ImportScreen />; break;
     case 'analysis':
-      return <AnalysisScreen />;
+      screen = <AnalysisScreen />; break;
     case 'ml-analysis':
-      return <ContentAnalysisScreen />;
+      screen = <ContentAnalysisScreen />; break;
     case 'llm-understanding':
-      return <AIUnderstandingScreen />;
+      screen = <AIUnderstandingScreen />; break;
     case 'suggestions':
-      return <SuggestionsScreen />;
+      screen = <SuggestionsScreen />; break;
     case 'suggestion-preview':
-      return <SuggestionPreviewScreen />;
+      screen = <SuggestionPreviewScreen />; break;
     case 'catalog':
-      return <CatalogScreen />;
+      screen = <CatalogScreen />; break;
     case 'content-detail':
-      return <ContentDetailScreen />;
+      screen = <ContentDetailScreen />; break;
     default:
-      return <ImportScreen />;
+      screen = <ImportScreen />;
   }
+  return <div>
+    <div style={{ background: '#F7F8FA', display: 'flex', justifyContent: 'flex-end', padding: '12px 20px 0' }}><button onClick={closeModal} aria-label="Exit Media Intelligence" style={{ border: '1px solid #E2E8F0', borderRadius: 8, background: '#FFFFFF', color: '#334155', padding: '7px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+      <ArrowLeft size={15} /> Exit
+    </button></div>
+    {screen}
+  </div>;
 };

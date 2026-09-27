@@ -18,10 +18,10 @@ export const ScriptView: React.FC = () => {
 Stop believing that AI agents only live inside giant cloud data centers.
 
 ## Value (0:05 - 0:18)
-Right here on this device, we're running localized Whisper and vision models with zero latency and complete privacy.
+What can a phone actually do? Demonstrate a workflow you have verified.
 
 ## Proof (0:19 - 0:26)
-Look at this real-time transcription and automatic edit plan generated in under 300 milliseconds.
+Insert your own tested result here; do not claim performance without a measurement.
 
 ## Call to Action (0:27 - 0:30)
 Tap create to try it yourself right now.`
@@ -56,6 +56,7 @@ Tap create to try it yourself right now.`
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
         <button
           onClick={closeModal}
+          aria-label="Close Script Studio"
           style={{
             width: '36px',
             height: '36px',
@@ -66,7 +67,7 @@ Tap create to try it yourself right now.`
             placeItems: 'center',
           }}
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={18} aria-hidden="true" />
         </button>
         <span style={{ fontSize: '15px', fontWeight: 700 }}>Script Studio</span>
         <button
@@ -74,6 +75,7 @@ Tap create to try it yourself right now.`
             navigator.clipboard.writeText(scriptContent);
             showToast('Script copied to clipboard');
           }}
+          aria-label="Copy script"
           style={{
             width: '36px',
             height: '36px',
@@ -85,7 +87,7 @@ Tap create to try it yourself right now.`
           }}
           title="Copy"
         >
-          <Copy size={16} />
+          <Copy size={16} aria-hidden="true" />
         </button>
       </div>
 
@@ -94,13 +96,14 @@ Tap create to try it yourself right now.`
         <label style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px', display: 'block' }}>
           Topic / Core Idea
         </label>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
           <input
             type="text"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             style={{
               flex: 1,
+              minWidth: 0,
               backgroundColor: '#111',
               border: '1px solid rgba(255, 255, 255, 0.1)',
               borderRadius: '14px',
@@ -115,22 +118,24 @@ Tap create to try it yourself right now.`
             size="sm"
             onClick={handleGenerate}
             disabled={isGenerating}
-            style={{ gap: '6px' }}
+             style={{ gap: '6px', flexShrink: 0 }}
           >
             <Sparkles size={14} />
-            {isGenerating ? 'Writing...' : 'Generate ✦'}
+             {isGenerating ? 'Writing...' : <>Generate <Sparkles size={14} aria-hidden="true" /></>}
           </Button>
         </div>
       </div>
 
       {/* Script Editor Canvas */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginBottom: '20px' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, marginBottom: '20px' }}>
         <textarea
           value={scriptContent}
           onChange={(e) => setScriptContent(e.target.value)}
           style={{
             flex: 1,
             minHeight: '340px',
+            width: '100%',
+            boxSizing: 'border-box',
             backgroundColor: '#111',
             border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: '18px',

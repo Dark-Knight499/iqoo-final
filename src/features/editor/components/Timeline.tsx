@@ -4,9 +4,10 @@ import { formatDuration } from '@/utils/format';
 
 interface TimelineProps {
   duration: number;
+  sourceName?: string;
 }
 
-export const Timeline: React.FC<TimelineProps> = ({ duration }) => {
+export const Timeline: React.FC<TimelineProps> = ({ duration, sourceName }) => {
   const { currentTime, setCurrentTime } = useEditorStore();
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -78,7 +79,7 @@ export const Timeline: React.FC<TimelineProps> = ({ duration }) => {
         >
           <div
             style={{
-              width: '55%',
+              width: '100%',
               height: '100%',
               background: 'repeating-linear-gradient(90deg, #25382e 0px, #25382e 32px, #334e40 32px, #334e40 64px)',
               borderRight: '2px solid rgba(255, 255, 255, 0.2)',
@@ -90,22 +91,7 @@ export const Timeline: React.FC<TimelineProps> = ({ duration }) => {
               color: 'rgba(255, 255, 255, 0.8)',
             }}
           >
-            Hook & Intro (A-Roll)
-          </div>
-          <div
-            style={{
-              width: '45%',
-              height: '100%',
-              background: 'repeating-linear-gradient(90deg, #1c2e3d 0px, #1c2e3d 32px, #264157 32px, #264157 64px)',
-              display: 'flex',
-              alignItems: 'center',
-              paddingLeft: '10px',
-              fontSize: '11px',
-              fontWeight: 600,
-              color: 'rgba(255, 255, 255, 0.8)',
-            }}
-          >
-            NPU Benchmark Demo
+            {sourceName || 'Preview track · import a video to edit'}
           </div>
         </div>
 
@@ -126,12 +112,12 @@ export const Timeline: React.FC<TimelineProps> = ({ duration }) => {
             style={{
               width: '100%',
               height: '18px',
-              background:
-                'repeating-linear-gradient(90deg, #9e7d2a 0px, #9e7d2a 4px, transparent 4px, transparent 8px)',
+              background: '#9e7d2a',
               borderRadius: '4px',
               opacity: 0.85,
             }}
-          />
+            />
+          <span style={{ position: 'absolute', color: '#fff', fontSize: 10, paddingLeft: 4 }}>Source audio (if present)</span>
         </div>
       </div>
     </div>

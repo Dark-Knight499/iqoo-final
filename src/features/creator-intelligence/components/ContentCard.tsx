@@ -1,6 +1,7 @@
 import React from 'react';
 import { Bookmark, Plus, Check, Eye, Heart, TrendingUp, Play } from 'lucide-react';
 import { ContentItem } from '../types/creatorIntelligence';
+import { MediaArt } from '@/shared/components/MediaArt';
 
 interface ContentCardProps {
   item: ContentItem;
@@ -43,20 +44,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({
     >
       {/* Thumbnail area */}
       <div style={{ position: 'relative', width: '100%', aspectRatio: item.type === 'reel' ? '9/11' : '16/9', backgroundColor: 'var(--bg-surface-3)', overflow: 'hidden' }}>
-        <img
-          src={item.thumbnail}
-          alt={item.title}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            display: 'block',
-          }}
-          onError={(e) => {
-            // fallback if asset path is missing
-            (e.target as HTMLElement).style.display = 'none';
-          }}
-        />
+        <MediaArt src={item.thumbnail} label={item.title} kind="video" style={{ width: '100%', height: '100%' }} />
 
         {/* Duration badge */}
         {item.duration && (
@@ -155,12 +143,12 @@ export const ContentCard: React.FC<ContentCardProps> = ({
               color: 'var(--ai-accent, #D8FF00)',
             }}
           >
-            {item.creatorName.charAt(0)}
+            {item.creatorName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
           </div>
           <span style={{ fontSize: '12px', color: 'var(--text-primary)', fontWeight: 500 }}>
             {item.creatorName}
           </span>
-          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>•</span>
+          <span className="meta-separator" aria-hidden="true" style={{ color: 'var(--text-muted)' }} />
           <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{item.publishedAt}</span>
         </div>
 
@@ -221,7 +209,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({
             }}
           >
             {isStoryboarding ? <Check size={13} /> : <Plus size={13} />}
-            <span>{isStoryboarding ? 'In Storyboard' : '+ Storyboard'}</span>
+            <span>{isStoryboarding ? 'In Storyboard' : 'Storyboard'}</span>
           </button>
         </div>
       </div>

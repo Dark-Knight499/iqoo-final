@@ -15,20 +15,21 @@ export const llm = {
   async generate(prompt: string, options: LLMGenerateOptions = {}): Promise<string> {
     const p = prompt.toLowerCase();
     if (p.includes('reel') || p.includes('edit') || p.includes('cut') || p.includes('short')) {
-      return `I've analyzed your footage based on your Creator DNA. I recommend a high-impact 30s cut with dynamic captions and smart 9:16 reframing.`;
+      return 'Local planning assistant: no footage was analyzed. Import a video to preview and trim it, or review a sample content blueprint in Creator Intelligence.';
     }
     if (p.includes('script') || p.includes('idea')) {
-      return `# Video Script: Can Phones Run Useful AI Agents?
+      const topic = prompt.replace(/^.*?script for:\s*/i, '').trim() || 'Your idea';
+      return `# Script outline (local template): ${topic}
 ## Hook (0:00 - 0:04)
-Stop believing that AI agents only live inside giant cloud data centers.
+Open with a specific question or result about ${topic}.
 ## Value (0:05 - 0:18)
-Right here on this device, we're running localized Whisper and vision models with zero latency and complete privacy.
+Explain why this topic matters to your audience using a fact you can verify.
 ## Proof (0:19 - 0:26)
-Look at this real-time transcription and automatic edit plan generated in under 300 milliseconds.
+Show your own example or footage. Add real evidence before publishing.
 ## Call to Action (0:27 - 0:30)
-Tap create to try it yourself right now.`;
+Ask viewers for their experience with ${topic}.`;
     }
-    return `Copilot analyzed your request: "${prompt}". Ready to transform your creative workflow.`;
+    return `Local planning assistant received: "${prompt}". No footage was analyzed or edits applied.`;
   },
 
   /**
@@ -38,38 +39,38 @@ Tap create to try it yourself right now.`;
     return {
       id: `plan_${Date.now()}`,
       prompt,
-      summary: `I'll transform this footage into an optimized 9:16 vertical Reel aligned with your Creator DNA.`,
+      summary: 'Suggested editing checklist (not applied). Review and execute edits manually; no automatic footage analysis was performed.',
       targetAspectRatio: '9:16',
       estimatedDuration: 30,
       steps: [
         {
           id: 'step_1',
           action: 'Highlight Extraction',
-          description: 'Pinpointed top 3 hook moments (Virality Score 94%)',
+          description: 'Review the footage and mark a strong opening moment.',
           status: 'pending',
         },
         {
           id: 'step_2',
           action: 'Silence & Filler Removal',
-          description: 'Trimmed 3.4s of dead pauses and 2 filler words ("um", "uh")',
+          description: 'Find unwanted pauses and trim them manually.',
           status: 'pending',
         },
         {
           id: 'step_3',
           action: 'Smart 9:16 Reframe',
-          description: 'Subject centered via on-device YOLO vision tracking',
+          description: 'Check portrait framing; automatic reframing is unavailable.',
           status: 'pending',
         },
         {
           id: 'step_4',
           action: 'Kinetic Captions',
-          description: 'Generated dynamic word-by-word highlighted captions',
+          description: 'Create and verify captions in your video workflow; not generated here.',
           status: 'pending',
         },
         {
           id: 'step_5',
           action: 'Audio Normalization',
-          description: 'Ducked background noise and leveled vocal presence',
+          description: 'Listen to the source audio and adjust it with a supported editor if needed.',
           status: 'pending',
         },
       ],

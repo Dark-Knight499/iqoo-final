@@ -43,7 +43,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({ scene }) => {
           <Eye size={13} color="#2563EB" />
           <span style={{ fontWeight: 600, color: '#334155' }}>{scene.visualType}</span>
         </div>
-        <span>•</span>
+        <span className="meta-separator" aria-hidden="true" />
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <MapPin size={13} />
           <span>{scene.location}</span>

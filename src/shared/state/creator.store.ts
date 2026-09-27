@@ -2,85 +2,93 @@ import { useState, useEffect } from 'react';
 import { CreatorProfile } from '@/shared/types/creator';
 import { storage } from '@/utils/storage';
 
-const INITIAL_CREATOR: CreatorProfile = {
-  id: 'c_default',
-  name: 'Harsh Jain',
-  avatarUrl: '/assets/creator-avatar.jpg',
-  coverUrl: '/assets/creator-setup.jpg',
-  niche: 'Technology & AI Agents',
-  platforms: ['YouTube', 'X / Twitter', 'LinkedIn', 'Substack'],
-  goals: ['Scale Short-form', 'Grow Audience', 'Monetize Workflows'],
-  dna: {
-    voice: 'Technical, conversational, concrete, fast-paced.',
-    tone: ['High-energy', 'Analytical', 'Pragmatic', 'Contrarian'],
-    frequentPhrases: ['Here is the unlock', 'Look at this benchmark', 'Zero latency', 'Let me show you'],
-    avgVideoLength: '45s Shorts / 14m Deep Dives',
-    hookStyle: 'Start with the unexpected result first, then reveal the mechanism.',
-    coreThemes: ['On-Device AI', 'Autonomous Coding Agents', 'Hardware Benchmarks'],
-    thumbnailStyle: 'High-contrast typography, close-up reaction, lime accents.',
-  },
-  hookPatterns: [
-    {
-      id: 'h1',
-      title: 'The "Why Everyone Is Wrong" Teardown',
-      example: 'Stop believing AI agents only run in giant cloud datacenters...',
-      virality: 94,
-    },
-    {
-      id: 'h2',
-      title: '30-Day Rapid Transformation Case Study',
-      example: 'Day 1 vs Day 30: what actually happened when I ran local LLMs...',
-      virality: 91,
-    },
-    {
-      id: 'h3',
-      title: 'The Pattern Interrupt',
-      example: 'If you are still writing video scripts manually, stop doing this right now...',
-      virality: 88,
-    },
-  ],
-  connectedSources: ['YouTube (@HarshTech)', 'X (@harsh_ai)', 'LinkedIn', 'Substack'],
-  customInstructions: 'Keep technical jargon accessible. Prioritize rapid proofs and interactive demos.',
-  metrics: {
-    views: '24.3K',
-    viewsChange: '+18%',
-    engagement: '8.4%',
-    engagementChange: '+2.1%',
-    watchTime: '41m',
-    growth: '+12%',
-  },
-};
+const blankProfile = (): CreatorProfile => ({
+  id: '', name: '', avatarUrl: '', coverUrl: '', niche: '', platforms: [], goals: [],
+  dna: { voice: '', tone: [], frequentPhrases: [], avgVideoLength: '', hookStyle: '', coreThemes: [], thumbnailStyle: '' },
+  hookPatterns: [], connectedSources: [], customInstructions: '',
+  metrics: { views: '', viewsChange: '', engagement: '', engagementChange: '', watchTime: '', growth: '' },
+});
 
-let currentCreator: CreatorProfile = storage.load('creator_profile', INITIAL_CREATOR);
+const validProfile = (value: unknown): value is CreatorProfile =>
+  !!value && typeof value === 'object' && typeof (value as CreatorProfile).id === 'string'
+  && !!(value as CreatorProfile).id && typeof (value as CreatorProfile).name === 'string';
+
+// Only a previously completed, persisted profile can own legacy data. The old
+// built-in demo profile was never evidence of an actual creator workspace.
+const legacy = storage.load<CreatorProfile | null>('creator_profile', null);
+const legacyOwner = storage.load('has_onboarded', false) && validProfile(legacy) ? legacy.id : '';
+let workspaces = storage.load<CreatorProfile[]>('creator_workspaces', []);
+workspaces = Array.isArray(workspaces) ? workspaces.filter(validProfile) : [];
+if (!workspaces.length && legacyOwner && legacy) {
+  workspaces = [legacy];
+  storage.save('creator_workspaces', workspaces);
+}
+let currentCreator: CreatorProfile = workspaces.find(profile => profile.id === storage.load('active_creator_id', ''))
+  ?? workspaces[0] ?? blankProfile();
 const listeners = new Set<(creator: CreatorProfile) => void>();
 
 function notify() {
-  storage.save('creator_profile', currentCreator);
-  listeners.forEach((l) => l(currentCreator));
+  listeners.forEach(listener => listener(currentCreator));
+}
+
+function persistProfile() {
+  if (!currentCreator.id) return;
+  workspaces = [...workspaces.filter(profile => profile.id !== currentCreator.id), currentCreator];
+  storage.save('creator_workspaces', workspaces);
+  storage.save('active_creator_id', currentCreator.id);
+}
+
+function newId() {
+  return `creator_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 }
 
 export const creatorStore = {
   get: () => currentCreator,
+  // Copies prevent callers from mutating a saved profile without a notification.
+  listWorkspaces: (): CreatorProfile[] => structuredClone(workspaces),
+  getLegacyOwnerId: () => legacyOwner,
+  subscribe: (listener: (creator: CreatorProfile) => void) => {
+    listeners.add(listener);
+    return () => { listeners.delete(listener); };
+  },
+  saveWorkspace: (): void => {
+    if (!currentCreator.name.trim()) return;
+    if (!currentCreator.id) currentCreator = { ...currentCreator, id: newId() };
+    persistProfile();
+    notify();
+  },
+  switchWorkspace: (id: string): boolean => {
+    const profile = workspaces.find(item => item.id === id);
+    if (!profile) return false;
+    currentCreator = structuredClone(profile);
+    storage.save('active_creator_id', id);
+    notify();
+    return true;
+  },
+  beginNewWorkspace: (): void => {
+    currentCreator = blankProfile();
+    storage.save('active_creator_id', '');
+    notify();
+  },
   set: (updater: (prev: CreatorProfile) => CreatorProfile) => {
-    currentCreator = updater(currentCreator);
+    const next = updater(currentCreator);
+    currentCreator = { ...next, id: currentCreator.id }; // identity is controlled by workspace selection
+    persistProfile();
     notify();
   },
   updateProfile: (partial: Partial<CreatorProfile>) => {
-    currentCreator = { ...currentCreator, ...partial };
+    const { id: _ignored, ...edits } = partial;
+    currentCreator = { ...currentCreator, ...edits };
+    // Onboarding currently finishes immediately after updating the profile.
+    // A named pending profile becomes a local workspace at that point.
+    if (!currentCreator.id && currentCreator.name.trim()) currentCreator = { ...currentCreator, id: newId() };
+    persistProfile();
     notify();
   },
 };
 
 export function useCreatorStore() {
   const [state, setState] = useState<CreatorProfile>(currentCreator);
-  useEffect(() => {
-    listeners.add(setState);
-    return () => {
-      listeners.delete(setState);
-    };
-  }, []);
-  return {
-    creator: state,
-    updateProfile: creatorStore.updateProfile,
-  };
+  useEffect(() => creatorStore.subscribe(setState), []);
+  return { creator: state, updateProfile: creatorStore.updateProfile };
 }

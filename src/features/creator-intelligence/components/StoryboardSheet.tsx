@@ -2,6 +2,8 @@ import React from 'react';
 import { X, Trash2, Sparkles, Layers, ArrowRight, Play } from 'lucide-react';
 import { StoryboardItem, ContentItem } from '../types/creatorIntelligence';
 import { mockVideos, mockReels } from '../data/mockContent';
+import { MediaArt } from '@/shared/components/MediaArt';
+import '../compactMediaArt.css';
 
 interface StoryboardSheetProps {
   isOpen: boolean;
@@ -97,6 +99,7 @@ export const StoryboardSheet: React.FC<StoryboardSheetProps> = ({
             )}
             <button
               onClick={onClose}
+              aria-label="Close storyboard"
               style={{
                 background: 'var(--bg-surface-3)',
                 border: 'none',
@@ -110,7 +113,7 @@ export const StoryboardSheet: React.FC<StoryboardSheetProps> = ({
                 cursor: 'pointer',
               }}
             >
-              <X size={16} />
+              <X size={16} aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -125,12 +128,12 @@ export const StoryboardSheet: React.FC<StoryboardSheetProps> = ({
                 color: 'var(--text-muted)',
               }}
             >
-              <Layers size={36} style={{ marginBottom: '12px', opacity: 0.4 }} />
+              <Layers size={36} aria-hidden="true" style={{ marginBottom: '12px', opacity: 0.4 }} />
               <p style={{ margin: '0 0 6px 0', fontSize: '14px', color: 'var(--text-primary)', fontWeight: 600 }}>
                 Your storyboard is empty
               </p>
               <p style={{ margin: 0, fontSize: '12px', lineHeight: 1.5 }}>
-                Tap "+ Storyboard" on any video or reel to build reference material for AI script generation.
+                Tap "+ Storyboard" on a sample video or reel to build reference material for a local template.
               </p>
             </div>
           ) : (
@@ -176,11 +179,7 @@ export const StoryboardSheet: React.FC<StoryboardSheetProps> = ({
                         position: 'relative',
                       }}
                     >
-                      <img
-                        src={content?.thumbnail || '/assets/trend-on-device-ai.jpg'}
-                        alt={content?.title || 'Ref'}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
+                      <MediaArt src={content?.thumbnail} label={content?.title || `Unavailable reference (${it.contentId})`} kind="video" style={{ width: '100%', height: '100%' }} />
                     </div>
 
                     <div
@@ -198,10 +197,10 @@ export const StoryboardSheet: React.FC<StoryboardSheetProps> = ({
                           textOverflow: 'ellipsis',
                         }}
                       >
-                        {content?.title || 'Selected Reference'}
+                        {content?.title || `Unavailable reference (${it.contentId})`}
                       </h5>
                       <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                        {content?.creatorName || 'Creator'} • {content?.views || '1M'} views
+                        {content ? `${content.creatorName} · sample catalog entry` : 'Remove this reference to continue'}
                       </span>
                     </div>
 
@@ -220,7 +219,7 @@ export const StoryboardSheet: React.FC<StoryboardSheetProps> = ({
                       }}
                       title="Remove from storyboard"
                     >
-                      <Trash2 size={15} />
+                       <Trash2 size={15} aria-hidden="true" />
                     </button>
                   </div>
                 );
@@ -272,7 +271,7 @@ export const StoryboardSheet: React.FC<StoryboardSheetProps> = ({
               }}
             >
               <Sparkles size={16} />
-              <span>Generate Content ({items.length} Ref{items.length > 1 ? 's' : ''})</span>
+              <span>Build Template ({items.length} Ref{items.length > 1 ? 's' : ''})</span>
               <ArrowRight size={16} />
             </button>
           )}

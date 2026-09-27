@@ -61,7 +61,7 @@ export const RecordingView: React.FC = () => {
       showToast('Recording saved to project clips');
       addProject({
         title: `Recording Take ${Date.now().toString().slice(-4)}`,
-        thumbnailUrl: '/assets/create-edit-video.jpg',
+        thumbnailUrl: '',
         durationSeconds: recordSeconds || 12,
       });
       openModal('editor');
@@ -99,12 +99,10 @@ export const RecordingView: React.FC = () => {
         />
       ) : (
         <div
-          className="media-bg"
+          className="media-bg decorative-surface"
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: `url('/assets/creator-setup.jpg')`,
-            backgroundSize: 'cover',
           }}
         />
       )}
@@ -126,6 +124,7 @@ export const RecordingView: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <button
             onClick={closeModal}
+            aria-label="Close recording"
             style={{
               width: '40px',
               height: '40px',
@@ -137,7 +136,7 @@ export const RecordingView: React.FC = () => {
               placeItems: 'center',
             }}
           >
-            <ArrowLeft size={18} />
+            <ArrowLeft size={18} aria-hidden="true" />
           </button>
 
           {/* Recording Timer Badge */}
@@ -188,6 +187,7 @@ export const RecordingView: React.FC = () => {
 
           <button
             onClick={() => setFacingMode((prev) => (prev === 'user' ? 'environment' : 'user'))}
+            aria-label="Switch camera"
             style={{
               width: '40px',
               height: '40px',
@@ -199,7 +199,7 @@ export const RecordingView: React.FC = () => {
               placeItems: 'center',
             }}
           >
-            <RefreshCw size={18} />
+            <RefreshCw size={18} aria-hidden="true" />
           </button>
         </div>
 
@@ -217,7 +217,7 @@ export const RecordingView: React.FC = () => {
           }}
         >
           <div style={{ fontSize: '11px', color: 'var(--ai-accent)', fontWeight: 700, marginBottom: '2px' }}>
-            ✦ PROMPTER CUE
+             <Sparkles size={12} aria-hidden="true" style={{ verticalAlign: 'middle' }} /> PROMPTER CUE
           </div>
           <p style={{ fontSize: '13px', color: '#fff', margin: 0, fontWeight: 500 }}>
             "Stop believing that AI agents only live inside giant cloud data centers..."
@@ -228,6 +228,7 @@ export const RecordingView: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
           <button
             onClick={() => openModal('teleprompter')}
+            aria-label="Open teleprompter"
             style={{
               width: '48px',
               height: '48px',
@@ -240,12 +241,13 @@ export const RecordingView: React.FC = () => {
             }}
             title="Teleprompter"
           >
-            <Eye size={20} />
+            <Eye size={20} aria-hidden="true" />
           </button>
 
           {/* Record Shutter Button */}
           <button
             onClick={toggleRecording}
+            aria-label={isRecording ? 'Stop recording' : 'Start recording'}
             style={{
               width: '74px',
               height: '74px',
@@ -270,6 +272,7 @@ export const RecordingView: React.FC = () => {
 
           <button
             onClick={() => openModal('effects')}
+            aria-label="Open effects"
             style={{
               width: '48px',
               height: '48px',
@@ -282,7 +285,7 @@ export const RecordingView: React.FC = () => {
             }}
             title="Effects"
           >
-            <Sparkles size={20} />
+            <Sparkles size={20} aria-hidden="true" />
           </button>
         </div>
       </div>

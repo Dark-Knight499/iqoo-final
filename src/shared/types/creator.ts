@@ -12,7 +12,7 @@ export interface HookPattern {
   id: string;
   title: string;
   example: string;
-  virality: number;
+  virality?: number;
 }
 
 export interface CreatorProfile {
@@ -27,6 +27,20 @@ export interface CreatorProfile {
   hookPatterns: HookPattern[];
   connectedSources: string[];
   customInstructions: string;
+  profileSources?: {
+    youtube?: string;
+    substack?: string;
+    twitter?: string;
+    linkedin?: string;
+    instagram?: string;
+  };
+  profileDocuments?: {
+    creatorSlug: string;
+    analyzedAt: string;
+    userMd: string;
+    hookMd: string;
+    catalogSummary: Record<string, number>;
+  };
   metrics: {
     views: string;
     viewsChange: string;

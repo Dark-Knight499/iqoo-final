@@ -10,6 +10,8 @@ import { useCIStore } from '../state/creatorIntelligenceStore';
 import { CopilotView } from '../components/CopilotView';
 import { FinalView } from '../components/FinalView';
 import { useAppStore } from '@/shared/state/app.store';
+import { projectStore } from '@/shared/state/project.store';
+import type { Project } from '@/shared/types/project';
 
 const CONTENT_TYPES: { id: GenerateContentType; label: string }[] = [
   { id: 'reel', label: 'Reel' },
@@ -24,7 +26,7 @@ const DURATIONS: { id: GenerateDuration; label: string }[] = [
   { id: '30s', label: '30 sec' },
   { id: '60s', label: '60 sec' },
   { id: '90s', label: '90 sec' },
-  { id: 'custom', label: 'Custom' },
+  { id: 'custom', label: 'Default (60 sec)' },
 ];
 
 const TONES: { id: GenerateTone; label: string }[] = [
@@ -48,15 +50,37 @@ export const GenerateContentScreen: React.FC = () => {
     copilotMessages,
     sendCopilotMessage,
     generatedDraft,
-    storyboardItems,
+    savedProjectId,
+    proposedDraft,
+    generationError,
+    approveProposedDraft,
+    rejectProposedDraft,
   } = useCIStore();
 
-  const { showToast } = useAppStore();
+  const { showToast, setActiveTab } = useAppStore();
 
   if (!generateModalOpen) return null;
 
   const handleSaveToProject = () => {
-    showToast('Saved content blueprint to Projects!');
+    if (!generatedDraft || generationLoading) return;
+    const seconds = { '30s': 30, '60s': 60, '90s': 90, custom: 60 }[generatedDraft.format.duration];
+    const plan: Partial<Project> = {
+      title: generatedDraft.title,
+      description: generatedDraft.coreMessage,
+      thumbnailUrl: '',
+      durationSeconds: seconds,
+      aspectRatio: generatedDraft.format.contentType === 'youtube-video' ? '16:9' : '9:16',
+      blueprint: structuredClone(generatedDraft),
+      clips: [],
+    };
+    const existing = savedProjectId && projectStore.getProjects().find((project) => project.id === savedProjectId);
+    if (existing) projectStore.updateProject(existing.id, existing.mediaId
+      ? { blueprint: plan.blueprint, description: plan.description }
+      : plan);
+    else projectStore.addProject(plan);
+    closeGenerateModal();
+    setActiveTab('home');
+    showToast('Blueprint saved to Projects on Home');
   };
 
   return (
@@ -128,7 +152,7 @@ export const GenerateContentScreen: React.FC = () => {
             }}
           >
             <Bot size={14} />
-            <span>AI COPILOT</span>
+            <span>TEMPLATE EDITOR</span>
           </button>
 
           <button
@@ -155,6 +179,7 @@ export const GenerateContentScreen: React.FC = () => {
 
         <button
           onClick={closeGenerateModal}
+          aria-label="Close content generator"
           style={{
             background: 'var(--bg-surface-3)',
             border: 'none',
@@ -168,7 +193,7 @@ export const GenerateContentScreen: React.FC = () => {
             cursor: 'pointer',
           }}
         >
-          <X size={16} />
+          <X size={16} aria-hidden="true" />
         </button>
       </div>
 
@@ -247,7 +272,7 @@ export const GenerateContentScreen: React.FC = () => {
 
         <button
           onClick={startGeneration}
-          disabled={generationLoading}
+          disabled={generationLoading || !generationInput.referenceIds.length}
           style={{
             marginLeft: 'auto',
             display: 'flex',
@@ -264,9 +289,11 @@ export const GenerateContentScreen: React.FC = () => {
           }}
         >
           <Sparkles size={13} />
-          <span>Regenerate</span>
+          <span>Build template</span>
         </button>
       </div>
+
+      {generationError && <div role="alert" style={{ padding: '10px 16px', color: '#FF6B6B' }}>{generationError}</div>}
 
       {/* Main Tab Views */}
       <div style={{ flex: 1, overflow: 'hidden' }}>
@@ -274,7 +301,10 @@ export const GenerateContentScreen: React.FC = () => {
           <CopilotView
             messages={copilotMessages}
             draft={generatedDraft}
-            loading={generationLoading}
+             loading={generationLoading}
+             proposedDraft={proposedDraft}
+             onApprove={approveProposedDraft}
+             onReject={rejectProposedDraft}
             onSendMessage={sendCopilotMessage}
             onViewFinal={() => setActiveGenerateTab('final')}
           />

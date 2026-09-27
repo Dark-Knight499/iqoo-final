@@ -13,22 +13,23 @@ export const SuggestionsScreen: React.FC = () => {
     selectSuggestion,
     approveSuggestion,
     approvedSuggestionIds,
+    remoteSuggestions,
+    importedMedia,
   } = useMediaIntelligenceStore();
 
   const { showToast } = useAppStore();
+  const suggestions = remoteSuggestions ?? mockSuggestions;
 
   const handlePreview = (sug: AISuggestion) => {
     selectSuggestion(sug);
   };
 
   const handleApprove = (sug: AISuggestion) => {
-    approveSuggestion(sug.id);
-    showToast(`Approved "${sug.title}"`);
+    if (approveSuggestion(sug)) showToast(`Saved review draft: "${sug.title}"`);
   };
 
   const handleAddToStoryboard = (sug: AISuggestion) => {
-    approveSuggestion(sug.id);
-    showToast('Saved clip reference into Storyboard');
+    handleApprove(sug);
   };
 
   return (
@@ -82,16 +83,18 @@ export const SuggestionsScreen: React.FC = () => {
       {/* Screen Title */}
       <div style={{ marginBottom: '24px' }}>
         <h1 style={{ margin: '0 0 6px 0', fontSize: '26px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.5px' }}>
-          AI Suggestions
+          {remoteSuggestions ? 'Backend clip suggestions' : 'Demo suggestions'}
         </h1>
         <p style={{ margin: 0, fontSize: '14px', color: '#64748B' }}>
-          Creator AI found {mockSuggestions.length} opportunities in your content.
+          {remoteSuggestions
+            ? `${suggestions.length} text recommendations for ${importedMedia?.title || 'your video'}. No clip has been rendered.`
+            : `${suggestions.length} sample recommendations for the demo video; these are not analysis of an uploaded file.`}
         </p>
       </div>
 
       {/* List of Suggestion Cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '32px' }}>
-        {mockSuggestions.map((sug) => (
+        {suggestions.map((sug) => (
           <SuggestionCard
             key={sug.id}
             suggestion={sug}
@@ -125,7 +128,7 @@ export const SuggestionsScreen: React.FC = () => {
           }}
         >
           <FolderPlus size={18} />
-          <span>Go to Content Catalog ({approvedSuggestionIds.length} Approved)</span>
+          <span>Go to Content Catalog ({approvedSuggestionIds.length} Review Drafts)</span>
           <ArrowRight size={18} />
         </button>
       </div>

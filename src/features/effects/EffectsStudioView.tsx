@@ -30,6 +30,7 @@ export const EffectsStudioView: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
         <button
           onClick={closeModal}
+          aria-label="Close Effects Studio"
           style={{
             width: '36px',
             height: '36px',
@@ -40,7 +41,7 @@ export const EffectsStudioView: React.FC = () => {
             placeItems: 'center',
           }}
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={18} aria-hidden="true" />
         </button>
         <span style={{ fontSize: '15px', fontWeight: 700 }}>Effects Studio</span>
         <Chip label="GPU Shaders" variant="ai" />
@@ -48,11 +49,10 @@ export const EffectsStudioView: React.FC = () => {
 
       {/* Showcase Visual */}
       <div
-        className="media-bg"
+         className="media-bg decorative-surface"
         style={{
           height: '200px',
           borderRadius: '24px',
-          backgroundImage: `url('/assets/effects-showcase.jpg')`,
           padding: '18px',
           display: 'flex',
           flexDirection: 'column',
@@ -119,8 +119,8 @@ export const EffectsStudioView: React.FC = () => {
           }}
           style={{ gap: '8px' }}
         >
-          <Sparkles size={18} />
-          Apply Effect to Active Project ✦
+           <Sparkles size={18} aria-hidden="true" />
+           Apply Effect to Active Project
         </Button>
       </div>
     </div>

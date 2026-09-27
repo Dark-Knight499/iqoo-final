@@ -1,0 +1,18 @@
+.compact-media-art .content-placeholder-label {
+  padding: 3px;
+  gap: 2px;
+  font-size: 7px;
+}
+
+.compact-media-art .content-placeholder-label svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.compact-media-art .content-placeholder-label span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

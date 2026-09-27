@@ -9,6 +9,8 @@ from app.routers.profiling import router as profiling_router
 from app.routers.dashboard import router as dashboard_router
 from app.routers.trends import router as trends_router
 from app.routers.publish import router as publish_router
+from app.routers.intelligence import router as intelligence_router
+from app.routers.clipping import router as clipping_router
 
 # Configure clean logging
 logging.basicConfig(
@@ -50,12 +52,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include core routers at both root level and under /api/
-for prefix in ["", "/api"]:
-    app.include_router(profiling_router, prefix=prefix)
-    app.include_router(dashboard_router, prefix=prefix)
-    app.include_router(trends_router, prefix=prefix)
-    app.include_router(publish_router, prefix=prefix)
+# Include core routers cleanly without duplicate prefix mounting
+app.include_router(profiling_router)
+app.include_router(dashboard_router)
+app.include_router(trends_router)
+app.include_router(publish_router)
+app.include_router(intelligence_router)
+app.include_router(clipping_router)
 
 @app.get("/", tags=["Health"])
 @app.get("/health", tags=["Health"])
@@ -69,6 +72,7 @@ def health_check():
             "/dashboard",
             "/trends",
             "/publish",
+            "/intelligence",
             "/docs"
         ]
     }

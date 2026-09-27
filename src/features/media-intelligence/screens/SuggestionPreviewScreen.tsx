@@ -2,7 +2,6 @@ import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useMediaIntelligenceStore } from '../state/mediaIntelligenceStore';
 import { primaryDemoVideo } from '../data/mockMedia';
-import { mockSuggestions } from '../data/mockSuggestions';
 import { SuggestionPreview } from '../components/SuggestionPreview';
 import { useAppStore } from '@/shared/state/app.store';
 
@@ -17,7 +16,7 @@ export const SuggestionPreviewScreen: React.FC = () => {
 
   const { showToast } = useAppStore();
 
-  const suggestion = selectedSuggestion || mockSuggestions[1];
+  const suggestion = selectedSuggestion;
   const media = importedMedia || primaryDemoVideo;
 
   const handleReject = () => {
@@ -25,10 +24,12 @@ export const SuggestionPreviewScreen: React.FC = () => {
   };
 
   const handleApproveAndCreate = () => {
-    approveSuggestion(suggestion.id);
-    showToast('Added to Project');
+    if (!suggestion) return;
+    if (approveSuggestion(suggestion)) showToast('Review draft saved in Projects');
     navigateTo('catalog');
   };
+
+  if (!suggestion) return <button onClick={goBack}>Back to suggestions</button>;
 
   return (
     <div

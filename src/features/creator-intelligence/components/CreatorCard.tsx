@@ -8,6 +8,11 @@ interface CreatorCardProps {
 }
 
 export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, onClick }) => {
+  const hue = creator.name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % 360;
+  const avatarBg = `hsl(${hue}, 35%, 22%)`;
+  const avatarColor = `hsl(${hue}, 60%, 70%)`;
+  const initials = creator.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
   return (
     <div
       onClick={() => onClick(creator)}
@@ -38,18 +43,18 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, onClick }) =>
             width: '64px',
             height: '64px',
             borderRadius: '50%',
-            backgroundColor: 'var(--bg-surface-2)',
+            backgroundColor: avatarBg,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: 'var(--ai-accent, #D8FF00)',
-            fontSize: '22px',
+            color: avatarColor,
+            fontSize: '20px',
             fontWeight: 700,
             overflow: 'hidden',
-            border: '2px solid var(--ai-border, rgba(216, 255, 0, 0.3))',
+            border: `2px solid ${avatarColor}40`,
           }}
         >
-          {creator.name.charAt(0)}
+          {initials}
         </div>
         {creator.verified && (
           <span

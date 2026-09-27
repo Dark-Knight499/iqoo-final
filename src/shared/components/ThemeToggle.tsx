@@ -30,7 +30,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ style }) => {
         ...style,
       }}
     >
-      {isDark ? <Sun size={17} color="#FBBF24" /> : <Moon size={17} color="#2563EB" />}
+      {isDark ? <Sun size={17} color="#FBBF24" aria-hidden="true" /> : <Moon size={17} color="#2563EB" aria-hidden="true" />}
     </button>
   );
 };
