@@ -25,68 +25,71 @@ import { SignInView } from '@/features/auth/SignInView';
 export const App: React.FC = () => {
   const { activeTab, activeModal, returnFromExport, closeModal } = useAppStore();
 
-  // Render modal views if open
-  if (activeModal === 'sign-in') {
-    return <SignInView />;
-  }
-  if (activeModal === 'onboarding') {
-    return <OnboardingFlow />;
-  }
-  if (activeModal === 'editor' || (activeModal === 'export' && returnFromExport === 'editor')) {
+  const renderScreen = () => {
+    if (activeModal === 'sign-in') {
+      return <SignInView />;
+    }
+    if (activeModal === 'onboarding') {
+      return <OnboardingFlow />;
+    }
+    if (activeModal === 'editor' || (activeModal === 'export' && returnFromExport === 'editor')) {
+      return (
+        <>
+          <EditorPage />
+          {activeModal === 'export' && <ExportModal />}
+          <CopilotSheet />
+        </>
+      );
+    }
+    if (activeModal === 'video-analysis') {
+      return <VideoImportAnalysis />;
+    }
+    if (activeModal === 'recording') {
+      return <RecordingView />;
+    }
+    if (activeModal === 'teleprompter') {
+      return <TeleprompterView />;
+    }
+    if (activeModal === 'script') {
+      return <ScriptView />;
+    }
+    if (activeModal === 'game-studio') {
+      return <GameStudioView />;
+    }
+    if (activeModal === 'effects') {
+      return <EffectsStudioView />;
+    }
+    if (activeModal === 'assets') {
+      return <AssetsView />;
+    }
+    if (activeModal === 'media-intelligence') {
+      return <MediaIntelligenceView />;
+    }
+    if (activeModal === 'brainrot') {
+      return <BrainrotFeedView />;
+    }
+    if (activeModal === 'clipping') {
+      return <ClippingView />;
+    }
+    if (activeModal === 'creator-intelligence') {
+      return <CreatorIntelligenceScreen onBack={closeModal} />;
+    }
+
     return (
       <>
-        <EditorPage />
+        {activeTab === 'home' && <HomeView />}
+        {activeTab === 'insights' && <InsightsView />}
+        {activeTab === 'create' && <CreateView />}
+        {activeTab === 'profile' && <ProfileView />}
+
+        {/* Overlays */}
         {activeModal === 'export' && <ExportModal />}
         <CopilotSheet />
       </>
     );
-  }
-  if (activeModal === 'video-analysis') {
-    return <VideoImportAnalysis />;
-  }
-  if (activeModal === 'recording') {
-    return <RecordingView />;
-  }
-  if (activeModal === 'teleprompter') {
-    return <TeleprompterView />;
-  }
-  if (activeModal === 'script') {
-    return <ScriptView />;
-  }
-  if (activeModal === 'game-studio') {
-    return <GameStudioView />;
-  }
-  if (activeModal === 'effects') {
-    return <EffectsStudioView />;
-  }
-  if (activeModal === 'assets') {
-    return <AssetsView />;
-  }
-  if (activeModal === 'media-intelligence') {
-    return <MediaIntelligenceView />;
-  }
-  if (activeModal === 'brainrot') {
-    return <BrainrotFeedView />;
-  }
-  if (activeModal === 'clipping') {
-    return <ClippingView />;
-  }
-  if (activeModal === 'creator-intelligence') {
-    return <CreatorIntelligenceScreen onBack={closeModal} />;
-  }
+  };
 
-  return (
-    <AppShell>
-      {activeTab === 'home' && <HomeView />}
-      {activeTab === 'insights' && <InsightsView />}
-      {activeTab === 'create' && <CreateView />}
-      {activeTab === 'profile' && <ProfileView />}
-
-      {/* Overlays */}
-      {activeModal === 'export' && <ExportModal />}
-      <CopilotSheet />
-    </AppShell>
-  );
+  return <AppShell>{renderScreen()}</AppShell>;
 };
 
 export default App;

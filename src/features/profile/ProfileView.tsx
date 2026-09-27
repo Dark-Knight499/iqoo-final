@@ -16,7 +16,8 @@ import {
   Clock,
   Layers,
   Flame,
-  MessageSquare
+  MessageSquare,
+  ArrowLeft
 } from 'lucide-react';
 import { useCreatorStore } from '@/shared/state/creator.store';
 import { useAppStore } from '@/shared/state/app.store';
@@ -27,7 +28,7 @@ import { legacyBackend, mapProfileResponseToCreatorUpdate, ProfilingAnalysis } f
 
 export const ProfileView: React.FC = () => {
   const { creator, updateProfile } = useCreatorStore();
-  const { openModal, showToast } = useAppStore();
+  const { setActiveTab, openModal, showToast } = useAppStore();
   const initials = creator.name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'C';
 
   const [isProfiling, setIsProfiling] = useState(false);
@@ -116,6 +117,64 @@ export const ProfileView: React.FC = () => {
 
   return (
     <main className="screen-container" style={{ paddingBottom: '100px' }}>
+      {/* Sticky Native Mobile Navigation Bar */}
+      <div
+        style={{
+          position: 'sticky',
+          top: '-14px',
+          zIndex: 40,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 0',
+          backgroundColor: 'rgba(8, 8, 8, 0.92)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderBottom: '1px solid var(--border-color)',
+          marginBottom: '16px',
+        }}
+      >
+        <button
+          onClick={() => setActiveTab('home')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 12px',
+            borderRadius: '10px',
+            backgroundColor: 'var(--bg-surface-2)',
+            color: 'var(--text-primary)',
+            fontSize: '13px',
+            fontWeight: 700,
+            border: '1px solid var(--border-color)',
+            cursor: 'pointer',
+          }}
+        >
+          <ArrowLeft size={15} />
+          <span>Home</span>
+        </button>
+
+        <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>
+          Creator Profile
+        </span>
+
+        <button
+          onClick={() => openModal('sign-in')}
+          style={{
+            padding: '6px 10px',
+            borderRadius: '10px',
+            backgroundColor: 'var(--ai-soft)',
+            color: 'var(--ai-accent)',
+            fontSize: '11px',
+            fontWeight: 800,
+            border: '1px solid var(--ai-border)',
+            cursor: 'pointer',
+          }}
+        >
+          Switch
+        </button>
+      </div>
+
       {/* Profile Cover Banner */}
       <div
         className="media-bg decorative-surface"

@@ -167,13 +167,21 @@ export const HomeView: React.FC = () => {
   return (
     <main className="screen-container" style={{ paddingBottom: '24px' }}>
 
-      {/* ── Creator Header ────────────────────────────── */}
+      {/* ── Creator Header (Sticky Mobile Top Bar) ───────── */}
       <div
         style={{
+          position: 'sticky',
+          top: '-14px',
+          zIndex: 35,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: '24px',
+          padding: '10px 0',
+          backgroundColor: 'rgba(8, 8, 8, 0.92)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderBottom: '1px solid var(--border-color)',
+          marginBottom: '20px',
         }}
       >
         <div
@@ -826,39 +834,56 @@ export const HomeView: React.FC = () => {
         )}
       </section>
 
-      {/* ── Quick Nav (replaces bottom bar) ────────────── */}
-      <section style={{ marginBottom: '8px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-          {[
-            { label: 'Insights', icon: <BarChart3 size={18} />, action: () => setActiveTab('insights') },
-            { label: 'Create', icon: <Plus size={18} />, action: () => setActiveTab('create') },
-            { label: 'Profile', icon: <User size={18} />, action: () => setActiveTab('profile') },
-          ].map((nav) => (
-            <button
-              key={nav.label}
-              onClick={nav.action}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '14px 8px',
-                borderRadius: '14px',
-                backgroundColor: 'var(--bg-surface)',
-                border: '1px solid var(--border-color)',
-                color: 'var(--text-secondary)',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'border-color 0.15s ease',
-              }}
-            >
-              {nav.icon}
-              {nav.label}
-            </button>
-          ))}
-        </div>
-      </section>
+      {/* ── Native Mobile Floating Navigation Dock ────────────── */}
+      <nav
+        aria-label="Mobile Navigation Dock"
+        style={{
+          position: 'sticky',
+          bottom: '8px',
+          zIndex: 40,
+          margin: '16px auto 0',
+          width: '100%',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '8px',
+          padding: '6px',
+          borderRadius: '20px',
+          backgroundColor: 'rgba(17, 17, 20, 0.94)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.75)',
+        }}
+      >
+        {[
+          { label: 'Insights', icon: <BarChart3 size={17} />, action: () => setActiveTab('insights'), isPrimary: false },
+          { label: 'Create', icon: <Plus size={17} />, action: () => setActiveTab('create'), isPrimary: true },
+          { label: 'Profile', icon: <User size={17} />, action: () => setActiveTab('profile'), isPrimary: false },
+        ].map((nav) => (
+          <button
+            key={nav.label}
+            onClick={nav.action}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              padding: '10px 8px',
+              borderRadius: '14px',
+              backgroundColor: nav.isPrimary ? 'var(--ai-accent)' : 'transparent',
+              color: nav.isPrimary ? '#080808' : 'var(--text-secondary)',
+              border: 'none',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            {nav.icon}
+            <span>{nav.label}</span>
+          </button>
+        ))}
+      </nav>
     </main>
   );
 };

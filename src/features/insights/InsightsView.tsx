@@ -17,7 +17,8 @@ import {
   Search,
   ExternalLink,
   Plus,
-  Loader2
+  Loader2,
+  ArrowLeft
 } from 'lucide-react';
 import { useCreatorStore } from '@/shared/state/creator.store';
 import { useAppStore } from '@/shared/state/app.store';
@@ -44,7 +45,7 @@ function formatCount(value: number): string {
 
 export const InsightsView: React.FC = () => {
   const { creator, updateProfile } = useCreatorStore();
-  const { openCopilot, openModal, showToast } = useAppStore();
+  const { setActiveTab, openCopilot, openModal, showToast } = useAppStore();
   const { addToStoryboard } = useCIStore();
 
   const [activeDomain, setActiveDomain] = useState<string>(creator.niche || 'Consumer Technology, Hardware & AI Gadgets');
@@ -146,6 +147,64 @@ export const InsightsView: React.FC = () => {
 
   return (
     <main className="screen-container" style={{ paddingBottom: '90px' }}>
+      {/* Sticky Native Mobile Navigation Bar */}
+      <div
+        style={{
+          position: 'sticky',
+          top: '-14px',
+          zIndex: 40,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 0',
+          backgroundColor: 'rgba(8, 8, 8, 0.92)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderBottom: '1px solid var(--border-color)',
+          marginBottom: '16px',
+        }}
+      >
+        <button
+          onClick={() => setActiveTab('home')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 12px',
+            borderRadius: '10px',
+            backgroundColor: 'var(--bg-surface-2)',
+            color: 'var(--text-primary)',
+            fontSize: '13px',
+            fontWeight: 700,
+            border: '1px solid var(--border-color)',
+            cursor: 'pointer',
+          }}
+        >
+          <ArrowLeft size={15} />
+          <span>Home</span>
+        </button>
+
+        <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>
+          Intelligence Radar
+        </span>
+
+        <button
+          onClick={() => openModal('creator-intelligence')}
+          style={{
+            padding: '6px 10px',
+            borderRadius: '10px',
+            backgroundColor: 'var(--ai-soft)',
+            color: 'var(--ai-accent)',
+            fontSize: '11px',
+            fontWeight: 800,
+            border: '1px solid var(--ai-border)',
+            cursor: 'pointer',
+          }}
+        >
+          Full Suite
+        </button>
+      </div>
+
       {/* Top Header */}
       <div style={{ marginBottom: '18px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>

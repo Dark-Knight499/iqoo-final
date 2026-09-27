@@ -88,40 +88,75 @@ a {
   text-decoration: none;
 }
 
-/* App container constrained to mobile preview with nice responsiveness */
+/* ========================================================= */
+/* NATIVE MOBILE CONTAINER & SMARTPHONE FRAME               */
+/* ========================================================= */
+
 .app-viewport {
   width: 100%;
-  max-width: 480px;
-  min-height: 100vh;
+  max-width: 100%;
+  min-height: 100dvh;
+  height: 100dvh;
   margin: 0 auto;
   position: relative;
   background-color: var(--bg-primary);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   transition: background-color 0.25s ease;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
+input, textarea, [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Smartphone Device Mockup on Desktop Screens */
 @media (min-width: 768px) {
   body {
-    background-color: #020202;
-    background-image: radial-gradient(circle at 50% 10%, rgba(216, 255, 0, 0.04), transparent 50%);
+    background-color: #050507;
+    background-image: radial-gradient(circle at 50% 15%, rgba(216, 255, 0, 0.05), transparent 60%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 0;
   }
+
   [data-theme="light"] body {
-    background-color: #EEF2F6;
-    background-image: radial-gradient(circle at 50% 10%, rgba(37, 99, 235, 0.05), transparent 50%);
+    background-color: #E2E8F0;
+    background-image: radial-gradient(circle at 50% 15%, rgba(37, 99, 235, 0.06), transparent 60%);
   }
+
   .app-viewport {
-    box-shadow: 0 0 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.06);
+    max-width: 420px;
+    height: min(890px, calc(100vh - 36px));
+    min-height: auto;
+    border-radius: 46px;
+    border: 9px solid #1c1c20;
+    box-shadow:
+      0 30px 90px rgba(0, 0, 0, 0.9),
+      0 0 0 1px rgba(255, 255, 255, 0.1),
+      inset 0 0 0 1.5px rgba(255, 255, 255, 0.06);
+    overflow: hidden;
   }
+
   [data-theme="light"] .app-viewport {
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.08);
+    border-color: #CBD5E1;
+    box-shadow:
+      0 20px 60px rgba(15, 23, 42, 0.15),
+      0 0 0 1px rgba(0, 0, 0, 0.08);
   }
 }
 
 /* Scrollbar styles */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 3px;
+  height: 3px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -133,7 +168,59 @@ a {
 
 .screen-container {
   flex: 1;
-  padding: 16px 18px 24px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  padding: 14px 16px calc(24px + env(safe-area-inset-bottom, 16px));
+}
+
+/* Mobile device top status bar & dynamic island */
+.mobile-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 18px 4px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  flex-shrink: 0;
+  z-index: 50;
+}
+
+.mobile-dynamic-island {
+  width: 94px;
+  height: 20px;
+  background-color: #000;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mobile-home-indicator-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 6px 0 8px;
+  background-color: var(--bg-primary);
+  flex-shrink: 0;
+  z-index: 50;
+}
+
+.mobile-home-indicator {
+  width: 110px;
+  height: 4px;
+  border-radius: 999px;
+  background-color: var(--text-muted);
+  opacity: 0.45;
+}
+
+/* Hide hardware simulation on actual mobile phones */
+@media (max-width: 767px) {
+  .mobile-statusbar {
+    display: none;
+  }
+  .mobile-home-indicator-container {
+    padding-bottom: env(safe-area-inset-bottom, 6px);
+  }
 }
 
 .media-bg {
