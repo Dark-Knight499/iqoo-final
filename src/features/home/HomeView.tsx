@@ -241,6 +241,26 @@ export const HomeView: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button
+            onClick={() => openModal('sign-in')}
+            style={{
+              padding: '6px 10px',
+              borderRadius: '10px',
+              backgroundColor: 'var(--bg-surface-2)',
+              border: '1px solid var(--border-color)',
+              color: 'var(--text-secondary)',
+              fontSize: '11px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+            title="Switch Creator Account via OAuth"
+          >
+            <Sparkles size={12} color="var(--ai-accent)" />
+            <span>Switch</span>
+          </button>
           <ThemeToggle />
           <button
             onClick={() => setActiveTab('profile')}

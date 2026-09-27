@@ -148,25 +148,49 @@ export const ProfileView: React.FC = () => {
           <Sparkles size={12} />
           {creator.profileDocuments ? 'Creator DNA · Synced with Backend' : 'Creator Profile'}
         </span>
-        <button
-          onClick={() => openModal('onboarding')}
-          aria-label="Re-run onboarding"
-          style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '50%',
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            backdropFilter: 'blur(8px)',
-            color: '#fff',
-            display: 'grid',
-            placeItems: 'center',
-            cursor: 'pointer',
-            border: 'none',
-          }}
-          title="Re-run Onboarding"
-        >
-          <Settings size={17} />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            onClick={() => openModal('sign-in')}
+            aria-label="Switch Creator / OAuth Sign In"
+            style={{
+              padding: '6px 12px',
+              borderRadius: 'var(--radius-pill)',
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              backdropFilter: 'blur(8px)',
+              color: 'var(--ai-accent)',
+              border: '1px solid var(--ai-border)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              cursor: 'pointer',
+              fontSize: '11px',
+              fontWeight: 700,
+            }}
+            title="Switch Creator Account via OAuth"
+          >
+            <Sparkles size={13} />
+            <span>Switch Account</span>
+          </button>
+          <button
+            onClick={() => openModal('onboarding')}
+            aria-label="Re-run onboarding"
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              backdropFilter: 'blur(8px)',
+              color: '#fff',
+              display: 'grid',
+              placeItems: 'center',
+              cursor: 'pointer',
+              border: 'none',
+            }}
+            title="Re-run Onboarding"
+          >
+            <Settings size={17} />
+          </button>
+        </div>
       </div>
 
       {/* Creator Info & Avatar */}

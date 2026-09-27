@@ -33,8 +33,10 @@ import {
   YouTubeTrendItem,
   InstagramTrendItem,
   XTwitterTrendItem,
-  LinkedInTrendItem
+  LinkedInTrendItem,
+  CreatorComparisonResponse
 } from '@/services/legacyBackend';
+import { RemotionShortPlayer } from '@/features/remotion/RemotionShortPlayer';
 
 function formatCount(value: number): string {
   return new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(value);
@@ -54,6 +56,30 @@ export const InsightsView: React.FC = () => {
   const [timeframe, setTimeframe] = useState<'7d' | '30d' | '90d'>('30d');
   const [isLoading, setIsLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
+
+  // Competitor Benchmark state
+  const [benchmarkTarget, setBenchmarkTarget] = useState('Marques Brownlee');
+  const [benchmarkResult, setBenchmarkResult] = useState<CreatorComparisonResponse | null>(null);
+  const [isBenchmarking, setIsBenchmarking] = useState(false);
+  const [benchmarkError, setBenchmarkError] = useState<string | null>(null);
+  const [remotionPreview, setRemotionPreview] = useState<{ hook: string; name: string } | null>(null);
+
+  const handleRunBenchmark = async (target: string) => {
+    setIsBenchmarking(true);
+    try {
+      const res = await legacyBackend.compareCreator({
+        creator_name: target,
+        base_creator: creator.name || 'Ali Abdaal',
+        niche_hint: activeDomain,
+      });
+      setBenchmarkResult(res);
+      showToast(`Benchmarked with ${target}!`);
+    } catch (err) {
+      setBenchmarkError(err instanceof Error ? err.message : 'Benchmark scan failed');
+    } finally {
+      setIsBenchmarking(false);
+    }
+  };
 
   // Load recognized domains on mount
   useEffect(() => {
@@ -319,6 +345,232 @@ export const InsightsView: React.FC = () => {
         </Card>
       </div>
 
+      {/* Multi-Platform Channel Pulse */}
+      {dashboard?.platforms && (
+        <section style={{ marginBottom: '26px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+              Connected Platform Pulse · {timeframe}
+            </span>
+            <span style={{ fontSize: '11px', color: '#00DC82', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <CheckCircle2 size={12} /> Live API
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' }}>
+            {Object.entries(dashboard.platforms).map(([pKey, pData]) => {
+              const platformColor =
+                pKey === 'youtube' ? '#FF0000' :
+                pKey === 'instagram' ? '#E1306C' :
+                pKey === 'linkedin' ? '#0A66C2' :
+                pKey === 'substack' ? '#FF6719' : '#1DA1F2';
+
+              return (
+                <div
+                  key={pKey}
+                  style={{
+                    padding: '12px',
+                    borderRadius: '14px',
+                    backgroundColor: 'var(--bg-surface)',
+                    border: '1px solid var(--border-color)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'capitalize', color: platformColor }}>
+                      {pData.platform || pKey}
+                    </span>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                      +{pData.growth_rate_30d_percent}%
+                    </span>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '16px', fontWeight: 900, color: 'var(--text-primary)' }}>
+                      {formatCount(pData.followers_or_subscribers)}
+                    </div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                      {pData.avg_engagement_rate_percent}% engagement
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Instant Competitor Benchmark Scanner */}
+      <section style={{ marginBottom: '28px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Sparkles size={15} color="var(--ai-accent)" />
+            <h3 style={{ fontSize: '15px', fontWeight: 800, margin: 0 }}>Competitor Benchmark & Moat</h3>
+          </div>
+          <span style={{ fontSize: '11px', color: 'var(--ai-accent)', fontWeight: 700 }}>
+            Compare & Improve
+          </span>
+        </div>
+
+        <Card variant="surface" padding="16px">
+          <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+            Benchmark <strong>{creator.name}</strong> against leading creators to identify hook gaps, pacing differences, and immediate retention boosts.
+          </p>
+
+          <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', scrollbarWidth: 'none', marginBottom: '12px' }}>
+            {['Marques Brownlee', 'Ali Abdaal', 'Dhruv Rathee', 'MrBeast', 'Lex Fridman'].map((name) => (
+              <button
+                key={name}
+                onClick={() => {
+                  setBenchmarkTarget(name);
+                  handleRunBenchmark(name);
+                }}
+                style={{
+                  padding: '5px 11px',
+                  borderRadius: '999px',
+                  backgroundColor: benchmarkTarget === name ? 'var(--ai-accent)' : 'var(--bg-surface-2)',
+                  color: benchmarkTarget === name ? '#080808' : 'var(--text-secondary)',
+                  border: benchmarkTarget === name ? '1px solid var(--ai-accent)' : '1px solid var(--border-color)',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: isBenchmarking ? 'wait' : 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                vs {name}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              type="text"
+              value={benchmarkTarget}
+              onChange={(e) => setBenchmarkTarget(e.target.value)}
+              placeholder="Or enter any creator name..."
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                borderRadius: '10px',
+                backgroundColor: 'var(--bg-surface-2)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-primary)',
+                fontSize: '12px',
+                outline: 'none',
+              }}
+            />
+            <Button
+              variant="ai"
+              size="sm"
+              disabled={isBenchmarking || !benchmarkTarget.trim()}
+              onClick={() => handleRunBenchmark(benchmarkTarget)}
+              style={{ gap: '6px' }}
+            >
+              {isBenchmarking ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+              <span>{isBenchmarking ? 'Scanning…' : 'Run Benchmark'}</span>
+            </Button>
+          </div>
+
+          {benchmarkError && (
+            <div style={{ marginTop: '10px', padding: '8px 12px', borderRadius: '8px', backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#FCA5A5', fontSize: '11px' }}>
+              {benchmarkError}
+            </div>
+          )}
+
+          {benchmarkResult && (
+            <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: '8px',
+                  padding: '10px',
+                  borderRadius: '10px',
+                  backgroundColor: 'var(--bg-surface-2)',
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                    {creator.name} (You)
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }}>
+                    {benchmarkResult.comparison.base_profile?.hook_archetype || 'Empirical Opening'}
+                  </div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
+                    Pacing: {benchmarkResult.comparison.base_profile?.pacing_wpm || '140 WPM'}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '10px', color: 'var(--ai-accent)', textTransform: 'uppercase' }}>
+                    {benchmarkResult.target_creator.name}
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: 800, color: '#fff', marginTop: '2px' }}>
+                    {benchmarkResult.comparison.target_profile?.hook_archetype || 'Signature Interrupt'}
+                  </div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
+                    Pacing: {benchmarkResult.comparison.target_profile?.pacing_wpm || '155 WPM'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Playbook recommendations */}
+              {benchmarkResult.comparison.content_improvement_playbook?.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--ai-accent)' }}>
+                    🎯 Top Tactical Improvement Playbook:
+                  </span>
+                  {benchmarkResult.comparison.content_improvement_playbook.slice(0, 2).map((item, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: '8px 10px',
+                        borderRadius: '8px',
+                        backgroundColor: 'var(--bg-surface-2)',
+                        border: '1px solid rgba(255, 255, 255, 0.06)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <strong style={{ fontSize: '12px', color: '#fff' }}>{item.action}</strong>
+                        <span style={{ fontSize: '10px', color: '#00DC82', fontWeight: 700 }}>
+                          +{item.estimated_impact}
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.35 }}>
+                        {item.implementation_step || item.why_it_works}
+                      </p>
+                      <button
+                        onClick={() => openCopilot(`Apply this retention improvement from ${benchmarkResult.target_creator.name}: "${item.action}". Implementation: ${item.implementation_step || item.why_it_works}`)}
+                        style={{
+                          alignSelf: 'flex-start',
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--ai-accent)',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          padding: 0,
+                          marginTop: 2,
+                        }}
+                      >
+                        <Sparkles size={11} /> Apply to Next Script
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </Card>
+      </section>
+
       {/* 1. YOUTUBE TRENDING VIDEOS */}
       {youtubeItems.length > 0 && (
         <section style={{ marginBottom: '28px' }}>
@@ -513,14 +765,27 @@ export const InsightsView: React.FC = () => {
                 >
                   Structure: {fmt.structure_template}
                 </div>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  fullWidth
-                  onClick={() => openCopilot(`Draft a script using the "${fmt.format_name}" format for ${activeDomain}: ${fmt.structure_template}`)}
-                >
-                  <Sparkles size={12} /> Use Format in Copilot
-                </Button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    style={{ flex: 1 }}
+                    onClick={() => openCopilot(`Draft a script using the "${fmt.format_name}" format for ${activeDomain}: ${fmt.structure_template}`)}
+                  >
+                    <Sparkles size={12} /> Copilot
+                  </Button>
+                  <Button
+                    variant="ai"
+                    size="sm"
+                    style={{ flex: 1 }}
+                    onClick={() => setRemotionPreview({
+                      hook: fmt.format_name.toUpperCase(),
+                      name: fmt.format_name,
+                    })}
+                  >
+                    <Sparkles size={12} /> Remotion
+                  </Button>
+                </div>
               </Card>
             ))}
           </div>
@@ -610,6 +875,24 @@ export const InsightsView: React.FC = () => {
             </div>
           </Card>
         </section>
+      )}
+
+      {/* Remotion Short Player Preview */}
+      {remotionPreview && (
+        <RemotionShortPlayer
+          isModal
+          hookText={remotionPreview.hook}
+          creatorName={creator.name}
+          creatorHandle={`@${creator.name.toLowerCase().replace(/\s+/g, '')}`}
+          subtitles={[
+            `Viral Format: ${remotionPreview.name}`,
+            'Engineered for 85%+ retention.',
+            'First 3 seconds: Pattern interrupt.',
+            'Next 15 seconds: Cognitive dissonance.',
+            'Climax: Core thesis revelation.',
+          ]}
+          onClose={() => setRemotionPreview(null)}
+        />
       )}
     </main>
   );

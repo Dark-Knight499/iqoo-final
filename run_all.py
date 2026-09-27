@@ -22,7 +22,8 @@ def main():
     print("  1. Studio Backend:        http://localhost:8000 (API & Docs)")
     print("  2. Intelligence Backend:  http://localhost:8001 (Profiling & Trends)")
     print("  3. Static Analysis Server: http://localhost:4174 (Media Intelligence)")
-    print("  4. Web / Mobile UI:       http://localhost:5173 / http://localhost:5174")
+    print("  4. Brainrot Render Engine: http://localhost:8080 (MoneyPrinterTurbo)")
+    print("  5. Web / Mobile UI:       http://localhost:5173 / http://localhost:5174")
     print("=" * 65)
     print("Starting services...\n")
 
@@ -37,8 +38,15 @@ def main():
         p3 = subprocess.Popen(["npm", "--prefix", "legacy/static-analysis", "run", "server:dev"], shell=False)
         processes.append(("Static Analysis Server (4174)", p3))
 
-        p4 = subprocess.Popen(["npm", "run", "dev"], shell=True)
-        processes.append(("Frontend Vite Server", p4))
+        mpt_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "MoneyPrinterTurbo")
+        mpt_venv_py = os.path.join(mpt_dir, ".venv", "bin", "python")
+        mpt_py = mpt_venv_py if os.path.exists(mpt_venv_py) else py_exec
+        if os.path.exists(mpt_dir):
+            p4 = subprocess.Popen([mpt_py, "main.py"], cwd=mpt_dir)
+            processes.append(("Brainrot Render Engine (8080)", p4))
+
+        p5 = subprocess.Popen(["npm", "run", "dev"], shell=True)
+        processes.append(("Frontend Vite Server", p5))
 
         print("\nAll services started! Press Ctrl+C to terminate all services.\n")
 

@@ -4,6 +4,7 @@ import { storage } from '@/utils/storage';
 export type MainTab = 'home' | 'insights' | 'create' | 'profile';
 export type ScreenModal =
   | null
+  | 'sign-in'
   | 'onboarding'
   | 'editor'
   | 'video-analysis'
@@ -106,6 +107,12 @@ export const appStore = {
   completeOnboarding: () => {
     storage.save('has_onboarded', true);
     appState = { ...appState, hasCompletedOnboarding: true, activeModal: null, activeTab: 'home' };
+    notify();
+  },
+
+  signOut: () => {
+    storage.save('has_onboarded', false);
+    appState = { ...appState, hasCompletedOnboarding: false, activeModal: 'sign-in' };
     notify();
   },
 

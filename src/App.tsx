@@ -20,11 +20,15 @@ import { BrainrotFeedView } from '@/features/brainrot/BrainrotFeedView';
 import { ExportModal } from '@/features/export/ExportModal';
 import { CopilotSheet } from '@/features/copilot/CopilotSheet';
 import { ClippingView } from '@/features/clipping/ClippingView';
+import { SignInView } from '@/features/auth/SignInView';
 
 export const App: React.FC = () => {
   const { activeTab, activeModal, returnFromExport, closeModal } = useAppStore();
 
   // Render modal views if open
+  if (activeModal === 'sign-in') {
+    return <SignInView />;
+  }
   if (activeModal === 'onboarding') {
     return <OnboardingFlow />;
   }

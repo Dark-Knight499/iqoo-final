@@ -22,6 +22,7 @@ import {
   TASK_STATE_COMPLETE,
   TASK_STATE_FAILED,
 } from './api';
+import { RemotionShortPlayer } from '@/features/remotion/RemotionShortPlayer';
 
 // Free Edge TTS voices. These are generic narrator voices; no celebrity voice
 // cloning is performed or shipped.
@@ -84,6 +85,7 @@ export const BrainrotFeedView: React.FC = () => {
   const [taskId, setTaskId] = useState<string | null>(null);
   const [task, setTask] = useState<MptTask | null>(null);
   const [activeVideo, setActiveVideo] = useState<{ url: string; topic: string } | null>(null);
+  const [showRemotion, setShowRemotion] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadGallery = useCallback(async () => {
@@ -100,7 +102,9 @@ export const BrainrotFeedView: React.FC = () => {
 
   const loadMaterials = useCallback(async () => {
     try {
-      setMaterials(await brainrotEngine.listMaterials());
+      const items = await brainrotEngine.listMaterials();
+      setMaterials(items);
+      setSelected((prev) => (prev.length === 0 && items.length > 0 ? [items[0].file] : prev));
     } catch {
       setMaterials([]);
     }
@@ -199,7 +203,8 @@ export const BrainrotFeedView: React.FC = () => {
       setError('The local engine is not running.');
       return;
     }
-    if (!selected.length) {
+    const clipsToUse = selected.length > 0 ? selected : (materials.length > 0 ? [materials[0].file] : []);
+    if (!clipsToUse.length) {
       setError('Select at least one clip from the engine library, or upload one.');
       return;
     }
@@ -208,15 +213,22 @@ export const BrainrotFeedView: React.FC = () => {
       return;
     }
 
+    const effectiveTopic = topic.trim() || 'Fascinating Facts';
+    const effectiveScript = script.trim() || (
+      effectiveTopic.toLowerCase().includes('ocean')
+        ? "Did you know that the ocean covers more than 70 percent of Earth, yet over 80 percent of it remains completely unmapped and unexplored? At the bottom of the Mariana Trench, the water pressure is equivalent to fifty jumbo jets piled on top of you. What secrets are still hidden in the deep abyss?"
+        : `Here is the mind-blowing truth about ${effectiveTopic}. Most people assume the conventional wisdom is correct, but the real data tells a completely different story. Once you understand the mechanism, everything starts to click. Share this with someone who needs to hear it.`
+    );
+
     setPhase('rendering');
     setActiveVideo(null);
     setTask(null);
     try {
       const id = await brainrotEngine.createShort({
-        video_subject: topic.trim() || 'Untitled short',
-        video_script: script.trim(),
+        video_subject: effectiveTopic,
+        video_script: effectiveScript,
         video_source: 'local',
-        video_materials: selected.map((file) => ({ provider: 'local', url: file, duration: 0 })),
+        video_materials: clipsToUse.map((file) => ({ provider: 'local', url: file, duration: 0 })),
         video_aspect: '9:16',
         video_count: 1,
         video_clip_duration: 5,
@@ -628,9 +640,30 @@ export const BrainrotFeedView: React.FC = () => {
       {/* Player */}
       {activeVideo && !isRendering && (
         <Card variant="ai" padding="14px">
-          <strong style={{ display: 'block', fontSize: '13px', color: 'var(--ai-accent)', marginBottom: '10px' }}>
-            {phase === 'done' ? 'Short ready' : activeVideo.topic}
-          </strong>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <strong style={{ fontSize: '13px', color: 'var(--ai-accent)' }}>
+              {phase === 'done' ? 'Short ready' : activeVideo.topic}
+            </strong>
+            <button
+              onClick={() => setShowRemotion(true)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '4px 10px',
+                borderRadius: '8px',
+                backgroundColor: 'var(--ai-soft)',
+                border: '1px solid var(--ai-border)',
+                color: 'var(--ai-accent)',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              <Sparkles size={12} />
+              <span>Remotion Preview</span>
+            </button>
+          </div>
           <video
             key={activeVideo.url}
             src={activeVideo.url}
@@ -638,23 +671,53 @@ export const BrainrotFeedView: React.FC = () => {
             playsInline
             style={{ width: '100%', borderRadius: '12px', backgroundColor: '#000' }}
           />
-          <a
-            href={activeVideo.url}
-            download
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              marginTop: '12px',
-              color: 'var(--ai-accent)',
-              fontSize: '12px',
-              fontWeight: 600,
-              textDecoration: 'none',
-            }}
-          >
-            <Download size={14} aria-hidden="true" /> Download MP4
-          </a>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px' }}>
+            <a
+              href={activeVideo.url}
+              download
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                color: 'var(--ai-accent)',
+                fontSize: '12px',
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
+              <Download size={14} aria-hidden="true" /> Download MP4
+            </a>
+            <button
+              onClick={() => setShowRemotion(true)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              <span>Dynamic Remotion Layer</span>
+              <Sparkles size={11} color="var(--ai-accent)" />
+            </button>
+          </div>
         </Card>
+      )}
+
+      {/* Remotion Player Modal */}
+      {showRemotion && activeVideo && (
+        <RemotionShortPlayer
+          isModal
+          videoUrl={activeVideo.url}
+          hookText={activeVideo.topic.toUpperCase() || 'VIRAL REEL SHORT'}
+          creatorName="Creator"
+          creatorHandle="@creator"
+          onClose={() => setShowRemotion(false)}
+        />
       )}
 
       {/* Action */}
