@@ -26,9 +26,9 @@ export const AnalysisScreen: React.FC = () => {
         display: 'flex',
         flexDirection: 'column',
         minHeight: '100%',
-        backgroundColor: '#F7F8FA',
+        backgroundColor: 'var(--bg-primary)',
         padding: '24px 20px 80px 20px',
-        color: '#0F172A',
+        color: 'var(--text-primary)',
       }}
     >
       {/* Header */}
@@ -38,8 +38,8 @@ export const AnalysisScreen: React.FC = () => {
             style={{
               padding: '3px 8px',
               borderRadius: '6px',
-              backgroundColor: '#EFF6FF',
-              color: '#2563EB',
+              backgroundColor: 'var(--ai-soft)',
+              color: 'var(--ai-accent)',
               fontSize: '11px',
               fontWeight: 800,
               textTransform: 'uppercase',
@@ -49,11 +49,13 @@ export const AnalysisScreen: React.FC = () => {
             Step 2: Processing
           </span>
         </div>
-        <h1 style={{ margin: '0 0 6px 0', fontSize: '24px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.5px' }}>
+        <h1 style={{ margin: '0 0 6px 0', fontSize: '24px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>
           Understanding your content
         </h1>
-        <p style={{ margin: 0, fontSize: '13px', color: '#64748B' }}>
-          {isAnalysisComplete ? `Static analysis for ${currentMedia.title}` : `Analyzing ${currentMedia.title} on the host computer`}
+        <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
+          {isAnalysisComplete
+            ? `Static analysis complete for ${currentMedia.title}`
+            : `Analyzing ${currentMedia.title} on host computer`}
         </p>
       </div>
 
@@ -62,11 +64,25 @@ export const AnalysisScreen: React.FC = () => {
         <ContentPreview media={currentMedia} height="180px" />
       </div>
 
-      {/* Progress Bar */}
-      {!analysisError && <div style={{ marginBottom: '20px', backgroundColor: '#FFFFFF', padding: '16px', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
-        <AnalysisProgress progress={analysisProgress} isAnalyzing={isAnalyzing} />
-      </div>}
-      {analysisError && <p role="alert" style={{ marginBottom: 18, color: '#B91C1C', fontSize: 13 }}>{analysisError}</p>}
+      {/* Progress Bar Box */}
+      {!analysisError && (
+        <div
+          style={{
+            marginBottom: '20px',
+            backgroundColor: 'var(--bg-surface-2)',
+            padding: '16px',
+            borderRadius: '16px',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+          }}
+        >
+          <AnalysisProgress progress={analysisProgress} isAnalyzing={isAnalyzing} />
+        </div>
+      )}
+      {analysisError && (
+        <p role="alert" style={{ marginBottom: 18, color: '#FF5C6C', fontSize: 13 }}>
+          {analysisError}
+        </p>
+      )}
 
       {/* Analysis Modules / Progressive Stages */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
@@ -76,7 +92,7 @@ export const AnalysisScreen: React.FC = () => {
             fontWeight: 800,
             textTransform: 'uppercase',
             letterSpacing: '0.6px',
-            color: '#64748B',
+            color: 'var(--text-muted)',
             marginBottom: '4px',
           }}
         >
@@ -97,27 +113,37 @@ export const AnalysisScreen: React.FC = () => {
         }}
       >
         <button
-          onClick={() => isAnalysisComplete ? navigateTo('ml-analysis') : goBack()}
+          onClick={() => (isAnalysisComplete ? navigateTo('ml-analysis') : goBack())}
           disabled={isAnalyzing}
           style={{
             width: '100%',
             padding: '14px',
             borderRadius: '14px',
-            backgroundColor: isAnalysisComplete || analysisError ? '#2563EB' : '#E2E8F0',
-            color: isAnalysisComplete || analysisError ? '#FFFFFF' : '#94A3B8',
+            backgroundColor: isAnalysisComplete || analysisError ? 'var(--ai-accent)' : '#1e2229',
+            color: isAnalysisComplete || analysisError ? '#080808' : 'var(--text-muted)',
             border: 'none',
-            fontSize: '15px',
-            fontWeight: 700,
+            fontSize: '14px',
+            fontWeight: 800,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '8px',
             cursor: isAnalyzing ? 'wait' : 'pointer',
-            boxShadow: isAnalysisComplete ? '0 4px 16px rgba(37, 99, 235, 0.3)' : 'none',
+            boxShadow: isAnalysisComplete ? '0 4px 16px rgba(216, 255, 0, 0.25)' : 'none',
             transition: 'all 0.2s ease',
           }}
         >
-          {isAnalysisComplete ? <><span>View Analysis</span><ArrowRight size={18} /></> : <><ArrowLeft size={18} /><span>{analysisError ? 'Choose another video' : 'Back to video'}</span></>}
+          {isAnalysisComplete ? (
+            <>
+              <span>View Analysis</span>
+              <ArrowRight size={18} />
+            </>
+          ) : (
+            <>
+              <ArrowLeft size={18} />
+              <span>{analysisError ? 'Choose another video' : 'Back to video'}</span>
+            </>
+          )}
         </button>
       </div>
     </div>

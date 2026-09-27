@@ -24,11 +24,36 @@ export const ImportScreen: React.FC = () => {
   };
 
   return (
-    <main style={{ minHeight: '100%', padding: '24px 20px calc(32px + env(safe-area-inset-bottom))', background: '#F7F8FA', color: '#0F172A' }}>
+    <main
+      style={{
+        minHeight: '100%',
+        padding: '24px 20px calc(32px + env(safe-area-inset-bottom))',
+        background: 'var(--bg-primary)',
+        color: 'var(--text-primary)',
+      }}
+    >
       <header style={{ marginBottom: 24 }}>
-        <span style={{ display: 'inline-block', padding: '3px 8px', borderRadius: 6, background: '#EFF6FF', color: '#2563EB', fontSize: 11, fontWeight: 800, letterSpacing: '.6px', textTransform: 'uppercase' }}>Local video analysis</span>
-        <h1 style={{ margin: '10px 0 6px', fontSize: 27, fontWeight: 800, letterSpacing: '-.5px' }}>Analyze a video</h1>
-        <p style={{ margin: 0, color: '#64748B', fontSize: 14 }}>Choose a video from this device. Analysis runs on the computer hosting this app.</p>
+        <span
+          style={{
+            display: 'inline-block',
+            padding: '3px 8px',
+            borderRadius: 6,
+            background: 'var(--ai-soft)',
+            color: 'var(--ai-accent)',
+            fontSize: 11,
+            fontWeight: 800,
+            letterSpacing: '.6px',
+            textTransform: 'uppercase',
+          }}
+        >
+          Local video analysis
+        </span>
+        <h1 style={{ margin: '10px 0 6px', fontSize: 26, fontWeight: 800, color: '#fff', letterSpacing: '-.5px' }}>
+          Analyze a video
+        </h1>
+        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 14 }}>
+          Choose a video from this device. Whisper transcription and YOLO vision run locally on your host.
+        </p>
       </header>
 
       <input
@@ -46,35 +71,148 @@ export const ImportScreen: React.FC = () => {
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          style={{ width: '100%', minHeight: 190, padding: 24, borderRadius: 20, border: '2px dashed #93C5FD', background: '#FFFFFF', display: 'flex', flexDirection: 'column', gap: 10, color: '#1D4ED8' }}
+          style={{
+            width: '100%',
+            minHeight: 190,
+            padding: 24,
+            borderRadius: 20,
+            border: '2px dashed var(--ai-border)',
+            background: 'var(--bg-surface-2)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+            color: 'var(--ai-accent)',
+            cursor: 'pointer',
+          }}
         >
-          <span style={{ width: 54, height: 54, borderRadius: 18, background: '#EFF6FF', display: 'grid', placeItems: 'center' }}><UploadCloud size={27} /></span>
-          <strong style={{ color: '#0F172A', fontSize: 16 }}>Choose video</strong>
-          <span style={{ color: '#64748B', fontSize: 13 }}>MP4, MOV, MKV, WebM or M4V · up to 3 GB</span>
+          <span
+            style={{
+              width: 54,
+              height: 54,
+              borderRadius: 18,
+              background: 'var(--ai-soft)',
+              display: 'grid',
+              placeItems: 'center',
+            }}
+          >
+            <UploadCloud size={27} />
+          </span>
+          <strong style={{ color: '#fff', fontSize: 16 }}>Choose video</strong>
+          <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>MP4, MOV, MKV, WebM or M4V · up to 3 GB</span>
         </button>
       ) : (
-        <section style={{ padding: 16, borderRadius: 20, background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
-          <video src={importedMedia.previewUrl} controls playsInline preload="metadata" style={{ width: '100%', maxHeight: 250, borderRadius: 12, background: '#020617', objectFit: 'contain' }} />
+        <section
+          style={{
+            padding: 16,
+            borderRadius: 20,
+            background: 'var(--bg-surface-2)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+          }}
+        >
+          <video
+            src={importedMedia.previewUrl}
+            controls
+            playsInline
+            preload="metadata"
+            style={{
+              width: '100%',
+              maxHeight: 250,
+              borderRadius: 14,
+              background: '#020617',
+              objectFit: 'contain',
+            }}
+          />
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '14px 0' }}>
-            <CheckCircle2 size={22} color="#16A34A" />
+            <CheckCircle2 size={22} color="var(--ai-accent)" />
             <div style={{ minWidth: 0 }}>
-              <strong style={{ display: 'block', overflowWrap: 'anywhere', fontSize: 14 }}>{importedMedia.title}</strong>
-              <span style={{ color: '#64748B', fontSize: 12 }}>{importedMedia.size} · video stays on this local network</span>
+              <strong style={{ display: 'block', overflowWrap: 'anywhere', fontSize: 14, color: '#fff' }}>
+                {importedMedia.title}
+              </strong>
+              <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                {importedMedia.size} · video stays on this local device
+              </span>
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <button type="button" onClick={() => inputRef.current?.click()} style={{ minHeight: 46, borderRadius: 12, border: '1px solid #CBD5E1', color: '#334155', fontWeight: 700 }}>Choose another</button>
-            <button type="button" onClick={() => void startAnalysis()} style={{ minHeight: 46, borderRadius: 12, background: '#2563EB', color: '#FFFFFF', fontWeight: 700, gap: 8 }}><Film size={17} /> Analyze <ArrowRight size={17} /></button>
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              style={{
+                minHeight: 46,
+                borderRadius: 12,
+                border: '1px solid rgba(255,255,255,0.1)',
+                background: '#1a1f26',
+                color: 'var(--text-secondary)',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Choose another
+            </button>
+            <button
+              type="button"
+              onClick={() => void startAnalysis()}
+              style={{
+                minHeight: 46,
+                borderRadius: 12,
+                background: 'var(--ai-accent)',
+                color: '#080808',
+                fontWeight: 800,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <Film size={17} />
+              <span>Start Analysis</span>
+              <ArrowRight size={17} />
+            </button>
           </div>
         </section>
       )}
 
-      {(selectionError || analysisError) && <p role="alert" style={{ marginTop: 14, color: '#B91C1C', fontSize: 13 }}>{selectionError || analysisError}</p>}
-      <aside style={{ marginTop: 22, padding: 14, borderRadius: 14, background: '#EFF6FF', color: '#334155', fontSize: 12, lineHeight: 1.6 }}>
-        <strong style={{ color: '#1D4ED8' }}>Use from your phone</strong><br />
-        Connect the phone and host computer to the same Wi-Fi, run <code>npm run mobile</code> on the computer, then open the Network URL printed in that terminal. Select a video from the phone’s gallery or files.
+      {(selectionError || analysisError) && (
+        <p role="alert" style={{ marginTop: 14, color: '#FF5C6C', fontSize: 13 }}>
+          {selectionError || analysisError}
+        </p>
+      )}
+
+      <aside
+        style={{
+          marginTop: 22,
+          padding: 14,
+          borderRadius: 14,
+          background: 'var(--bg-surface-2)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          color: 'var(--text-secondary)',
+          fontSize: 12,
+          lineHeight: 1.6,
+        }}
+      >
+        <strong style={{ color: 'var(--ai-accent)' }}>Use from your phone</strong>
+        <br />
+        Connect your phone to the same Wi-Fi, open the LAN host address on your mobile browser, and select any video directly from your camera roll.
       </aside>
-      {importedMedia && <button type="button" onClick={resetFlow} style={{ marginTop: 14, color: '#64748B', fontSize: 13 }}>Clear selected video</button>}
+
+      {importedMedia && (
+        <button
+          type="button"
+          onClick={resetFlow}
+          style={{
+            marginTop: 14,
+            color: 'var(--text-muted)',
+            fontSize: 13,
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          Clear selected video
+        </button>
+      )}
     </main>
   );
 };

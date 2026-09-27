@@ -8,12 +8,14 @@ import {
   Play,
   RefreshCw,
   Sparkles,
+  Trash2,
   UploadCloud,
 } from 'lucide-react';
 import { useAppStore } from '@/shared/state/app.store';
 import { Button } from '@/shared/components/Button';
 import { Card } from '@/shared/components/Card';
 import { Chip } from '@/shared/components/Chip';
+import { useBrainrotStore } from './brainrot.store';
 import {
   brainrotEngine,
   MptMaterial,
@@ -32,6 +34,9 @@ const VOICES = [
   { id: 'en-GB-RyanNeural-Male', label: 'Ryan (UK, narrator)' },
   { id: 'en-GB-SoniaNeural-Female', label: 'Sonia (UK, warm)' },
 ];
+
+// Engine pipeline order. Progress is mapped across these as an approximation.
+const STAGES = ['Script', 'Voice', 'Captions', 'Clips', 'Render'];
 
 type EngineStatus = 'checking' | 'online' | 'offline';
 type Phase = 'idle' | 'rendering' | 'done' | 'failed';
@@ -59,7 +64,10 @@ const labelStyle: React.CSSProperties = {
 
 export const BrainrotFeedView: React.FC = () => {
   const { closeModal } = useAppStore();
+  const { shorts, addShort, removeShort } = useBrainrotStore();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // Captured when a render starts so a later field edit cannot mislabel the result.
+  const pendingRef = useRef({ topic: '', script: '', voice: '' });
 
   const [status, setStatus] = useState<EngineStatus>('checking');
   const [materials, setMaterials] = useState<MptMaterial[]>([]);
@@ -73,7 +81,7 @@ export const BrainrotFeedView: React.FC = () => {
   const [phase, setPhase] = useState<Phase>('idle');
   const [taskId, setTaskId] = useState<string | null>(null);
   const [task, setTask] = useState<MptTask | null>(null);
-  const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const [activeVideo, setActiveVideo] = useState<{ url: string; topic: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loadMaterials = useCallback(async () => {
@@ -106,12 +114,36 @@ export const BrainrotFeedView: React.FC = () => {
         if (cancelled) return;
         setTask(next);
         if (next.state === TASK_STATE_COMPLETE) {
-          const first = next.videos?.[0];
-          setResultUrl(first ? brainrotEngine.mediaUrl(first) : null);
+          const relativePath = next.videos?.[0];
           setPhase('done');
+          if (relativePath) {
+            const pending = pendingRef.current;
+            addShort({
+              id: `${taskId}-${Date.now()}`,
+              taskId,
+              topic: pending.topic || 'Untitled short',
+              script: pending.script,
+              voice: pending.voice,
+              relativePath,
+              createdAt: Date.now(),
+            });
+            setActiveVideo({
+              url: brainrotEngine.mediaUrl(relativePath),
+              topic: pending.topic || 'Untitled short',
+            });
+          } else {
+            setError('The engine finished but returned no video file.');
+          }
         } else if (next.state === TASK_STATE_FAILED) {
+          const message = next.error
+            ? String(next.error)
+            : `Render failed during ${next.failed_stage || 'the pipeline'}.`;
+          // Leaving the script blank makes the engine generate one, which needs an
+          // LLM key in the engine config. Point at both fixes instead of the raw error.
           setError(
-            next.error ? String(next.error) : `Render failed during ${next.failed_stage || 'the pipeline'}.`,
+            /api[ _]?key is not set/i.test(message)
+              ? `${message} Set an LLM provider and key in MoneyPrinterTurbo/config.toml, or paste a script above to skip script generation.`
+              : message,
           );
           setPhase('failed');
         }
@@ -126,7 +158,7 @@ export const BrainrotFeedView: React.FC = () => {
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, [taskId, phase]);
+  }, [taskId, phase, addShort]);
 
   const toggleMaterial = (file: string) => {
     setSelected((current) =>
@@ -169,8 +201,9 @@ export const BrainrotFeedView: React.FC = () => {
       return;
     }
 
+    pendingRef.current = { topic: topic.trim(), script: script.trim(), voice };
     setPhase('rendering');
-    setResultUrl(null);
+    setActiveVideo(null);
     setTask(null);
     try {
       const id = await brainrotEngine.createShort({
@@ -197,6 +230,7 @@ export const BrainrotFeedView: React.FC = () => {
 
   const isRendering = phase === 'rendering';
   const progress = isRendering ? Math.max(0, Math.min(100, task?.progress ?? 0)) : 0;
+  const currentStage = Math.min(STAGES.length - 1, Math.floor(progress / (100 / STAGES.length)));
 
   return (
     <div
@@ -273,6 +307,109 @@ export const BrainrotFeedView: React.FC = () => {
             </div>
           </div>
         </Card>
+      )}
+
+      {/* Feed */}
+      {shorts.length > 0 && (
+        <section>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <span style={{ ...labelStyle, marginBottom: 0 }}>Your feed ({shorts.length})</span>
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              gap: '10px',
+              overflowX: 'auto',
+              paddingBottom: '6px',
+              marginRight: '-18px',
+              paddingRight: '18px',
+              scrollbarWidth: 'none',
+            }}
+          >
+            {shorts.map((short) => {
+              const isActive = activeVideo?.url === brainrotEngine.mediaUrl(short.relativePath);
+              return (
+                <article
+                  key={short.id}
+                  onClick={() =>
+                    setActiveVideo({ url: brainrotEngine.mediaUrl(short.relativePath), topic: short.topic })
+                  }
+                  style={{
+                    position: 'relative',
+                    minWidth: '132px',
+                    width: '132px',
+                    height: '176px',
+                    flexShrink: 0,
+                    borderRadius: '16px',
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    backgroundColor: '#000',
+                    border: isActive ? '1px solid var(--ai-accent)' : '1px solid var(--border-color)',
+                  }}
+                >
+                  <video
+                    src={brainrotEngine.mediaUrl(short.relativePath)}
+                    muted
+                    playsInline
+                    preload="metadata"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: 'linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.88) 100%)',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                  <button
+                    aria-label={`Remove ${short.topic}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      removeShort(short.id);
+                      if (isActive) setActiveVideo(null);
+                    }}
+                    style={{
+                      position: 'absolute',
+                      top: '8px',
+                      right: '8px',
+                      width: '26px',
+                      height: '26px',
+                      borderRadius: '50%',
+                      border: 'none',
+                      backgroundColor: 'rgba(0,0,0,0.65)',
+                      color: '#fff',
+                      display: 'grid',
+                      placeItems: 'center',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Trash2 size={13} aria-hidden="true" />
+                  </button>
+                  <div style={{ position: 'absolute', bottom: '9px', left: '10px', right: '10px' }}>
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        color: '#fff',
+                        lineHeight: 1.25,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {short.topic}
+                    </div>
+                    <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.65)', marginTop: '3px' }}>
+                      {new Date(short.createdAt).toLocaleDateString()}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
       )}
 
       {/* Topic + script */}
@@ -441,28 +578,57 @@ export const BrainrotFeedView: React.FC = () => {
               }}
             />
           </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '12px' }}>
+            {STAGES.map((stage, index) => (
+              <span
+                key={stage}
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  padding: '3px 8px',
+                  borderRadius: '999px',
+                  backgroundColor: index <= currentStage ? 'var(--ai-soft)' : 'var(--bg-surface-3)',
+                  color: index <= currentStage ? 'var(--ai-accent)' : 'var(--text-muted)',
+                  border: '1px solid var(--border-color)',
+                }}
+              >
+                {index < currentStage ? '✓ ' : ''}
+                {stage}
+              </span>
+            ))}
+          </div>
           <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '10px 0 0' }}>
             A short render usually takes one to several minutes depending on clip length.
           </p>
         </Card>
       )}
 
-      {/* Result */}
-      {phase === 'done' && resultUrl && (
+      {/* Player */}
+      {activeVideo && !isRendering && (
         <Card variant="ai" padding="14px">
           <strong style={{ display: 'block', fontSize: '13px', color: 'var(--ai-accent)', marginBottom: '10px' }}>
-            Short ready
+            {phase === 'done' ? 'Short ready' : activeVideo.topic}
           </strong>
           <video
-            src={resultUrl}
+            key={activeVideo.url}
+            src={activeVideo.url}
             controls
             playsInline
             style={{ width: '100%', borderRadius: '12px', backgroundColor: '#000' }}
           />
           <a
-            href={resultUrl}
+            href={activeVideo.url}
             download
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '12px', color: 'var(--ai-accent)', fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              marginTop: '12px',
+              color: 'var(--ai-accent)',
+              fontSize: '12px',
+              fontWeight: 600,
+              textDecoration: 'none',
+            }}
           >
             <Download size={14} aria-hidden="true" /> Download MP4
           </a>

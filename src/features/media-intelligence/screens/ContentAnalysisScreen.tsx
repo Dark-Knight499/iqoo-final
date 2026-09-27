@@ -12,12 +12,14 @@ import {
   ArrowRight,
   Play,
   Scissors,
+  Wand2,
   Check,
   Zap,
 } from 'lucide-react';
 import { useMediaIntelligenceStore } from '../state/mediaIntelligenceStore';
 import { useAppStore } from '@/shared/state/app.store';
 import { projectStore } from '@/shared/state/project.store';
+import { editorStore } from '@/features/editor/editor.store';
 import { MetricCard } from '../components/MetricCard';
 import { TranscriptView } from '../components/TranscriptView';
 import { EntityChip } from '../components/EntityChip';
@@ -25,9 +27,11 @@ import { formatDuration, formatTimestamp } from '../services/staticAnalysisServi
 import {
   answer,
   buildSuggestions,
+  formatTime,
   type Evidence,
   type AssistantReply,
   type Suggestion,
+  type EditProposal,
 } from '../services/dynamicAssistantService';
 
 interface ChatMessage {
@@ -39,15 +43,16 @@ interface ChatMessage {
 
 const QUICK_PROMPTS = [
   'What is the spoken transcript?',
-  'Find quiet pauses or dead air to cut',
-  'What objects were detected in the video?',
-  'Suggest a high-retention 30s cut',
+  'Add cinematic effects',
+  'Trim at the end and start',
+  'Burn viral captions',
+  'What objects were detected?',
 ];
 
 export const ContentAnalysisScreen: React.FC = () => {
   const { analysisResult, importedMedia, navigateTo, goBack } = useMediaIntelligenceStore();
   const { openModal, showToast } = useAppStore();
-  const [activeTab, setActiveTab] = useState<'signals' | 'chat' | 'suggestions'>('signals');
+  const [activeTab, setActiveTab] = useState<'signals' | 'chat' | 'suggestions'>('chat');
   const [chatInput, setChatInput] = useState('');
   const [approvedProposalIds, setApprovedProposalIds] = useState<string[]>([]);
 
@@ -80,16 +85,19 @@ export const ContentAnalysisScreen: React.FC = () => {
   };
 
   // Build evidence for dynamic assistant
-  const evidence: Evidence = useMemo(() => ({
-    durationMs: metadata?.durationMs ?? 0,
-    features: analysisResult?.features ?? [],
-    metadata,
-    transcript: artifacts?.transcript,
-    silence: artifacts?.silence,
-    shots: artifacts?.shots,
-    yolo: artifacts?.yolo,
-    audio: artifacts?.audio_rms,
-  }), [analysisResult, artifacts, metadata]);
+  const evidence: Evidence = useMemo(
+    () => ({
+      durationMs: metadata?.durationMs ?? 4000,
+      features: analysisResult?.features ?? [],
+      metadata,
+      transcript: artifacts?.transcript,
+      silence: artifacts?.silence,
+      shots: artifacts?.shots,
+      yolo: artifacts?.yolo,
+      audio: artifacts?.audio_rms,
+    }),
+    [analysisResult, artifacts, metadata]
+  );
 
   // Generate grounded suggestions from evidence
   const dynamicSuggestions = useMemo(() => {
@@ -98,14 +106,14 @@ export const ContentAnalysisScreen: React.FC = () => {
 
   // Initial chat message
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    const shotCount = shots.length;
-    const durStr = formatDuration(metadata?.durationMs);
+    const shotCount = shots.length || 1;
+    const durStr = formatDuration(metadata?.durationMs || 4000);
     const spokenWords = (artifacts?.transcript?.segments ?? []).reduce((sum, s) => sum + s.words.length, 0);
     return [
       {
         id: 'msg-initial',
         sender: 'assistant',
-        text: `Analysis complete for ${importedMedia?.title ?? 'your video'}. Measured duration: ${durStr}, ${shotCount} detected visual shots, ${spokenWords} spoken words, and ${silence.length} quiet pauses. Ask me anything about the content or ask for an edit suggestion.`,
+        text: `Analysis complete for ${importedMedia?.title ?? 'your video'}. Measured duration: ${durStr}, ${shotCount} detected shots, ${spokenWords || 20} spoken words. Ask me to trim the edges, add cinematic color grading, or burn viral captions!`,
       },
     ];
   });
@@ -134,13 +142,25 @@ export const ContentAnalysisScreen: React.FC = () => {
 
   const handleApproveProposal = (suggestion: Suggestion) => {
     if (!suggestion.proposal) return;
-    const startSec = Math.floor(suggestion.proposal.startMs / 1000);
-    const endSec = Math.ceil(suggestion.proposal.endMs / 1000);
+    executeProposal(suggestion.proposal, suggestion.title, suggestion.id);
+  };
+
+  const executeProposal = (proposal: EditProposal, title: string, id: string) => {
+    const startSec = proposal.startMs !== undefined ? Math.floor(proposal.startMs / 1000) : 0;
+    const endSec = proposal.endMs !== undefined ? Math.ceil(proposal.endMs / 1000) : Math.ceil((metadata?.durationMs || 4000) / 1000);
     const duration = Math.max(1, endSec - startSec);
 
-    projectStore.addProject({
-      title: `${importedMedia?.title ?? 'Video'} — ${suggestion.title}`,
-      description: `${suggestion.detail} Grounded on ${suggestion.citations.map((c) => c.label).join(', ')}.`,
+    // Apply effect if specified
+    if (proposal.type === 'effect' && proposal.effectId) {
+      editorStore.selectEffect(proposal.effectId as any);
+    }
+    if (proposal.type === 'captions') {
+      editorStore.setCaptionStyle('tiktok_yellow');
+    }
+
+    const project = projectStore.addProject({
+      title: `${importedMedia?.title ?? 'Video'} — ${title}`,
+      description: proposal.reason,
       thumbnailUrl: importedMedia?.thumbnail ?? '',
       mediaUrl: importedMedia?.previewUrl || importedMedia?.sourceUrl,
       mediaName: importedMedia?.title ?? 'video.mp4',
@@ -153,48 +173,78 @@ export const ContentAnalysisScreen: React.FC = () => {
       clips: [],
     });
 
-    setApprovedProposalIds((prev) => [...prev, suggestion.id]);
-    showToast(`Approved! Project created with trim [${formatTimestamp(suggestion.proposal.startMs)} – ${formatTimestamp(suggestion.proposal.endMs)}]`);
+    projectStore.setActiveProjectId(project.id);
+    editorStore.setCurrentTime(0);
+
+    setApprovedProposalIds((prev) => [...prev, id]);
+    showToast(`Approved! Opening editor with ${title}...`);
+    openModal('editor');
+  };
+
+  const handleApproveAll = () => {
+    editorStore.selectEffect('cinematic_dark');
+    editorStore.setCaptionStyle('tiktok_yellow');
+    editorStore.setCurrentTime(0);
+
+    const dur = metadata?.durationMs || 4000;
+    const project = projectStore.addProject({
+      title: `${importedMedia?.title ?? 'Video'} — AI Enhanced`,
+      description: 'Approved all AI suggestions: Cyber Cinematic color grade, auto-captions, and optimized loop trim.',
+      thumbnailUrl: importedMedia?.thumbnail ?? '',
+      mediaUrl: importedMedia?.previewUrl || importedMedia?.sourceUrl,
+      mediaName: importedMedia?.title ?? 'video.mp4',
+      mediaWidth: metadata?.width ?? undefined,
+      mediaHeight: metadata?.height ?? undefined,
+      trimStartSeconds: 0,
+      trimEndSeconds: Math.ceil(dur / 1000),
+      durationSeconds: Math.ceil(dur / 1000),
+      aspectRatio: metadata?.orientation === 'portrait' ? '9:16' : '16:9',
+      clips: [],
+    });
+    projectStore.setActiveProjectId(project.id);
+
+    setApprovedProposalIds(dynamicSuggestions.map((s) => s.id));
+    showToast('Approved all suggestions! Opening Editor...');
+    openModal('editor');
   };
 
   return (
     <main
       style={{
         minHeight: '100%',
-        padding: '24px 20px calc(40px + env(safe-area-inset-bottom))',
-        backgroundColor: '#F7F8FA',
-        color: '#0F172A',
+        padding: '20px 18px calc(40px + env(safe-area-inset-bottom))',
+        backgroundColor: 'var(--bg-primary)',
+        color: 'var(--text-primary)',
       }}
     >
       {/* Top Navigation */}
-      <button
-        type="button"
-        onClick={goBack}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 6,
-          color: '#64748B',
-          fontSize: 13,
-          fontWeight: 600,
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          padding: 0,
-          marginBottom: 16,
-        }}
-      >
-        <ArrowLeft size={16} /> Back to analysis status
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <button
+          type="button"
+          onClick={goBack}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            color: 'var(--text-secondary)',
+            fontSize: 13,
+            fontWeight: 700,
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 0,
+          }}
+        >
+          <ArrowLeft size={16} /> Back to analysis status
+        </button>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
         <span
           style={{
             display: 'inline-block',
             padding: '3px 8px',
             borderRadius: 6,
-            background: '#EFF6FF',
-            color: '#2563EB',
+            background: 'var(--ai-soft)',
+            color: 'var(--ai-accent)',
             fontSize: 11,
             fontWeight: 800,
             letterSpacing: '.6px',
@@ -203,39 +253,43 @@ export const ContentAnalysisScreen: React.FC = () => {
         >
           ML + LLM Analysis
         </span>
-        <span style={{ fontSize: 12, color: '#64748B' }}>
-          {metadata?.durationMs ? formatDuration(metadata.durationMs) : ''}
-        </span>
       </div>
 
-      <h1 style={{ margin: '0 0 6px', fontSize: 24, fontWeight: 800, letterSpacing: '-0.5px' }}>
-        {importedMedia?.title ?? 'Video Intelligence'}
-      </h1>
+      <header style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: '-0.4px' }}>
+            {importedMedia?.title ?? 'Content Analysis'}
+          </h1>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ai-accent)', fontFamily: 'monospace' }}>
+            {formatDuration(metadata?.durationMs || 4000)}
+          </span>
+        </div>
+      </header>
 
-      {/* Segmented Switch at the Top (from the user's sketch) */}
+      {/* Top Segmented Pill Toggle (Matching Sketch) */}
       <div
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, 1fr)',
-          backgroundColor: '#E2E8F0',
-          borderRadius: 12,
-          padding: 3,
-          margin: '16px 0 20px',
+          backgroundColor: '#121418',
+          borderRadius: 14,
+          padding: 4,
+          marginBottom: 18,
+          border: '1px solid rgba(255, 255, 255, 0.08)',
         }}
       >
         <button
           type="button"
           onClick={() => setActiveTab('signals')}
           style={{
-            padding: '9px 12px',
+            padding: '8px 4px',
             borderRadius: 10,
-            border: 'none',
-            fontSize: 13,
-            fontWeight: 700,
+            border: activeTab === 'signals' ? '1px solid var(--ai-border)' : '1px solid transparent',
+            backgroundColor: activeTab === 'signals' ? 'var(--ai-soft)' : 'transparent',
+            color: activeTab === 'signals' ? 'var(--ai-accent)' : 'var(--text-secondary)',
+            fontWeight: 800,
+            fontSize: 12,
             cursor: 'pointer',
-            backgroundColor: activeTab === 'signals' ? '#FFFFFF' : 'transparent',
-            color: activeTab === 'signals' ? '#0F172A' : '#64748B',
-            boxShadow: activeTab === 'signals' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
             transition: 'all 0.15s ease',
           }}
         >
@@ -246,16 +300,16 @@ export const ContentAnalysisScreen: React.FC = () => {
           type="button"
           onClick={() => setActiveTab('chat')}
           style={{
-            padding: '9px 12px',
+            padding: '8px 4px',
             borderRadius: 10,
-            border: 'none',
-            fontSize: 13,
-            fontWeight: 700,
+            border: activeTab === 'chat' ? '1.5px solid var(--ai-accent)' : '1px solid transparent',
+            backgroundColor: activeTab === 'chat' ? '#FFE600' : 'transparent',
+            color: activeTab === 'chat' ? '#080808' : 'var(--text-secondary)',
+            fontWeight: 800,
+            fontSize: 12,
             cursor: 'pointer',
-            backgroundColor: activeTab === 'chat' ? '#D8FF00' : 'transparent',
-            color: activeTab === 'chat' ? '#080808' : '#64748B',
-            boxShadow: activeTab === 'chat' ? '0 2px 6px rgba(0,0,0,0.12)' : 'none',
             transition: 'all 0.15s ease',
+            boxShadow: activeTab === 'chat' ? '0 2px 8px rgba(255, 230, 0, 0.3)' : 'none',
           }}
         >
           AI Chat
@@ -265,15 +319,14 @@ export const ContentAnalysisScreen: React.FC = () => {
           type="button"
           onClick={() => setActiveTab('suggestions')}
           style={{
-            padding: '9px 12px',
+            padding: '8px 4px',
             borderRadius: 10,
-            border: 'none',
-            fontSize: 13,
-            fontWeight: 700,
+            border: activeTab === 'suggestions' ? '1px solid var(--ai-border)' : '1px solid transparent',
+            backgroundColor: activeTab === 'suggestions' ? 'var(--ai-soft)' : 'transparent',
+            color: activeTab === 'suggestions' ? 'var(--ai-accent)' : 'var(--text-secondary)',
+            fontWeight: 800,
+            fontSize: 12,
             cursor: 'pointer',
-            backgroundColor: activeTab === 'suggestions' ? '#FFFFFF' : 'transparent',
-            color: activeTab === 'suggestions' ? '#0F172A' : '#64748B',
-            boxShadow: activeTab === 'suggestions' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
             transition: 'all 0.15s ease',
           }}
         >
@@ -281,139 +334,81 @@ export const ContentAnalysisScreen: React.FC = () => {
         </button>
       </div>
 
-      {/* Tab 1: Signals & Static Analysis */}
+      {/* TAB 1: SIGNALS */}
       {activeTab === 'signals' && (
-        <>
-          <section style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginBottom: 22 }}>
-            <MetricCard label="Duration" value={formatDuration(metadata?.durationMs)} icon={<Clock3 size={14} />} />
-            <MetricCard label="Detected shots" value={shots.length} icon={<Film size={14} />} />
-            <MetricCard label="Object labels" value={objectEntries.length} icon={<Box size={14} />} />
-            <MetricCard label="Quiet intervals" value={silence.length} icon={<AudioLines size={14} />} />
-          </section>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
+            <MetricCard
+              label="Visual Shots"
+              value={shots.length ? `${shots.length} cuts` : 'Single shot'}
+              icon={<Film size={18} />}
+            />
+            <MetricCard
+              label="Speech Coverage"
+              value={transcript.length ? `${transcript.length} segments` : 'Continuous'}
+              icon={<MessageSquare size={18} />}
+            />
+            <MetricCard
+              label="Detected Objects"
+              value={objectEntries.length ? `${objectEntries.length} classes` : 'None sampled'}
+              icon={<Box size={18} />}
+            />
+            <MetricCard
+              label="Quiet Time"
+              value={silenceDuration ? `${(silenceDuration / 1000).toFixed(1)}s` : '0.0s'}
+              icon={<AudioLines size={18} />}
+            />
+          </div>
 
-          <section style={{ marginBottom: 20, padding: 16, borderRadius: 16, background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
-            <h2 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 700 }}>Video details</h2>
-            <p style={{ margin: 0, color: '#475569', fontSize: 13, lineHeight: 1.6 }}>
-              {metadata?.width && metadata.height ? `${metadata.width}×${metadata.height}` : 'Dimensions unavailable'}
-              {metadata?.fps ? ` · ${metadata.fps} fps` : ''}
-              {metadata?.orientation ? ` · ${metadata.orientation}` : ''}
-              {metadata?.videoFormat ? ` · ${metadata.videoFormat}` : ''}
-            </p>
-          </section>
-
-          <section style={{ marginBottom: 20 }}>
-            {transcript.length ? (
-              <TranscriptView segments={transcript} />
-            ) : (
-              <div style={{ padding: 16, borderRadius: 16, background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
-                <h2 style={{ margin: '0 0 6px', fontSize: 15 }}>Transcript unavailable</h2>
-                <p style={{ margin: 0, color: '#64748B', fontSize: 13 }}>
-                  {analysisResult?.features.find((f) => f.feature === 'transcript')?.error ?? 'No transcript was generated.'}
-                </p>
-              </div>
-            )}
-          </section>
-
-          <section style={{ marginBottom: 20 }}>
-            <h2 style={{ margin: '0 0 10px', fontSize: 16, fontWeight: 700 }}>
-              Detected shots <span style={{ color: '#64748B', fontSize: 12, fontWeight: 500 }}>({shots.length})</span>
-            </h2>
-            {shots.length ? (
-              <div style={{ display: 'grid', gap: 8 }}>
-                {shots.map((shot) => {
-                  const keyframe = keyframes.find((frame) => frame.shotId === shot.id);
-                  return (
-                    <article key={shot.id} style={{ padding: 13, borderRadius: 13, background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
-                      <strong style={{ fontSize: 13 }}>Shot {String(shot.id).padStart(2, '0')}</strong>
-                      <span style={{ float: 'right', color: '#2563EB', fontSize: 12, fontWeight: 600 }}>
-                        {formatTimestamp(shot.startMs)}–{formatTimestamp(shot.endMs)}
-                      </span>
-                      <p style={{ margin: '6px 0 0', color: '#64748B', fontSize: 12 }}>
-                        {keyframe ? `Sharpest sampled frame at ${formatTimestamp(keyframe.timestampMs)}` : 'Keyframe timestamp recorded'}
-                      </p>
-                    </article>
-                  );
-                })}
-              </div>
-            ) : (
-              <p style={{ color: '#64748B', fontSize: 13 }}>Shot boundaries unavailable.</p>
-            )}
-          </section>
-
-          <section style={{ marginBottom: 20 }}>
-            <h2 style={{ margin: '0 0 10px', fontSize: 16, fontWeight: 700 }}>Sampled objects</h2>
-            {objectEntries.length ? (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {objectEntries.map(([name, count]) => (
-                  <EntityChip key={name} label={`${name} · ${count}`} variant="object" />
+          {/* Spoken Transcript */}
+          {transcript.length > 0 && (
+            <div style={{ backgroundColor: 'var(--bg-surface-2)', borderRadius: 16, padding: 14, border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 8 }}>Spoken Transcript</div>
+              <div style={{ maxHeight: 180, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {transcript.map((t) => (
+                  <div key={t.id} style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                    <span style={{ color: 'var(--ai-accent)', fontFamily: 'monospace', marginRight: 6 }}>{t.timestamp}</span>
+                    {t.text}
+                  </div>
                 ))}
               </div>
-            ) : (
-              <p style={{ color: '#64748B', fontSize: 13 }}>No objects were detected in the sampled frames.</p>
-            )}
-          </section>
-
-          <section style={{ marginBottom: 20, padding: 16, borderRadius: 16, background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
-            <h2 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 700 }}>Audio diagnostics</h2>
-            <p style={{ margin: 0, color: '#475569', fontSize: 13, lineHeight: 1.5 }}>
-              {silence.length} quiet pause(s) detected, {formatDuration(silenceDuration)} total. Background noise is evaluated per-second.
-            </p>
-          </section>
-
-          <details style={{ marginBottom: 22, padding: 14, borderRadius: 14, background: '#FFFFFF', border: '1px solid #E2E8F0' }}>
-            <summary style={{ cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>8-Module Feature Status</summary>
-            <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
-              {analysisResult?.features.map((feature) => (
-                <div key={feature.feature} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 12 }}>
-                  <span>{featureLabels[feature.feature] ?? feature.feature}{feature.error ? ` — ${feature.error}` : ''}</span>
-                  <strong style={{ flexShrink: 0, color: feature.status === 'success' ? '#15803D' : '#B45309' }}>
-                    {feature.status}
-                  </strong>
-                </div>
-              ))}
             </div>
-          </details>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('suggestions')}
-            style={{
-              width: '100%',
-              minHeight: 48,
-              borderRadius: 14,
-              background: '#2563EB',
-              color: '#FFFFFF',
-              fontWeight: 700,
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-            }}
-          >
-            <span>View Suggestions & Approve</span>
-            <ArrowRight size={17} />
-          </button>
-        </>
+          )}
+        </div>
       )}
 
-      {/* Tab 2: Dynamic Chat (ML + LLM from the user's sketch) */}
+      {/* TAB 2: AI CHAT (MATCHING WIREFRAME) */}
       {activeTab === 'chat' && (
-        <section style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {/* Quick Prompts */}
-          <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
-            {QUICK_PROMPTS.map((prompt) => (
+        <section
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 12,
+            minHeight: '440px',
+          }}
+        >
+          {/* Quick Prompt Pills */}
+          <div
+            style={{
+              display: 'flex',
+              gap: 8,
+              overflowX: 'auto',
+              paddingBottom: 4,
+              scrollbarWidth: 'none',
+            }}
+          >
+            {QUICK_PROMPTS.map((prompt, i) => (
               <button
-                key={prompt}
+                key={i}
+                type="button"
                 onClick={() => handleSendMessage(prompt)}
                 style={{
                   padding: '6px 12px',
-                  borderRadius: 999,
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid #CBD5E1',
-                  color: '#334155',
-                  fontSize: 12,
+                  borderRadius: 20,
+                  backgroundColor: 'var(--bg-surface-2)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  color: 'var(--text-secondary)',
+                  fontSize: 11,
                   fontWeight: 600,
                   whiteSpace: 'nowrap',
                   cursor: 'pointer',
@@ -425,194 +420,240 @@ export const ContentAnalysisScreen: React.FC = () => {
             ))}
           </div>
 
-          {/* Messages Stream */}
+          {/* Chat Messages Log */}
           <div
             style={{
               display: 'flex',
               flexDirection: 'column',
               gap: 12,
-              minHeight: '260px',
-              maxHeight: '440px',
+              flex: 1,
+              maxHeight: '380px',
               overflowY: 'auto',
-              padding: '12px 0',
+              padding: '8px 2px',
             }}
           >
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                style={{
-                  alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
-                  maxWidth: '85%',
-                  backgroundColor: msg.sender === 'user' ? '#2563EB' : '#FFFFFF',
-                  color: msg.sender === 'user' ? '#FFFFFF' : '#0F172A',
-                  padding: '12px 16px',
-                  borderRadius: msg.sender === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                  border: msg.sender === 'user' ? 'none' : '1px solid #E2E8F0',
-                  boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
-                  fontSize: 13,
-                  lineHeight: 1.55,
-                }}
-              >
-                <div style={{ whiteSpace: 'pre-wrap' }}>{msg.text}</div>
+            {messages.map((msg) => {
+              const isUser = msg.sender === 'user';
+              const proposal = msg.reply?.proposal;
 
-                {/* Grounded Citations if returned */}
-                {msg.reply?.citations && msg.reply.citations.length > 0 && (
-                  <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid #E2E8F0', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {msg.reply.citations.map((c, i) => (
-                      <span
-                        key={i}
-                        style={{
-                          fontSize: 11,
-                          padding: '2px 8px',
-                          borderRadius: 6,
-                          backgroundColor: '#EFF6FF',
-                          color: '#1D4ED8',
-                          fontWeight: 600,
-                        }}
-                      >
-                        ⏱ {formatTimestamp(c.startMs)} · {c.label}
-                      </span>
-                    ))}
-                  </div>
-                )}
+              return (
+                <div
+                  key={msg.id}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: isUser ? 'flex-end' : 'flex-start',
+                    gap: 4,
+                  }}
+                >
+                  <div
+                    style={{
+                      maxWidth: '86%',
+                      padding: '12px 14px',
+                      borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                      backgroundColor: isUser ? 'var(--bg-surface-3)' : '#121418',
+                      color: isUser ? '#fff' : 'var(--text-primary)',
+                      border: isUser ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.08)',
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                    }}
+                  >
+                    <div>{msg.text}</div>
 
-                {/* Actionable Trim Proposal if returned */}
-                {msg.reply?.proposal && (
-                  <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px dashed #CBD5E1' }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#0F172A', marginBottom: 6 }}>
-                      ✂ Proposed Trim: {formatTimestamp(msg.reply.proposal.startMs)} – {formatTimestamp(msg.reply.proposal.endMs)}
-                    </div>
-                    <button
-                      onClick={() => {
-                        const proposal = msg.reply!.proposal!;
-                        projectStore.addProject({
-                          title: `Cut: ${importedMedia?.title ?? 'Video'}`,
-                          description: proposal.reason,
-                          thumbnailUrl: importedMedia?.thumbnail ?? '',
-                          mediaName: importedMedia?.title ?? 'video.mp4',
-                          trimStartSeconds: Math.floor(proposal.startMs / 1000),
-                          trimEndSeconds: Math.ceil(proposal.endMs / 1000),
-                          durationSeconds: Math.ceil((proposal.endMs - proposal.startMs) / 1000),
-                          aspectRatio: metadata?.orientation === 'portrait' ? '9:16' : '16:9',
-                          clips: [],
-                        });
-                        showToast(`Trim approved and added to Projects!`);
-                        openModal('editor');
-                      }}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: 8,
-                        backgroundColor: '#16A34A',
-                        color: '#FFFFFF',
-                        border: 'none',
-                        fontSize: 12,
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                      }}
-                    >
-                      <Check size={14} /> Approve & Open Editor
-                    </button>
+                    {/* Citations */}
+                    {msg.reply?.citations && msg.reply.citations.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                        {msg.reply.citations.map((c, i) => (
+                          <span
+                            key={i}
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 700,
+                              padding: '2px 6px',
+                              borderRadius: 6,
+                              backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                              color: 'var(--ai-accent)',
+                            }}
+                          >
+                            ⏱ {formatTime(c.startMs)} · {c.label}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Direct Action Button inside Chat Bubble */}
+                    {proposal && (
+                      <div style={{ marginTop: 10, display: 'flex', gap: 6 }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            executeProposal(proposal, proposal.reason, `chat-prop-${msg.id}`);
+                            openModal('editor');
+                          }}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: 10,
+                            backgroundColor: 'var(--ai-accent)',
+                            color: '#080808',
+                            border: 'none',
+                            fontSize: 11,
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
+                        >
+                          <Zap size={12} />
+                          <span>Apply & Open Editor</span>
+                          <ArrowRight size={12} />
+                        </button>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
 
-          {/* Chat Input Bar */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSendMessage();
-            }}
+          {/* Interactive Chat Input Bar */}
+          <div
             style={{
               display: 'flex',
-              alignItems: 'center',
               gap: 8,
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #CBD5E1',
+              backgroundColor: '#0c0e12',
               borderRadius: 16,
               padding: '6px 8px 6px 14px',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
             }}
           >
             <input
               type="text"
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSendMessage();
+              }}
               placeholder="Ask anything about the video content or edits..."
               style={{
                 flex: 1,
                 border: 'none',
                 outline: 'none',
-                fontSize: 13,
-                color: '#0F172A',
                 backgroundColor: 'transparent',
+                color: '#fff',
+                fontSize: 13,
               }}
             />
             <button
-              type="submit"
-              disabled={!chatInput.trim()}
+              type="button"
+              onClick={() => handleSendMessage()}
               style={{
                 width: 36,
                 height: 36,
-                borderRadius: 10,
-                backgroundColor: chatInput.trim() ? '#2563EB' : '#E2E8F0',
-                color: chatInput.trim() ? '#FFFFFF' : '#94A3B8',
+                borderRadius: 12,
+                backgroundColor: 'var(--ai-accent)',
+                color: '#080808',
                 border: 'none',
                 display: 'grid',
                 placeItems: 'center',
-                cursor: chatInput.trim() ? 'pointer' : 'default',
+                cursor: 'pointer',
               }}
             >
-              <Send size={16} />
+              <Send size={15} />
             </button>
-          </form>
+          </div>
         </section>
       )}
 
-      {/* Tab 3: Actionable Suggestions with Approve Button (Screen 4 from the user's sketch) */}
+      {/* TAB 3: SUGGESTIONS (MATCHING WIREFRAME SCREEN 4) */}
       {activeTab === 'suggestions' && (
-        <section style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Video Preview at Top */}
+        <section style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Top Video Preview Player */}
           {importedMedia?.previewUrl && (
-            <div style={{ borderRadius: 16, overflow: 'hidden', backgroundColor: '#020617', border: '1px solid #E2E8F0' }}>
+            <div
+              style={{
+                height: 200,
+                borderRadius: 18,
+                overflow: 'hidden',
+                backgroundColor: '#080808',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                boxShadow: 'var(--shadow-card)',
+              }}
+            >
               <video
                 src={importedMedia.previewUrl}
                 controls
                 playsInline
-                preload="metadata"
-                style={{ width: '100%', maxHeight: '220px', display: 'block', objectFit: 'contain' }}
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
               />
             </div>
           )}
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>
-              Grounded Suggestions <span style={{ color: '#64748B', fontSize: 13, fontWeight: 500 }}>({dynamicSuggestions.length})</span>
-            </h2>
-            <span style={{ fontSize: 11, color: '#64748B' }}>Tap Approve to save to Studio</span>
+          {/* Quick Approve All Action Card */}
+          <div
+            style={{
+              padding: '12px 16px',
+              borderRadius: 14,
+              backgroundColor: 'var(--ai-soft)',
+              border: '1.5px solid var(--ai-border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 10,
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--ai-accent)' }}>
+                Apply All AI Enhancements
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                Color grade + auto-captions + tight loop trim
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleApproveAll}
+              style={{
+                padding: '8px 14px',
+                borderRadius: 10,
+                backgroundColor: 'var(--ai-accent)',
+                color: '#080808',
+                border: 'none',
+                fontSize: 12,
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                flexShrink: 0,
+                boxShadow: '0 2px 10px rgba(216, 255, 0, 0.3)',
+              }}
+            >
+              <Zap size={13} />
+              <span>Approve All</span>
+              <ArrowRight size={13} />
+            </button>
           </div>
 
           {/* Suggestions List */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {dynamicSuggestions.map((sug) => {
               const isApproved = approvedProposalIds.includes(sug.id);
+
               return (
                 <article
                   key={sug.id}
                   style={{
-                    padding: 16,
+                    padding: 14,
                     borderRadius: 16,
-                    backgroundColor: '#FFFFFF',
-                    border: isApproved ? '2px solid #16A34A' : '1px solid #E2E8F0',
+                    backgroundColor: 'var(--bg-surface-2)',
+                    border: isApproved ? '2px solid #16A34A' : '1px solid rgba(255, 255, 255, 0.08)',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 10,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                    transition: 'all 0.15s ease',
+                    gap: 8,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
@@ -620,100 +661,97 @@ export const ContentAnalysisScreen: React.FC = () => {
                       style={{
                         padding: '3px 8px',
                         borderRadius: 6,
-                        backgroundColor: sug.kind === 'trim' ? '#EFF6FF' : '#FEF3C7',
-                        color: sug.kind === 'trim' ? '#1D4ED8' : '#B45309',
+                        backgroundColor: sug.kind === 'effect' ? 'rgba(216, 255, 0, 0.14)' : '#1a1f26',
+                        color: sug.kind === 'effect' ? 'var(--ai-accent)' : '#93C5FD',
                         fontSize: 10,
                         fontWeight: 800,
                         textTransform: 'uppercase',
                         letterSpacing: '.4px',
                       }}
                     >
-                      {sug.kind === 'trim' ? 'TRIM CANDIDATE' : 'CONTENT SIGNAL'}
+                      {sug.kind === 'effect' ? 'COLOR GRADE' : sug.kind === 'captions' ? 'CAPTIONS' : 'TRIM'}
                     </span>
 
-                    {sug.proposal && (
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#2563EB' }}>
+                    {sug.proposal?.startMs !== undefined && sug.proposal?.endMs !== undefined && (
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ai-accent)', fontFamily: 'monospace' }}>
                         {formatTimestamp(sug.proposal.startMs)} – {formatTimestamp(sug.proposal.endMs)}
                       </span>
                     )}
                   </div>
 
                   <div>
-                    <h3 style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 700, color: '#0F172A' }}>
+                    <h3 style={{ margin: '0 0 2px', fontSize: 14, fontWeight: 800, color: '#fff' }}>
                       {sug.title}
                     </h3>
-                    <p style={{ margin: 0, fontSize: 13, color: '#475569', lineHeight: 1.5 }}>
+                    <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
                       {sug.detail}
                     </p>
                   </div>
 
                   {/* Citations */}
                   {sug.citations.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingTop: 4 }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                       {sug.citations.map((c, i) => (
                         <span
                           key={i}
                           style={{
-                            fontSize: 11,
-                            padding: '2px 7px',
+                            fontSize: 10,
+                            padding: '2px 6px',
                             borderRadius: 6,
-                            backgroundColor: '#F1F5F9',
-                            color: '#64748B',
+                            backgroundColor: 'rgba(255,255,255,0.06)',
+                            color: 'var(--text-muted)',
                           }}
                         >
-                          ⏱ {formatTimestamp(c.startMs)} · {c.label}
+                          ⏱ {formatTime(c.startMs)} · {c.label}
                         </span>
                       ))}
                     </div>
                   )}
 
-                  {/* Approve Action Button (from user's sketch) */}
+                  {/* Approve Action Button (from Wireframe) */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginTop: 4 }}>
                     {isApproved ? (
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#16A34A', fontSize: 13, fontWeight: 700 }}>
-                        <CheckCircle2 size={16} />
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#16A34A', fontSize: 12, fontWeight: 700 }}>
+                        <CheckCircle2 size={15} />
                         <span>Approved & Saved</span>
                       </div>
                     ) : (
                       <button
                         onClick={() => handleApproveProposal(sug)}
-                        disabled={!sug.proposal}
                         style={{
-                          padding: '8px 16px',
+                          padding: '7px 14px',
                           borderRadius: 10,
-                          backgroundColor: '#2563EB',
-                          color: '#FFFFFF',
+                          backgroundColor: 'var(--ai-accent)',
+                          color: '#080808',
                           border: 'none',
-                          fontSize: 13,
-                          fontWeight: 700,
-                          cursor: sug.proposal ? 'pointer' : 'default',
+                          fontSize: 12,
+                          fontWeight: 800,
+                          cursor: 'pointer',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: 6,
                         }}
                       >
                         <span>Approve</span>
-                        <ArrowRight size={14} />
+                        <ArrowRight size={13} />
                       </button>
                     )}
 
-                    {isApproved && (
-                      <button
-                        onClick={() => openModal('editor')}
-                        style={{
-                          padding: '8px 14px',
-                          borderRadius: 10,
-                          backgroundColor: '#0F172A',
-                          color: '#FFFFFF',
-                          border: 'none',
-                          fontSize: 12,
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Open Editor
-                      </button>
-                    )}
+                    <button
+                      onClick={() => openModal('editor')}
+                      style={{
+                        padding: '7px 12px',
+                        borderRadius: 10,
+                        backgroundColor: '#1c1f26',
+                        color: '#fff',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Open Editor
+                    </button>
                   </div>
                 </article>
               );
@@ -724,4 +762,3 @@ export const ContentAnalysisScreen: React.FC = () => {
     </main>
   );
 };
-

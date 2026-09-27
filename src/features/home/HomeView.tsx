@@ -8,6 +8,7 @@ import {
   ArrowUpRight,
   Brain,
   Film,
+  Flame,
   ArrowRight,
   Mic,
   TrendingUp,
@@ -484,7 +485,7 @@ export const HomeView: React.FC = () => {
           <h2 style={{ fontSize: '15px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)', margin: 0 }}>
             Creator AI Studio Hub
           </h2>
-          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>4 Core Capabilities</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>5 Core Capabilities</span>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
@@ -688,6 +689,57 @@ export const HomeView: React.FC = () => {
               </div>
               <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
                 Timeline trim & multitrack export
+              </div>
+            </div>
+          </div>
+
+          {/* Tile 5: Brainrot Feed */}
+          <div
+            onClick={() => openModal('brainrot')}
+            style={{
+              padding: '16px',
+              borderRadius: '18px',
+              backgroundColor: 'var(--bg-surface)',
+              border: '1px solid var(--border-color)',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              minHeight: '120px',
+              transition: 'transform 0.15s ease, border-color 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.borderColor = 'var(--border-color)';
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                  color: '#F87171',
+                  display: 'grid',
+                  placeItems: 'center',
+                }}
+              >
+                <Flame size={18} />
+              </div>
+              <ArrowUpRight size={16} color="var(--text-muted)" />
+            </div>
+
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>
+                Brainrot Feed
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
+                Topic to vertical short with voice & captions
               </div>
             </div>
           </div>
