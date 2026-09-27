@@ -657,13 +657,59 @@ export const CreatorIntelligenceScreen: React.FC<CreatorIntelligenceScreenProps>
         })}
       </nav>
 
-      {/* LOADING & ERROR STATES */}
+      {/* LOADING SKELETON STREAM */}
       {trendsLoading && (
-        <div style={{ padding: '30px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-          <Loader2 size={24} className="animate-spin" style={{ color: 'var(--ai-accent)' }} />
-          <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
-            Scraping live YouTube videos, Instagram Reels, X trends & LinkedIn discussions for <strong>{activeDomain}</strong>…
-          </p>
+        <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div
+            className="skeleton-shimmer"
+            style={{
+              padding: '16px 20px',
+              borderRadius: '16px',
+              border: '1px solid var(--ai-border)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+            }}
+          >
+            <Loader2 size={20} className="animate-spin" style={{ color: 'var(--ai-accent)', flexShrink: 0 }} />
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#fff' }}>
+                Analyzing Live Intelligence Signals for {activeDomain}…
+              </div>
+              <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--text-muted)' }}>
+                Scraping live YouTube videos, Instagram Reels, X threads, and search volume in real-time.
+              </p>
+            </div>
+          </div>
+
+          {/* Skeleton Content Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
+            {[1, 2, 3, 4].map((idx) => (
+              <div
+                key={idx}
+                className="skeleton-shimmer"
+                style={{
+                  height: '180px',
+                  borderRadius: '16px',
+                  border: '1px solid var(--border-color)',
+                  padding: '16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <div style={{ width: '80px', height: '14px', borderRadius: '4px', backgroundColor: 'rgba(255,255,255,0.06)' }} />
+                  <div style={{ width: '40px', height: '14px', borderRadius: '4px', backgroundColor: 'rgba(255,255,255,0.04)' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ width: '90%', height: '16px', borderRadius: '4px', backgroundColor: 'rgba(255,255,255,0.08)' }} />
+                  <div style={{ width: '60%', height: '14px', borderRadius: '4px', backgroundColor: 'rgba(255,255,255,0.05)' }} />
+                </div>
+                <div style={{ width: '100%', height: '32px', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.05)' }} />
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

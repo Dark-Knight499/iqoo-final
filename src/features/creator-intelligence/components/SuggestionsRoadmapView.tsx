@@ -157,8 +157,36 @@ export const SuggestionsRoadmapView: React.FC<SuggestionsRoadmapViewProps> = ({
         </div>
       </div>
 
+      {/* SKELETON ROADMAP WHEN LOADING */}
+      {isLoading && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {[1, 2, 3].map((idx) => (
+            <div
+              key={idx}
+              className="skeleton-shimmer"
+              style={{
+                height: '150px',
+                borderRadius: '16px',
+                border: '1px solid var(--border-color)',
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ width: '30%', height: '14px', borderRadius: '4px', backgroundColor: 'rgba(255,255,255,0.06)' }} />
+              <div style={{ width: '80%', height: '22px', borderRadius: '6px', backgroundColor: 'rgba(255,255,255,0.08)' }} />
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ width: '100px', height: '28px', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.05)' }} />
+                <div style={{ width: '100px', height: '28px', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.05)' }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* TOP OPPORTUNITY MATRIX */}
-      {opportunityMatrix.length > 0 && (
+      {!isLoading && opportunityMatrix.length > 0 && (
         <section>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <Zap size={16} color="var(--ai-accent)" />

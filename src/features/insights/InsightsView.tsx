@@ -343,69 +343,109 @@ export const InsightsView: React.FC = () => {
       </div>
 
       {/* 2x2 Metric Grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: '12px',
-          marginBottom: '26px',
-        }}
-      >
-        <Card variant="surface" padding="16px">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Total Views</span>
-            <Eye size={14} color="var(--text-muted)" />
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: '#fff' }}>
-            {youtube ? formatCount(youtube.total_views_or_impressions) : creator.metrics.views || '18.4M'}
-          </div>
-          <div style={{ marginTop: '4px' }}>
-            <Chip label={youtube ? 'YouTube views' : creator.metrics.viewsChange || '+12.4%'} variant="ai" />
-          </div>
-        </Card>
+      {isLoading ? (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: '12px',
+            marginBottom: '26px',
+          }}
+        >
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="skeleton-shimmer"
+              style={{
+                height: '112px',
+                borderRadius: '16px',
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                border: '1px solid var(--border-color)',
+              }}
+            >
+              <div style={{ width: '45%', height: '11px', borderRadius: '4px', backgroundColor: 'rgba(255,255,255,0.06)' }} />
+              <div style={{ width: '65%', height: '22px', borderRadius: '6px', backgroundColor: 'rgba(255,255,255,0.08)' }} />
+              <div style={{ width: '50%', height: '16px', borderRadius: '999px', backgroundColor: 'rgba(255,255,255,0.05)' }} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: '12px',
+            marginBottom: '26px',
+          }}
+        >
+          <Card variant="surface" padding="16px">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Total Views</span>
+              <Eye size={14} color="var(--text-muted)" />
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: '#fff' }}>
+              {youtube ? formatCount(youtube.total_views_or_impressions) : creator.metrics.views || '18.4M'}
+            </div>
+            <div style={{ marginTop: '4px' }}>
+              <Chip label={youtube ? 'YouTube views' : creator.metrics.viewsChange || '+12.4%'} variant="ai" />
+            </div>
+          </Card>
 
-        <Card variant="surface" padding="16px">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Engagement</span>
-            <BarChart3 size={14} color="var(--text-muted)" />
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: '#fff' }}>
-            {dashboard ? `${dashboard.overall_engagement_rate}%` : creator.metrics.engagement || '6.8%'}
-          </div>
-          <div style={{ marginTop: '4px' }}>
-            <Chip label={dashboard ? 'Overall rate' : creator.metrics.engagementChange || 'Verified'} variant="ai" />
-          </div>
-        </Card>
+          <Card variant="surface" padding="16px">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Engagement</span>
+              <BarChart3 size={14} color="var(--text-muted)" />
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: '#fff' }}>
+              {dashboard ? `${dashboard.overall_engagement_rate}%` : creator.metrics.engagement || '6.8%'}
+            </div>
+            <div style={{ marginTop: '4px' }}>
+              <Chip label={dashboard ? 'Overall rate' : creator.metrics.engagementChange || 'Verified'} variant="ai" />
+            </div>
+          </Card>
 
-        <Card variant="surface" padding="16px">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Overall Reach</span>
-            <Eye size={14} color="var(--text-muted)" />
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: '#fff' }}>
-            {dashboard ? formatCount(dashboard.overall_reach) : '8.1M'}
-          </div>
-          <div style={{ marginTop: '4px' }}>
-            <Chip label={dashboard ? 'Across 5 platforms' : 'Omni-channel'} />
-          </div>
-        </Card>
+          <Card variant="surface" padding="16px">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Overall Reach</span>
+              <Eye size={14} color="var(--text-muted)" />
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: '#fff' }}>
+              {dashboard ? formatCount(dashboard.overall_reach) : '8.1M'}
+            </div>
+            <div style={{ marginTop: '4px' }}>
+              <Chip label={dashboard ? 'Across 5 platforms' : 'Omni-channel'} />
+            </div>
+          </Card>
 
-        <Card variant="surface" padding="16px">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Growth Rate</span>
-            <Users size={14} color="var(--text-muted)" />
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: '#fff' }}>
-            {youtube ? `+${youtube.growth_rate_30d_percent}%` : creator.metrics.growth || '+4.2%'}
-          </div>
-          <div style={{ marginTop: '4px' }}>
-            <Chip label={youtube ? `${timeframe} growth` : 'Audience rate'} variant="success" />
-          </div>
-        </Card>
-      </div>
+          <Card variant="surface" padding="16px">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Growth Rate</span>
+              <Users size={14} color="var(--text-muted)" />
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: '#fff' }}>
+              {youtube ? `+${youtube.growth_rate_30d_percent}%` : creator.metrics.growth || '+4.2%'}
+            </div>
+            <div style={{ marginTop: '4px' }}>
+              <Chip label={youtube ? `${timeframe} growth` : 'Audience rate'} variant="success" />
+            </div>
+          </Card>
+        </div>
+      )}
 
-      {/* Multi-Platform Channel Pulse */}
-      {dashboard?.platforms && (
+      {/* Multi-Platform Channel Pulse (Live or Skeleton) */}
+      {isLoading ? (
+        <section style={{ marginBottom: '26px' }}>
+          <div style={{ width: '160px', height: '12px', borderRadius: '4px', backgroundColor: 'rgba(255,255,255,0.06)', marginBottom: '10px' }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' }}>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="skeleton-shimmer" style={{ height: '76px', borderRadius: '14px', border: '1px solid var(--border-color)' }} />
+            ))}
+          </div>
+        </section>
+      ) : dashboard?.platforms && (
         <section style={{ marginBottom: '26px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
             <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
@@ -537,7 +577,30 @@ export const InsightsView: React.FC = () => {
             </div>
           )}
 
-          {benchmarkResult && (
+          {isBenchmarking && (
+            <div
+              className="skeleton-shimmer"
+              style={{
+                marginTop: '14px',
+                padding: '16px',
+                borderRadius: '12px',
+                border: '1px solid var(--ai-border)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--ai-accent)', fontSize: '13px', fontWeight: 800 }}>
+                <Loader2 size={15} className="animate-spin" />
+                <span>Deep Scanning {benchmarkTarget}…</span>
+              </div>
+              <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                Comparing script pacing (WPM), retention hook archetypes, and generating action playbook…
+              </p>
+            </div>
+          )}
+
+          {benchmarkResult && !isBenchmarking && (
             <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div
                 style={{
